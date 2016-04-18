@@ -41,7 +41,6 @@ namespace Cluster.Famicom
         static int Main(string[] args)
         {
             startTime = DateTime.Now;
-            string command = args[0];
             string port = "auto";
             string mapper = "0";
             string psize = null;
@@ -58,6 +57,8 @@ namespace Cluster.Famicom
                     PrintHelp();
                     return 0;
                 }
+
+                string command = args[0];
 
                 for (int i = 1; i < args.Length; i++)
                 {
@@ -225,7 +226,10 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "reset", "simulate reset to change games in multicards");
             Console.WriteLine(" {0,-20}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-20}{1}", "write-prg-ram", "write PRG RAM");
-            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump only tiles to PNG file");
+            Console.WriteLine(" {0,-20}{1}", "write-flash", "write special flash cartridge");
+            Console.WriteLine(" {0,-20}{1}", "write-coolboy", "write COOLBOY cartridge");
+            Console.WriteLine(" {0,-20}{1}", "write-coolgirl", "write COOLGIRL cartridge");
+            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump tiles to PNG file");
             Console.WriteLine();
             Console.WriteLine("Available options:");
             Console.WriteLine(" {0,-20}{1}", "--port <com>", "serial port of dumper, default - auto");
