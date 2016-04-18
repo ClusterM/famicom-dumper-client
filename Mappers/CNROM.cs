@@ -17,6 +17,11 @@ namespace Cluster.Famicom.Mappers
             get { return 3; }
         }
 
+        public string UnifName
+        {
+            get { return null; }
+        }
+
         public int DefaultPrgSize
         {
             get { return 0x8000; }
@@ -24,7 +29,7 @@ namespace Cluster.Famicom.Mappers
 
         public int DefaultChrSize
         {
-            get { return 0x2000 * 4; }
+            get { return 0x2000*4; }
         }
 
         byte[] prg;
@@ -32,7 +37,7 @@ namespace Cluster.Famicom.Mappers
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
             Console.Write("Dumping PRG... ");
-            prg = dumper.ReadPrg(0x8000, size);
+            prg = dumper.ReadCpu(0x8000, size);
             data.AddRange(prg);
             Console.WriteLine("OK");
         }
@@ -41,7 +46,7 @@ namespace Cluster.Famicom.Mappers
         {
             if (prg == null)
             {
-                prg = dumper.ReadPrg(0x8000, DefaultPrgSize);
+                prg = dumper.ReadCpu(0x8000, DefaultPrgSize);
             }
             byte banks = (byte)(size / 0x2000);
 
@@ -52,14 +57,19 @@ namespace Cluster.Famicom.Mappers
                 {
                     if (prg[i] == bank)
                     {
-                        dumper.WritePrg((ushort)(0x8000 + i), (byte)bank);
+                        dumper.WriteCpu((ushort)(0x8000 + i), (byte)bank);
                         break;
                     }
                 }
-                var d = dumper.ReadChr(0x0000, 0x2000);
+                var d = dumper.ReadPpu(0x0000, 0x2000);
                 data.AddRange(d);
                 Console.WriteLine("OK");
             }
+        }
+
+        public void EnablePrgRam(FamicomDumperConnection dumper)
+        {
+            Console.WriteLine("Warning: SRAM is not supported by this mapper");
         }
     }
 }

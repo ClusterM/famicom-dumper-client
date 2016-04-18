@@ -10,11 +10,15 @@ namespace Cluster.Famicom
         string Name { get; }
         int Number { get; }
 
+        string UnifName { get; }
+
         int DefaultPrgSize { get; }
         int DefaultChrSize { get; }
 
         void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size = 0);
 
         void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size = 0);
+
+        void EnablePrgRam(FamicomDumperConnection dumper);
     }
 }

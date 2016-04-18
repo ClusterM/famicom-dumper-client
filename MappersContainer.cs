@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Cluster.Famicom
+namespace Cluster.Famicom.Mappers
 {
     public static class MappersContainer
     {
@@ -13,7 +13,14 @@ namespace Cluster.Famicom
             new MMC1(),
             new UxROM(),
             new CNROM(),
-            new MMC3()
+            new MMC3(),
+            new AxROM(),
+            //new Mapper182(),
+            //new Multicart9999999(),
+            new BMC1024CA1(),
+            new Coolboy(),
+            new Coolgirl()
+            //new MapperTest(),
         };
 
         public static IMapper GetMapper(string name)

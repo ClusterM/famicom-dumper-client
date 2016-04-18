@@ -5,16 +5,16 @@ using System.Text;
 
 namespace Cluster.Famicom.Mappers
 {
-    public class UxROM : IMapper
+    public class AxROM : IMapper
     {
         public string Name
         {
-            get { return "UxROM"; }
+            get { return "AxROM"; }
         }
 
         public int Number
         {
-            get { return 2; }
+            get { return 7; }
         }
 
         public string UnifName
@@ -29,42 +29,35 @@ namespace Cluster.Famicom.Mappers
 
         public int DefaultChrSize
         {
-            get { return 0; /* 0x2000; */ }
+            get { return 0; }
         }
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            //dumper.WritePrg(0xFFC9, 1);
             dumper.WriteCpu((ushort)(0x5000), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5001), (byte)0x08);
-            dumper.WriteCpu((ushort)(0x5002), (byte)0xF8);
-            dumper.WriteCpu((ushort)(0x5003), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5004), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5005), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5006), (byte)0x02);
-            dumper.WriteCpu((ushort)(0x5007), (byte)0x82);
-
-            byte banks = (byte)(size / 0x4000);
-            Console.Write("Reading last PRG bank... ");
-            var lastBank = dumper.ReadCpu(0xC000, 0x4000);
-            Console.WriteLine("OK");
-            for (int bank = 0; bank < banks-1; bank++)
+            dumper.WriteCpu((ushort)(0x5001), (byte)0x10);
+            dumper.WriteCpu((ushort)(0x5002), (byte)0x10);
+            dumper.WriteCpu((ushort)(0x5006), (byte)0x07);
+            dumper.WriteCpu((ushort)(0x5007), (byte)0x03);
+            byte banks = (byte)(size / 0x8000);
+            for (int bank = 0; bank < banks; bank++)
             {
                 Console.Write("Reading PRG bank #{0}... ", bank);
+                // TODO: избежать конфликтов шины
                 // Avoiding bus conflicts
+                /*
                 for (int i = 0; i < lastBank.Length; i++)
                 {
                     if (lastBank[i] == bank)
                     {
-                        dumper.WriteCpu((ushort)(0xC000 + i), (byte)bank);
                         break;
                     }
                 }
-                data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
+                 */
+                dumper.WriteCpu((ushort)(0x8000), (byte)bank);
+                data.AddRange(dumper.ReadCpu(0x8000, 0x8000));
                 Console.WriteLine("OK");
             }
-            data.AddRange(lastBank);
-            
         }
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
@@ -73,7 +66,6 @@ namespace Cluster.Famicom.Mappers
             data.AddRange(dumper.ReadPpu(0x0000, size));
             Console.WriteLine("OK");
         }
-
         public void EnablePrgRam(FamicomDumperConnection dumper)
         {
             Console.WriteLine("Warning: SRAM is not supported by this mapper");

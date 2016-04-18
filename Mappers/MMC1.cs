@@ -18,6 +18,11 @@ namespace Cluster.Famicom.Mappers
             get { return 1; }
         }
 
+        public string UnifName
+        {
+            get { return null; }
+        }
+
         public int DefaultPrgSize
         {
             get { return 256 * 1024; }
@@ -28,50 +33,58 @@ namespace Cluster.Famicom.Mappers
             get { return 128 * 1024; }
         }
 
-        void WriteMmc1(FamicomDumperConnection dumper, UInt16 address, byte data)
+        void WriteMMC1(FamicomDumperConnection dumper, UInt16 address, byte data)
         {
             var buffer = new byte[5];
             for (int i = 0; i < 5; i++)
             {
                 buffer[i] = (byte)(data >> i);
             }
-            dumper.WritePrg(address, buffer);
+            dumper.WriteCpu(address, buffer);
         }
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            dumper.WritePrg(0x8000, 0x80);
-            WriteMmc1(dumper, 0x8000, 0x0C);
+            dumper.WriteCpu(0x8000, 0x80);
+            WriteMMC1(dumper, 0x8000, 0x0C);    
 
             byte banks = (byte)(size / 0x4000);
 
             for (byte bank = 0; bank < banks-1; bank++)
             {
                 Console.Write("Reading PRG bank #{0}... ", bank);
-                WriteMmc1(dumper, 0xE000, bank);
-                data.AddRange(dumper.ReadPrg(0x8000, 0x4000));
+                WriteMMC1(dumper, 0xE000, bank);
+                data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                 Console.WriteLine("OK");
             }
             if (banks > 0)
             {
                 Console.Write("Reading last PRG bank #{0}... ", banks - 1);
-                data.AddRange(dumper.ReadPrg(0xC000, 0x4000));
+                data.AddRange(dumper.ReadCpu(0xC000, 0x4000));
                 Console.WriteLine("OK");
             }
         }
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
+            dumper.WriteCpu(0x8000, 0x80);
+            WriteMMC1(dumper, 0x8000, 0x0C);
+            
             byte banks = (byte)(size / 0x1000);
 
             for (int bank = 0; bank < banks; bank += 2)
             {
                 Console.Write("Reading CHR banks #{0} and #{1}... ", bank, bank + 1);
-                WriteMmc1(dumper, 0xA000, (byte)bank);
-                WriteMmc1(dumper, 0xC000, (byte)(bank | 1));
-                data.AddRange(dumper.ReadChr(0x0000, 0x2000));
+                WriteMMC1(dumper, 0xA000, (byte)bank);
+                data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
                 Console.WriteLine("OK");
             }
+        }
+
+        public void EnablePrgRam(FamicomDumperConnection dumper)
+        {
+            dumper.WriteCpu(0x8000, 0x80);
+            WriteMMC1(dumper, 0xE000, 0x00);
         }
     }
 }
