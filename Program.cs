@@ -22,6 +22,7 @@
  */
 
 using Cluster.Famicom.Mappers;
+using MoonSharp.Interpreter;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -46,6 +47,7 @@ namespace Cluster.Famicom
             string psize = null;
             string csize = null;
             string filename = null;
+            string lua = null;
             string unifName = null;
             string unifAuthor = null;
             bool reset = false;
@@ -80,6 +82,11 @@ namespace Cluster.Famicom
                         case "f":
                         case "file":
                             filename = value;
+                            i++;
+                            break;
+                        case "lua":
+                        case "script":
+                            lua = value;
                             i++;
                             break;
                         case "psize":
@@ -127,6 +134,34 @@ namespace Cluster.Famicom
                     Console.WriteLine("OK");
                     if (reset)
                         Reset(dumper);
+
+                    if (lua != null)
+                    {
+                        Script script = new Script();
+                        script.Globals["WritePrg"] = script.Globals["WriteCpu"] = (Action<UInt16, List<byte>>)delegate(UInt16 address, List<byte> data) 
+                        {
+                            var a = address;
+                            foreach (var v in data)
+                            {
+                                Console.WriteLine("CPU write {0:X2} => {1:X4}", a, v);
+                                a++;
+                            }
+                            dumper.WriteCpu(address, data.ToArray());
+                        };
+                        script.Globals["WriteChr"] = script.Globals["WritePpu"] = (Action<UInt16, List<byte>>)delegate(UInt16 address, List<byte> data)
+                        {
+                            var a = address;
+                            foreach (var v in data)
+                            {
+                                Console.WriteLine("PPU write {0:X2} => {1:X4}", a, v);
+                                a++;
+                            }
+                            dumper.WritePpu(address, data.ToArray());
+                        };
+                        script.Globals["Reset"] = (Action)delegate { Reset(dumper); };
+                        Console.WriteLine("Executing LUA script...");
+                        script.DoString(lua);
+                    }
 
                     switch (command)
                     {
@@ -184,6 +219,10 @@ namespace Cluster.Famicom
                         case "bootloader":
                             Bootloader(dumper);
                             break;
+                        case "nop":
+                        case "none":
+                        case "-":
+                            break;
                         default:
                             Console.WriteLine("Unknown command: " + command);
                             PrintHelp();
@@ -226,14 +265,17 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "reset", "simulate reset to change games in multicards");
             Console.WriteLine(" {0,-20}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-20}{1}", "write-prg-ram", "write PRG RAM");
-            Console.WriteLine(" {0,-20}{1}", "write-flash", "write special flash cartridge");
+            //Console.WriteLine(" {0,-20}{1}", "write-flash", "write special flash cartridge");
             Console.WriteLine(" {0,-20}{1}", "write-coolboy", "write COOLBOY cartridge");
             Console.WriteLine(" {0,-20}{1}", "write-coolgirl", "write COOLGIRL cartridge");
-            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump tiles to PNG file");
+            Console.WriteLine(" {0,-20}{1}", "test-prg-ram", "run PRG RAM test");
+            Console.WriteLine(" {0,-20}{1}", "test-chr-ram", "run CHR RAM test");
+            Console.WriteLine(" {0,-20}{1}", "test-battery", "test battery-backed PRG RAM");
+            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump CHR data to PNG file");
             Console.WriteLine();
             Console.WriteLine("Available options:");
-            Console.WriteLine(" {0,-20}{1}", "--port <com>", "serial port of dumper, default - auto");
-            Console.WriteLine(" {0,-20}{1}", "--mapper <mapper>", "number,  name or patth to LUA script of mapper for dumping, default is 0");
+            Console.WriteLine(" {0,-20}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
+            Console.WriteLine(" {0,-20}{1}", "--mapper <mapper>", "number, name or patt to LUA script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-20}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
             Console.WriteLine(" {0,-20}{1}", "--psize <sile>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-20}{1}", "--csize <sile>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
@@ -285,10 +327,10 @@ namespace Cluster.Famicom
             List<byte> chr = new List<byte>();
             prgSize = prgSize >= 0 ? prgSize : mapper.DefaultPrgSize;
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
-            Console.WriteLine("PRG memory size: {0}", prgSize);
+            Console.WriteLine("PRG memory size: {0}K", prgSize / 1024);
             mapper.DumpPrg(dumper, prg, prgSize);
             while (prg.Count % 0x4000 != 0) prg.Add(0);
-            Console.WriteLine("CHR memory size: {0}", chrSize);
+            Console.WriteLine("CHR memory size: {0}K", chrSize / 1024);
             mapper.DumpChr(dumper, chr, chrSize);
             while (chr.Count % 0x2000 != 0) chr.Add(0);
             byte[] mirroringRaw = dumper.GetMirroring();
@@ -786,7 +828,7 @@ namespace Cluster.Famicom
             Console.WriteLine("Dumping...");
             List<byte> chr = new List<byte>();
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
-            Console.WriteLine("CHR memory size: {0}", chrSize);
+            Console.WriteLine("CHR memory size: {0}K", chrSize / 1024);
             mapper.DumpChr(dumper, chr, chrSize);
             var tiles = new TilesExtractor(chr.ToArray());
             var allTiles = tiles.GetAllTiles();
