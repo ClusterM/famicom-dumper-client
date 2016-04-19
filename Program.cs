@@ -279,6 +279,7 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
             Console.WriteLine(" {0,-20}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-20}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-20}{1}", "--lua \"<lua_code>\"", "execute lua code first");
             Console.WriteLine(" {0,-20}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--reset", "do reset first");
