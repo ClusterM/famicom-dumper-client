@@ -277,13 +277,13 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
             Console.WriteLine(" {0,-20}{1}", "--mapper <mapper>", "number, name or patt to LUA script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-20}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
-            Console.WriteLine(" {0,-20}{1}", "--psize <sile>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-20}{1}", "--csize <sile>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-20}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-20}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-20}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--reset", "do reset first");
             //Console.WriteLine(" {0,-20}{1}", "--silent", "silent mode (without sounds)");
-            Console.WriteLine(" {0,-20}{1}", "--sound", "use sounds");
+            Console.WriteLine(" {0,-20}{1}", "--sound", "play sounds");
         }
 
         static void Reset(FamicomDumperConnection dumper)
