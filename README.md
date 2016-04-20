@@ -133,7 +133,7 @@ Reading PRG banks #0/4 and #0/5...
 
 Read battery-backed save from MMC1 cartridge:
 ~~~~
-D:\Projects\C#\FamicomDumper\famicom-dumper\bin\Release>famicom-dumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
+>famicom-dumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
 PRG reader initialization... OK
 CHR reader initialization... OK
 Using mapper: #1 (MMC1)
