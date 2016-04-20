@@ -26,7 +26,7 @@ Available commands:
   
 Available options:  
 - --**port** <*com*> - serial port of dumper or serial number of FTDI device, default - auto  
-- --**mapper** <*mapper*> - number, name or patt to LUA script of mapper for dumping, default is 0 (NROM)  
+- --**mapper** <*mapper*> - number, name or path to LUA script of mapper for dumping, default is 0 (NROM)  
 - --**file** <*output.nes*> - output filename (.nes, .png or .sav)  
 - --**psize** <*size*> - size of PRG memory to dump, you can use "K" or "M" suffixes  
 - --**csize** <*size*> - size of CHR memory to dump, you can use "K" or "M" suffixes  
