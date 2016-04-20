@@ -255,7 +255,7 @@ namespace Cluster.Famicom
             Console.WriteLine();
             Console.WriteLine("Available options:");
             Console.WriteLine(" {0,-20}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
-            Console.WriteLine(" {0,-20}{1}", "--mapper <mapper>", "number, name or patt to LUA script of mapper for dumping, default is 0 (NROM)");
+            Console.WriteLine(" {0,-20}{1}", "--mapper <mapper>", "number, name or path to LUA script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-20}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
             Console.WriteLine(" {0,-20}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-20}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
