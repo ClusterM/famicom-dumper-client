@@ -1,6 +1,7 @@
 # Client (PC-software) for Famicom Dumper/Programmer
 
 This is client for Famicom Dumper/Programmer: [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper)
+
 You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
 
 
@@ -8,7 +9,7 @@ You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
 
 It's command-line application.
 
-Usage: **famicom-dumper.exe <command> [options]**
+Usage: **famicom-dumper.exe \<command\> [options]**
 
 Available commands:  
 - **list-mappers** - list built in mappers  
@@ -25,7 +26,7 @@ Available commands:
   
 Available options:  
 - --**port** <*com*> - serial port of dumper or serial number of FTDI device, default - auto  
-- --**mapper** <*mapper*> - number, name or patt to LUA script of mapper for dumping, default is 0 (NROM)  
+- --**mapper** <*mapper*> - number, name or path to LUA script of mapper for dumping, default is 0 (NROM)  
 - --**file** <*output.nes*> - output filename (.nes, .png or .sav)  
 - --**psize** <*size*> - size of PRG memory to dump, you can use "K" or "M" suffixes  
 - --**csize** <*size*> - size of CHR memory to dump, you can use "K" or "M" suffixes  
@@ -38,7 +39,7 @@ Available options:
 
 ## Examples
 
-Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR size are default.
+Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR sizes are default.
 ~~~~
   > famicom-dumper.exe dump --port COM14 --mapper nrom --file game.nes
   PRG reader initialization... OK
@@ -71,7 +72,7 @@ Reading PRG bank #3... OK
 
 Autodetect FTDI device (port is not specified) by description, simulate reset and dump cartridge using Lua script:
 ~~~~
->famicom-dumper.exe dump --mapper mappers-lua/MMC3.lua --reset --psize 128K --csize 128K --file game.nes
+>famicom-dumper.exe dump --mapper mappers-lua\MMC3.lua --reset --psize 128K --csize 128K --file game.nes
 Searhing for dumper (FTDI device with name "Famicom Dumper/Programmer")...
 Number of FTDI devices: 1
 
@@ -116,10 +117,6 @@ Mirroring: Horizontal (00 00 01 01)
 Saving to game.nes...
 Done in 5 seconds
 ~~~~
-Available Lua functions:
-- WriteCpu(address, table_of_data)
-- WritePpu(address, table_of_data)
-- Reset()
 
 Dump 32MBytes of COOLBOY cartridge using Lua script and save it as UNIF file with some extra info:
 ~~~~
@@ -136,7 +133,7 @@ Reading PRG banks #0/4 and #0/5...
 
 Read battery-backed save from MMC1 cartridge:
 ~~~~
-D:\Projects\C#\FamicomDumper\famicom-dumper\bin\Release>famicom-dumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
+>famicom-dumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
 PRG reader initialization... OK
 CHR reader initialization... OK
 Using mapper: #1 (MMC1)
