@@ -72,7 +72,7 @@ Reading PRG bank #3... OK
 
 Autodetect FTDI device (port is not specified) by description, simulate reset and dump cartridge using Lua script:
 ~~~~
->famicom-dumper.exe dump --mapper mappers-lua/MMC3.lua --reset --psize 128K --csize 128K --file game.nes
+>famicom-dumper.exe dump --mapper mappers-lua\MMC3.lua --reset --psize 128K --csize 128K --file game.nes
 Searhing for dumper (FTDI device with name "Famicom Dumper/Programmer")...
 Number of FTDI devices: 1
 
