@@ -22,7 +22,6 @@
  */
 
 using Cluster.Famicom.Mappers;
-using MoonSharp.Interpreter;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -136,32 +135,7 @@ namespace Cluster.Famicom
                         Reset(dumper);
 
                     if (lua != null)
-                    {
-                        Script script = new Script();
-                        script.Globals["WritePrg"] = script.Globals["WriteCpu"] = (Action<UInt16, List<byte>>)delegate(UInt16 address, List<byte> data) 
-                        {
-                            var a = address;
-                            foreach (var v in data)
-                            {
-                                Console.WriteLine("CPU write {0:X2} => {1:X4}", a, v);
-                                a++;
-                            }
-                            dumper.WriteCpu(address, data.ToArray());
-                        };
-                        script.Globals["WriteChr"] = script.Globals["WritePpu"] = (Action<UInt16, List<byte>>)delegate(UInt16 address, List<byte> data)
-                        {
-                            var a = address;
-                            foreach (var v in data)
-                            {
-                                Console.WriteLine("PPU write {0:X2} => {1:X4}", a, v);
-                                a++;
-                            }
-                            dumper.WritePpu(address, data.ToArray());
-                        };
-                        script.Globals["Reset"] = (Action)delegate { Reset(dumper); };
-                        Console.WriteLine("Executing LUA script...");
-                        script.DoString(lua);
-                    }
+                        LuaMapper.Execute(dumper, lua);
 
                     switch (command)
                     {
@@ -247,12 +221,18 @@ namespace Cluster.Famicom
         {
             if (string.IsNullOrEmpty(size)) return -1;
             size = size.ToUpper();
-            if (size.Contains("K"))
+            int mul = 1;
+            while (size.Contains("K"))
             {
                 size = size.Replace("K", "");
-                return int.Parse(size) * 1024;
+                mul *= 1024;
             }
-            return int.Parse(size);
+            while (size.Contains("M"))
+            {
+                size = size.Replace("M", "");
+                mul *= 1024 * 1024;
+            }
+            return int.Parse(size) * mul;
         }
 
         static void PrintHelp()
@@ -262,7 +242,7 @@ namespace Cluster.Famicom
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-20}{1}", "list-mappers", "list built in mappers");
             Console.WriteLine(" {0,-20}{1}", "dump", "dump cartridge");
-            Console.WriteLine(" {0,-20}{1}", "reset", "simulate reset to change games in multicards");
+            Console.WriteLine(" {0,-20}{1}", "reset", "simulate reset (M2 goes low for a second)");
             Console.WriteLine(" {0,-20}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-20}{1}", "write-prg-ram", "write PRG RAM");
             //Console.WriteLine(" {0,-20}{1}", "write-flash", "write special flash cartridge");
@@ -394,7 +374,7 @@ namespace Cluster.Famicom
             var mapper = GetMapper(mapperName);
             Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
             mapper.EnablePrgRam(dumper);
-            Console.Write("Dumping SRAM... ");
+            Console.Write("Reading PRG-RAM... ");
             var sram = dumper.ReadCpu(0x6000, 0x2000);
             File.WriteAllBytes(fileName, sram);
             dumper.ReadCpu(0x0, 1); // to avoid corruption
@@ -406,7 +386,7 @@ namespace Cluster.Famicom
             var mapper = GetMapper(mapperName);
             Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
             mapper.EnablePrgRam(dumper);
-            Console.Write("Writing SRAM... ");
+            Console.Write("Writing PRG-RAM... ");
             var sram = File.ReadAllBytes(fileName);
             dumper.WriteCpu(0x6000, sram);
             dumper.ReadCpu(0x0, 1); // to avoid corruption

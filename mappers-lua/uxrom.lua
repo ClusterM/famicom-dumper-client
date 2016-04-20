@@ -1,18 +1,7 @@
-function MapperName()
-	return "UxROM"
-end
-
-function MapperNumber()
-	return 2;
-end
-
-function DefaultPrgSize()
-	return 256 * 1024
-end
-
-function DefaultChrSize()
-	return 0
-end
+MapperName = "UxROM"
+MapperNumber = 2
+DefaultPrgSize = 256 * 1024
+DefaultChrSize = 0
 
 function DumpPrg(size)
 	local banks = size / 0x4000

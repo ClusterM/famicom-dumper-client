@@ -1,19 +1,7 @@
-function MapperName()
-	return "COOLBOY"
-end
-
-function MapperUnifName()
-	return "COOLBOY"
-end
-
-
-function DefaultPrgSize()
-	return 32 * 1024 * 1024
-end
-
-function DefaultChrSize()
-	return 0
-end
+MapperName = "COOLBOY"
+MapperUnifName = "COOLBOY"
+DefaultPrgSize = 32 * 1024 * 1024
+DefaultChrSize = 0
 
 function DumpPrg(size)
 	Reset()

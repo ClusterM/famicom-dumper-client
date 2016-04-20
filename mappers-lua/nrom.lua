@@ -1,18 +1,7 @@
-function MapperName()
-	return "NROM"
-end
-
-function MapperNumber()
-	return 0;
-end
-
-function DefaultPrgSize()
-	return 32 * 1024
-end
-
-function DefaultChrSize()
-	return 8 * 1024
-end
+MapperName = "NROM"
+MapperNumber = 0
+DefaultPrgSize = 32 * 1024
+DefaultChrSize = 8 * 1024
 
 function DumpPrg(size)
 	print("Reading PRG...")

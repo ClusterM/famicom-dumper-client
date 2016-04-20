@@ -20,7 +20,7 @@ namespace Cluster.Famicom.Mappers
             script.DoFile(fileName);
             script.Globals["ReadPrg"] = script.Globals["ReadCpu"] = (Func<UInt16, int, List<byte>>)readPrg;
             script.Globals["WritePrg"] = script.Globals["WriteCpu"] = (Action<UInt16, List<byte>>)writePrg;
-            script.Globals["AddPrg"] = script.Globals["AddResult"] = (Action<List<byte>>)addResultPrg;
+            script.Globals["AddPrg"] = script.Globals["AddPrgResult"] = (Action<List<byte>>)addResultPrg;
             script.Globals["ReadAddPrg"] = script.Globals["ReadAddCpu"] = (Action<UInt16, int>)readAddPrg;
             script.Globals["ReadChr"] = script.Globals["ReadPpu"] = (Func<UInt16, int, List<byte>>)readChr;
             script.Globals["WriteChr"] = script.Globals["WritePpu"] = (Action<UInt16, List<byte>>)writeChr;
@@ -32,7 +32,7 @@ namespace Cluster.Famicom.Mappers
 
         public string Name
         {
-            get { return script.Call(script.Globals["MapperName"]).CastToString(); }
+            get { return (string) script.Globals["MapperName"]; }
         }
 
         public int Number
@@ -41,7 +41,7 @@ namespace Cluster.Famicom.Mappers
             {
                 try
                 {
-                    return (int)script.Call(script.Globals["MapperNumber"]).CastToNumber();
+                    return Convert.ToInt32(script.Globals["MapperNumber"]);
                 }
                 catch
                 {
@@ -56,7 +56,7 @@ namespace Cluster.Famicom.Mappers
             {
                 try
                 {
-                    return script.Call(script.Globals["MapperUnifName"]).CastToString();
+                    return (string)script.Globals["MapperUnifName"];
                 }
                 catch
                 {
@@ -67,12 +67,12 @@ namespace Cluster.Famicom.Mappers
 
         public int DefaultPrgSize
         {
-            get { return (int)script.Call(script.Globals["DefaultPrgSize"]).CastToNumber(); }
+            get { return Convert.ToInt32(script.Globals["DefaultPrgSize"]); }
         }
 
         public int DefaultChrSize
         {
-            get { return (int)script.Call(script.Globals["DefaultChrSize"]).CastToNumber(); }
+            get { return Convert.ToInt32(script.Globals["DefaultChrSize"]); }
         }
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size = 0)
@@ -149,6 +149,39 @@ namespace Cluster.Famicom.Mappers
         private void error(string e)
         {
             throw new Exception(e);
+        }
+
+        public static void Execute(FamicomDumperConnection dumper, string lua)
+        {
+            Script script = new Script();
+            script.Globals["WritePrg"] = script.Globals["WriteCpu"] = (Action<UInt16, List<byte>>)delegate(UInt16 address, List<byte> data)
+            {
+                var a = address;
+                foreach (var v in data)
+                {
+                    Console.WriteLine("CPU write ${0:X2} => ${1:X4}", v, a);
+                    a++;
+                }
+                dumper.WriteCpu(address, data.ToArray());
+            };
+            script.Globals["WriteChr"] = script.Globals["WritePpu"] = (Action<UInt16, List<byte>>)delegate(UInt16 address, List<byte> data)
+            {
+                var a = address;
+                foreach (var v in data)
+                {
+                    Console.WriteLine("PPU write ${0:X2} => ${1:X4}", v, a);
+                    a++;
+                }
+                dumper.WritePpu(address, data.ToArray());
+            };
+            script.Globals["Reset"] = (Action)delegate
+            {
+                Console.Write("Reset... ");
+                dumper.Reset();
+                Console.WriteLine("OK");
+            };
+            Console.WriteLine("Executing LUA script...");
+            script.DoString(lua);
         }
     }
 }

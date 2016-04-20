@@ -1,18 +1,7 @@
-function MapperName()
-	return "MMC1"
-end
-
-function MapperNumber()
-	return 1
-end
-
-function DefaultPrgSize()
-	return 256 * 1024
-end
-
-function DefaultChrSize()
-	return 128 * 1024
-end
+MapperName = "MMC1"
+MapperNumber = 1
+DefaultPrgSize = 256 * 1024
+DefaultChrSize = 128 * 1024
 
 function WriteMMC1(address, data)
 	WriteCpu(address, {data})

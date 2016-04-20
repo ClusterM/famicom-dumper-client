@@ -1,18 +1,7 @@
-function MapperName()
-	return "MMC3"
-end
-
-function MapperNumber()
-	return 4
-end
-
-function DefaultPrgSize()
-	return 512 * 1024
-end
-
-function DefaultChrSize()
-	return 256 * 1024
-end
+MapperName = "MMC3"
+MapperNumber = 4
+DefaultPrgSize = 512 * 1024
+DefaultChrSize = 256 * 1024
 
 function DumpPrg(size)
 	local banks = size / 0x2000
