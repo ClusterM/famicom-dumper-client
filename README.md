@@ -9,7 +9,7 @@ You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
 
 It's command-line application.
 
-Usage: **famicom-dumper.exe <command> [options]**
+Usage: **famicom-dumper.exe \<command\> [options]**
 
 Available commands:  
 - **list-mappers** - list built in mappers  
