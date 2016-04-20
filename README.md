@@ -39,7 +39,7 @@ Available options:
 
 ## Examples
 
-Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR size are default.
+Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR sizes are default.
 ~~~~
   > famicom-dumper.exe dump --port COM14 --mapper nrom --file game.nes
   PRG reader initialization... OK
@@ -117,10 +117,6 @@ Mirroring: Horizontal (00 00 01 01)
 Saving to game.nes...
 Done in 5 seconds
 ~~~~
-Available Lua functions:
-- WriteCpu(address, table_of_data)
-- WritePpu(address, table_of_data)
-- Reset()
 
 Dump 32MBytes of COOLBOY cartridge using Lua script and save it as UNIF file with some extra info:
 ~~~~
