@@ -182,38 +182,28 @@ Writing 5/114 (3%, 00:00:03/00:00:29)... OK
 
 ## Lua scripting
 
-You can write Lua scripts to add support for more mappers. You must declare those functions:
+You can write Lua scripts to add support for more mappers. You must declare those constants:
 ~~~~
-function MapperName()
-	return "NROM"
-end
+MapperName = "NROM"
 ~~~~
 to define mapper name.
 
 ~~~~
-function DefaultPrgSize()
-	return 32 * 1024
-end
+DefaultPrgSize = 32 * 1024
 ~~~~
 and
 ~~~~
-function DefaultChrSize()
-	return 8 * 2014
-end
+DefaultChrSize = 8 * 1024
 ~~~~
 to define default PRG and CHR size.
 
 You need to define mapper number for iNES file:
 ~~~~
-function MapperNumber()
-	return 7;
-end
+MapperNumber = 7
 ~~~~
 or mapper name for UNIF-mappers:
 ~~~~
-function MapperUnifName()
-	return "COOLBOY"
-end
+MapperUnifName = "COOLBOY"
 ~~~~
 
 Of course you need to declare dumping functions:
