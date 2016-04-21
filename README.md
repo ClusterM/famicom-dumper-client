@@ -19,6 +19,7 @@ Available commands:
 - **write-prg-ram** - write PRG RAM  
 - **write-coolboy** - write COOLBOY cartridge  
 - **write-coolgirl** - write COOLGIRL cartridge  
+- **console** - start interactive Lua console
 - **test-prg-ram** - run PRG RAM test  
 - **test-chr-ram** - run CHR RAM test  
 - **test-battery** - test battery-backed PRG RAM  
@@ -30,7 +31,8 @@ Available options:
 - --**file** <*output.nes*> - output filename (.nes, .png or .sav)  
 - --**psize** <*size*> - size of PRG memory to dump, you can use "K" or "M" suffixes  
 - --**csize** <*size*> - size of CHR memory to dump, you can use "K" or "M" suffixes  
-- --**lua** "<*lua_code*>" - execute lua code first
+- --**luafile** "<*lua_code*>" - execute Lua code from file first
+- --**lua** "<*lua_code*>" - execute this Lua code first
 - --**unifname** <*name*> - internal ROM name for UNIF dumps  
 - --**unifauthor** <*name*> - author of dump for UNIF dumps  
 - --**reset** - do reset first
@@ -239,14 +241,80 @@ Available functions:
 - **AddChr**(table_of_data) - add data to dumped CHR
 - **AddChrResult**(table_of_data) - alias for *AddChr*
 - **ReadAddChr**(address, length) - it's like *AddChr(ReadChr(address, length))* but faster
+- **WriteFile**(filename, data) - write table of *data* to file
+- **WriteNes**(filename, prg, chr, mapper, vertical) - create .nes file using this *prg* table *chr* table, *mapper* number and mirroring (*vertical* - boolean value)
 - **Reset()** - simulate reset (M2 goes low for a second)
 - **Error(message)** - generate exception (stop application with a message)
 
 You can find examples in *mappers-lua* folder.
 
-Also you can use **WriteCpu**, **WriteChr** and **Reset** functions on command line.
+Also you can use those functions on command line.
 This simple command:
 ~~~~
 >famicom-dumper.exe dump --port COM14 --mapper 0 --psize 32K --csize 8K --file game.nes --lua "Reset() ; WriteCpu(0x8000, {0x00})"
 ~~~~
 writes $00 to $8000 before dumping.
+
+
+And finally you can use Lua console:
+~~~~
+>famicom-dumper.exe console --port COM14
+PRG reader initialization... OK
+CHR reader initialization... OK
+Executing Lua script myfunctions.lua...
+Starting interactiva Lua console, type "exit" to exit.
+> Reset()
+Reset... OK
+> prg = ReadCpu(0x8000, 0x8000)
+Reading 32768 bytes from CPU:$8000
+> print(prg[1])
+1
+> print(prg[2])
+2
+> print(prg[3])
+4
+> WriteCpu(0x8000, {1})
+CPU write $01 => $8000
+> chr = ReadChr(0x0000, 0x2000)
+Reading 8192 bytes from PPU:$0000
+> WriteFile("prg.bin", prg)
+Writing data to "prg.bin"... OK
+> WriteNes("game1.nes", prg, chr, 0, false)
+Writing data to NES file "game1.nes" (mapper=0, mirroring=horizontal)... OK
+> WriteCpu(0x8001, {2})
+CPU write $02 => $8001
+> chr = ReadChr(0x0000, 0x2000)
+Reading 8192 bytes from PPU:$0000
+> WriteNes("game2.nes", prg, chr, 0, true)
+Writing data to NES file "game2.nes" (mapper=0, mirroring=vertical)... OK
+> p = ReadCpu
+> prg = p(0x8000, 0x8000)
+Reading 32768 bytes from CPU:$8000
+> allp = function() return p(0x8000, 0x8000) end
+> prg = allp()
+Reading 32768 bytes from CPU:$8000
+> w = function() WriteFile("prg.bin", prg) end
+> w()
+Writing data to "prg.bin"... OK
+> dumpprg = function() prg = allp() ; w() end
+> dumpprg()
+Reading 32768 bytes from CPU:$8000
+Writing data to "prg.bin"... OK
+>
+~~~~
+
+You can create and use Lua file with your own functions:
+~~~~
+>famicom-dumper.exe console --port COM14 --luafile myfunctions.lua
+PRG reader initialization... OK
+CHR reader initialization... OK
+Executing Lua script "myfunctions.lua"...
+Starting interactiva Lua console, type "exit" to exit.
+> readprg()
+Reading 32768 bytes from CPU:$8000
+> readchr()
+Reading 8192 bytes from PPU:$0000
+> savenes()
+Writing data to NES file "game.nes" (mapper=0, mirroring=horizontal)... OK
+>
+~~~~
