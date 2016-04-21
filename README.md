@@ -256,13 +256,13 @@ This simple command:
 writes $00 to $8000 before dumping.
 
 
-And finally you can use Lua console:
+And finally you can use interactive Lua console:
 ~~~~
 >famicom-dumper.exe console --port COM14
 PRG reader initialization... OK
 CHR reader initialization... OK
 Executing Lua script myfunctions.lua...
-Starting interactiva Lua console, type "exit" to exit.
+Starting interactive Lua console, type "exit" to exit.
 > Reset()
 Reset... OK
 > prg = ReadCpu(0x8000, 0x8000)
@@ -309,7 +309,7 @@ You can create and use Lua file with your own functions:
 PRG reader initialization... OK
 CHR reader initialization... OK
 Executing Lua script "myfunctions.lua"...
-Starting interactiva Lua console, type "exit" to exit.
+Starting interactive Lua console, type "exit" to exit.
 > readprg()
 Reading 32768 bytes from CPU:$8000
 > readchr()
