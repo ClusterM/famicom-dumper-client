@@ -854,7 +854,7 @@ namespace Cluster.Famicom
         static void LuaConsole(FamicomDumperConnection dumper, LuaMapper luaMapper)
         {
             luaMapper.Verbose = true;
-            Console.WriteLine("Starting interactiva Lua console, type \"exit\" to exit.");
+            Console.WriteLine("Starting interactive Lua console, type \"exit\" to exit.");
             while (true)
             {
                 Console.Write("> ");
