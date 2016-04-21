@@ -46,7 +46,8 @@ namespace Cluster.Famicom
             string psize = null;
             string csize = null;
             string filename = null;
-            string lua = null;
+            string luaCode = null;
+            string luaFile = null;
             string unifName = null;
             string unifAuthor = null;
             bool reset = false;
@@ -85,7 +86,12 @@ namespace Cluster.Famicom
                             break;
                         case "lua":
                         case "script":
-                            lua = value;
+                            luaCode = value;
+                            i++;
+                            break;
+                        case "luafile":
+                        case "scriptfile":
+                            luaFile = value;
                             i++;
                             break;
                         case "psize":
@@ -134,10 +140,25 @@ namespace Cluster.Famicom
                     if (reset)
                         Reset(dumper);
 
-                    if (lua != null)
-                        LuaMapper.Execute(dumper, lua);
+                    LuaMapper luaMapper = null;
+                    if (!string.IsNullOrEmpty(luaFile) || !string.IsNullOrEmpty(luaCode) || command.ToLower() == "console")
+                        luaMapper = new LuaMapper();
+                    if (!string.IsNullOrEmpty(luaFile))
+                    {
+                        Console.WriteLine("Executing Lua script \"{0}\"...", Path.GetFileName(luaFile));
+                        luaMapper.Verbose = true;
+                        luaMapper.Execute(dumper, luaFile, true);
+                        luaMapper.Verbose = false;
+                    }
+                    if (!string.IsNullOrEmpty(luaCode))
+                    {
+                        Console.WriteLine("Executing Lua code: \"{0}\"", luaCode);
+                        luaMapper.Verbose = true;
+                        luaMapper.Execute(dumper, luaCode, false);
+                        luaMapper.Verbose = false;
+                    }
 
-                    switch (command)
+                    switch (command.ToLower())
                     {
                         case "reset":
                             if (!reset)
@@ -192,6 +213,9 @@ namespace Cluster.Famicom
                             break;
                         case "bootloader":
                             Bootloader(dumper);
+                            break;
+                        case "console":
+                            LuaConsole(dumper, luaMapper);
                             break;
                         case "nop":
                         case "none":
@@ -248,6 +272,7 @@ namespace Cluster.Famicom
             //Console.WriteLine(" {0,-20}{1}", "write-flash", "write special flash cartridge");
             Console.WriteLine(" {0,-20}{1}", "write-coolboy", "write COOLBOY cartridge");
             Console.WriteLine(" {0,-20}{1}", "write-coolgirl", "write COOLGIRL cartridge");
+            Console.WriteLine(" {0,-20}{1}", "console", "start interactive Lua console");
             Console.WriteLine(" {0,-20}{1}", "test-prg-ram", "run PRG RAM test");
             Console.WriteLine(" {0,-20}{1}", "test-chr-ram", "run CHR RAM test");
             Console.WriteLine(" {0,-20}{1}", "test-battery", "test battery-backed PRG RAM");
@@ -259,7 +284,8 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
             Console.WriteLine(" {0,-20}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-20}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-20}{1}", "--lua \"<lua_code>\"", "execute lua code first");
+            Console.WriteLine(" {0,-20}{1}", "--luafile \"<lua_code>\"", "execute Lua code from file first");
+            Console.WriteLine(" {0,-20}{1}", "--lua \"<lua_code>\"", "execute this Lua code first");
             Console.WriteLine(" {0,-20}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--reset", "do reset first");
@@ -289,7 +315,9 @@ namespace Cluster.Famicom
         {
             if (File.Exists(mapperName)) // LUA script?
             {
-                return new LuaMapper(mapperName);
+                var luaMapper = new LuaMapper();
+                luaMapper.Execute(null, mapperName, true);
+                return luaMapper;
             }
             var mapper = MappersContainer.GetMapper(mapperName ?? "0");
             if (mapper == null) throw new Exception("can't find mapper");
@@ -821,6 +849,26 @@ namespace Cluster.Famicom
         {
             Console.WriteLine("Rebooting to bootloader...");
             dumper.Bootloader();
+        }
+
+        static void LuaConsole(FamicomDumperConnection dumper, LuaMapper luaMapper)
+        {
+            luaMapper.Verbose = true;
+            Console.WriteLine("Starting interactiva Lua console, type \"exit\" to exit.");
+            while (true)
+            {
+                Console.Write("> ");
+                var line = Console.ReadLine();
+                if (line.ToLower().Trim() == "exit") break;
+                try
+                {
+                    luaMapper.Execute(dumper, line, false);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("Error: " + ex.Message);
+                }
+            }
         }
     }
 }

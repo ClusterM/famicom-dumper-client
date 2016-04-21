@@ -131,7 +131,7 @@ namespace Cluster.Famicom
                 SerialPort sPort;
                 sPort = new SerialPort();
                 sPort.PortName = PortName;
-                sPort.WriteTimeout = 5000; sPort.ReadTimeout = 300000;
+                sPort.WriteTimeout = 5000; sPort.ReadTimeout = -1;
                 sPort.BaudRate = PortBaudRate;
                 sPort.Parity = Parity.None;
                 sPort.DataBits = 8;
