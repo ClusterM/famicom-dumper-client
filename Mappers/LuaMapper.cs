@@ -131,7 +131,7 @@ namespace Cluster.Famicom.Mappers
             {
                 try
                 {
-                    return Convert.ToInt32(script.Globals["MapperNumber"]);
+                    return int.Parse(script.Globals["MapperNumber"].ToString());
                 }
                 catch
                 {

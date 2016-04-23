@@ -196,6 +196,9 @@ namespace Cluster.Famicom
                         case "test-chr-coolgirl":
                             TestChrRamCoolgirl(dumper);
                             break;
+                        case "test-coolgirl":
+                            TestCoolgirlFull(dumper);
+                            break;
                         case "dump-tiles":
                             DumpTiles(dumper, filename ?? "output.png", mapper, parseSize(csize));
                             break;
@@ -421,13 +424,13 @@ namespace Cluster.Famicom
             dumper.Reset();
         }
 
-        static void TestPrgRam(FamicomDumperConnection dumper, string mapperName)
+        static void TestPrgRam(FamicomDumperConnection dumper, string mapperName, int count = -1)
         {
             var mapper = GetMapper(mapperName);
             Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
             mapper.EnablePrgRam(dumper);
             var rnd = new Random();
-            while (true)
+            while (count != 0)
             {
                 var data = new byte[0x2000];
                 rnd.NextBytes(data);
@@ -450,18 +453,20 @@ namespace Cluster.Famicom
                     Console.WriteLine("sramgood.bin writed");
                     File.WriteAllBytes("srambad.bin", rdata);
                     Console.WriteLine("srambad.bin writed");
-                    break;
+                    throw new Exception("Test failed");
                 }
                 Console.WriteLine("OK!");
+                count--;
             }
         }
 
-        static void TestPrgRamCoolgirl(FamicomDumperConnection dumper)
+        static void TestPrgRamCoolgirl(FamicomDumperConnection dumper, int count = -1)
         {
+            TestPrgRam(dumper, "coolgirl", 1);
             dumper.Reset();
             dumper.WriteCpu(0x5007, 0x01); // enable SRAM
             var rnd = new Random();
-            while (true)
+            while (count != 0)
             {
                 var data = new byte[][] { new byte[0x2000], new byte[0x2000], new byte[0x2000], new byte[0x2000] };
                 for (byte bank = 0; bank < 4; bank++)
@@ -491,10 +496,11 @@ namespace Cluster.Famicom
                         Console.WriteLine("sramgood.bin writed");
                         File.WriteAllBytes("srambad.bin", rdata);
                         Console.WriteLine("srambad.bin writed");
-                        throw new Exception("Test failed"); ;
+                        throw new Exception("Test failed");
                     }
                     Console.WriteLine("OK!");
                 }
+                count--;
             }
         }
 
@@ -555,13 +561,13 @@ namespace Cluster.Famicom
                     Console.WriteLine("chrgood.bin writed");
                     File.WriteAllBytes("chrbad.bin", rdata);
                     Console.WriteLine("chrbad.bin writed");
-                    break;
+                    throw new Exception("Test failed");
                 }
                 Console.WriteLine("OK!");
             }
         }
 
-        static void TestChrRamCoolgirl(FamicomDumperConnection dumper)
+        static void TestChrRamCoolgirl(FamicomDumperConnection dumper, int count = -1)
         {
             dumper.Reset();
             dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
@@ -584,19 +590,20 @@ namespace Cluster.Famicom
             }
             if (!ok)
             {
-                Console.Beep();
                 File.WriteAllBytes("chrgood.bin", data);
                 Console.WriteLine("chrgood.bin writed");
                 File.WriteAllBytes("chrbad.bin", rdata);
                 Console.WriteLine("chrbad.bin writed");
-                return;
+                throw new Exception("Test failed");
             }
             Console.WriteLine("OK!");
 
             Console.WriteLine("Global test.");
             data = new byte[256 * 1024];
-            while (true)
+            while (count != 0)
             {
+                dumper.Reset();
+                dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
                 rnd.NextBytes(data);
                 for (byte bank = 0; bank < 32; bank++)
                 {
@@ -621,8 +628,18 @@ namespace Cluster.Famicom
                         }
                     }
                     if (ok) Console.WriteLine("OK!");
-                    else Console.Beep();
+                    else throw new Exception("Test failed");
                 }
+                count--;
+            }
+        }
+
+        static void TestCoolgirlFull(FamicomDumperConnection dumper)
+        {
+            while (true)
+            {
+                TestChrRamCoolgirl(dumper, 2);
+                TestPrgRamCoolgirl(dumper, 5);
             }
         }
 
