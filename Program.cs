@@ -403,7 +403,10 @@ namespace Cluster.Famicom
         static void ReadPrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);
-            Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            if (mapper.Number >= 0)
+                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            else
+                Console.WriteLine("Using mapper: {0}", mapper.Name);
             mapper.EnablePrgRam(dumper);
             Console.Write("Reading PRG-RAM... ");
             var sram = dumper.ReadCpu(0x6000, 0x2000);
@@ -415,7 +418,10 @@ namespace Cluster.Famicom
         static void WritePrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);
-            Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            if (mapper.Number >= 0)
+                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            else
+                Console.WriteLine("Using mapper: {0}", mapper.Name);
             mapper.EnablePrgRam(dumper);
             Console.Write("Writing PRG-RAM... ");
             var sram = File.ReadAllBytes(fileName);
@@ -427,7 +433,10 @@ namespace Cluster.Famicom
         static void TestPrgRam(FamicomDumperConnection dumper, string mapperName, int count = -1)
         {
             var mapper = GetMapper(mapperName);
-            Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            if (mapper.Number >= 0)
+                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            else
+                Console.WriteLine("Using mapper: {0}", mapper.Name);
             mapper.EnablePrgRam(dumper);
             var rnd = new Random();
             while (count != 0)
@@ -507,7 +516,10 @@ namespace Cluster.Famicom
         static void TestBattery(FamicomDumperConnection dumper, string mapperName)
         {
             var mapper = GetMapper(mapperName);
-            Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            if (mapper.Number >= 0)
+                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            else
+                Console.WriteLine("Using mapper: {0}", mapper.Name);
             mapper.EnablePrgRam(dumper);
             var rnd = new Random();
             var data = new byte[0x2000];
@@ -850,7 +862,10 @@ namespace Cluster.Famicom
         static void DumpTiles(FamicomDumperConnection dumper, string fileName, string mapperName, int chrSize, int tilesPerLine = 16)
         {
             var mapper = GetMapper(mapperName);
-            Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            if (mapper.Number >= 0)
+                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+            else
+                Console.WriteLine("Using mapper: {0}", mapper.Name);
             Console.WriteLine("Dumping...");
             List<byte> chr = new List<byte>();
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
