@@ -38,14 +38,13 @@ namespace Cluster.Famicom.Mappers
             Console.Write("Reset... ");
             dumper.Reset();
             Console.WriteLine("OK");
-
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
             for (int bank = 0; bank < prgBanks; bank++)
             {
                 byte r0 = (byte)(bank >> 7);
                 byte r1 = (byte)(bank << 1);
                 dumper.WriteCpu(0x5000, r0);
                 dumper.WriteCpu(0x5001, r1);
-                dumper.WriteCpu(0x5002, 0xFE);
 
                 Console.Write("Reading PRG bank #{0}/{1}... ", bank, prgBanks);
                 data.AddRange(dumper.ReadCpu(0x8000, 0x8000));

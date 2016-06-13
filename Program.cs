@@ -544,7 +544,7 @@ namespace Cluster.Famicom
             if (ok)
                 Console.WriteLine("OK!");
             else
-                Console.WriteLine("Failed!");
+                throw new Exception("Failed!");
         }
 
         static void TestChrRam(FamicomDumperConnection dumper)
@@ -639,8 +639,15 @@ namespace Cluster.Famicom
                             ok = false;
                         }
                     }
-                    if (ok) Console.WriteLine("OK!");
-                    else throw new Exception("Test failed");
+                    if (!ok)
+                    {
+                        File.WriteAllBytes("chrgoodf.bin", data);
+                        Console.WriteLine("chrgoodf.bin writed");
+                        File.WriteAllBytes("chrbad.bin", rdata);
+                        Console.WriteLine("chrbad.bin writed");
+                        throw new Exception("Test failed");
+                    }
+                    Console.WriteLine("OK!");
                 }
                 count--;
             }
@@ -650,8 +657,8 @@ namespace Cluster.Famicom
         {
             while (true)
             {
-                TestChrRamCoolgirl(dumper, 2);
-                TestPrgRamCoolgirl(dumper, 5);
+                TestChrRamCoolgirl(dumper, 1);
+                TestPrgRamCoolgirl(dumper, 3);
             }
         }
 
@@ -817,13 +824,13 @@ namespace Cluster.Famicom
 
             DateTime lastSectorTime = DateTime.Now;
             TimeSpan timeTotal = new TimeSpan();
-            for (int bank = 0; bank < prgBanks; bank++)
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            for (int bank = 0; bank < /*16*/prgBanks; bank++)
             {
                 byte r0 = (byte)(bank >> 7);
                 byte r1 = (byte)(bank << 1);
                 dumper.WriteCpu(0x5000, r0);
                 dumper.WriteCpu(0x5001, r1);
-                dumper.WriteCpu(0x5002, 0xFE);
 
                 var data = new byte[0x8000];
                 int pos = bank * 0x8000;
