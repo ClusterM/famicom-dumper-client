@@ -37,6 +37,7 @@ namespace Cluster.Famicom
     {
         static DateTime startTime;
         static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
+        static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
@@ -52,6 +53,9 @@ namespace Cluster.Famicom
             string unifAuthor = null;
             bool reset = false;
             bool silent = true;
+            bool needCheck = false;
+            List<int> badSectors = new List<int>();
+            int testCount = -1;
             try
             {
                 if (args.Length == 0)
@@ -118,6 +122,18 @@ namespace Cluster.Famicom
                             break;
                         case "sound":
                             silent = false;
+                            break;
+                        case "check":
+                            needCheck = true;
+                            break;
+                        case "testcount":
+                            testCount = int.Parse(value);
+                            i++;
+                            break;
+                        case "badsectors":
+                            foreach (var v in value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                                badSectors.Add(int.Parse(v));
+                            i++;
                             break;
                         default:
                             Console.WriteLine("Unknown parameter: " + param);
@@ -197,7 +213,10 @@ namespace Cluster.Famicom
                             TestChrRamCoolgirl(dumper);
                             break;
                         case "test-coolgirl":
-                            TestCoolgirlFull(dumper);
+                            TestCoolgirlFull(dumper, testCount);
+                            break;
+                        case "test-bads-coolgirl":
+                            FindBadsCoolgirl(dumper, silent);
                             break;
                         case "dump-tiles":
                             DumpTiles(dumper, filename ?? "output.png", mapper, parseSize(csize));
@@ -209,7 +228,10 @@ namespace Cluster.Famicom
                             WriteCoolboy(dumper, filename ?? "game.nes");
                             break;
                         case "write-coolgirl":
-                            WriteCoolgirl(dumper, filename ?? "game.nes");
+                            WriteCoolgirl(dumper, filename ?? "game.nes", badSectors, silent, needCheck);
+                            break;
+                        case "info-coolgirl":
+                            GetCoolgirlInfoOnly(dumper);
                             break;
                         case "jtag":
                             WriteJtag(dumper, filename ?? "mapper.fmp");
@@ -239,7 +261,7 @@ namespace Cluster.Famicom
             {
                 Console.WriteLine("Error: " + ex.Message);
                 if (!silent)
-                    Console.Beep();
+                    errorSound.PlaySync();
                 return 1;
             }
         }
@@ -276,9 +298,17 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "write-coolboy", "write COOLBOY cartridge");
             Console.WriteLine(" {0,-20}{1}", "write-coolgirl", "write COOLGIRL cartridge");
             Console.WriteLine(" {0,-20}{1}", "console", "start interactive Lua console");
+            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump CHR data to PNG file");
             Console.WriteLine(" {0,-20}{1}", "test-prg-ram", "run PRG RAM test");
             Console.WriteLine(" {0,-20}{1}", "test-chr-ram", "run CHR RAM test");
             Console.WriteLine(" {0,-20}{1}", "test-battery", "test battery-backed PRG RAM");
+            Console.WriteLine(" {0,-20}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-20}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-20}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-20}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge");
+            Console.WriteLine(" {0,-20}{1}", "info-coolgirl", "show information abou COOLGIRL's flash memory");
+
+
             Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump CHR data to PNG file");
             Console.WriteLine();
             Console.WriteLine("Available options:");
@@ -293,6 +323,7 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-20}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-20}{1}", "--reset", "do reset first");
             //Console.WriteLine(" {0,-20}{1}", "--silent", "silent mode (without sounds)");
+            Console.WriteLine(" {0,-20}{1}", "--badsectors", "comma separated list of bad sectors for COOLGIRL flashing");
             Console.WriteLine(" {0,-20}{1}", "--sound", "play sounds");
         }
 
@@ -653,12 +684,13 @@ namespace Cluster.Famicom
             }
         }
 
-        static void TestCoolgirlFull(FamicomDumperConnection dumper)
+        static void TestCoolgirlFull(FamicomDumperConnection dumper, int count = -1)
         {
-            while (true)
+            while (count != 0)
             {
                 TestChrRamCoolgirl(dumper, 1);
-                TestPrgRamCoolgirl(dumper, 3);
+                TestPrgRamCoolgirl(dumper, 1);
+                if (count > 0) count--;
             }
         }
 
@@ -801,18 +833,74 @@ namespace Cluster.Famicom
             }
         }
 
-        static void WriteCoolgirl(FamicomDumperConnection dumper, string fileName)
+        static int GetCoolgirlSize(FamicomDumperConnection dumper)
+        {
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0x90);
+            var autoselect = dumper.ReadCpu(0x8000, 0x100);
+            byte manufacturer = autoselect[0];
+            var device = new byte[] { autoselect[2], autoselect[0x1C], autoselect[0x1E] };
+            dumper.WriteCpu(0x8000, 0xF0); // Reset            
+            Console.WriteLine("Chip manufacturer ID: {0:X2}", manufacturer);
+            Console.WriteLine("Chip device ID: {0:X2} {1:X2} {2:X2}", device[0], device[1], device[2]);
+            string deviceName;
+            int size;
+            switch ((UInt32)((device[0] << 16) | (device[1] << 8) | (device[2])))
+            {
+                case 0x7E2801:
+                    deviceName = "S29GL01GP";
+                    size = 128 * 1024 * 1024;
+                    break;
+                case 0x7E2301:
+                    deviceName = "S29GL512GP";
+                    size = 64 * 1024 * 1024;
+                    break;
+                case 0x7E2201:
+                    deviceName = "S29GL256GP";
+                    size = 32 * 1024 * 1024;
+                    break;
+                case 0x7E2101:
+                    deviceName = "S29GL128GP";
+                    size = 16 * 1024 * 1024;
+                    break;
+                default:
+                    throw new Exception("Unknown device ID");
+            }
+            Console.WriteLine("Device name: {0}", deviceName);
+            Console.WriteLine("Device size: {0} MBytes / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
+            return size;
+        }
+
+        static void GetCoolgirlInfoOnly(FamicomDumperConnection dumper)
+        {
+            Console.Write("Reset... ");
+            dumper.Reset();
+            Console.WriteLine("OK");
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            GetCoolgirlSize(dumper);
+        }
+
+        static void WriteCoolgirl(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck)
         {
             byte[] PRG;
-            try
+            if (Path.GetExtension(fileName).ToLower() == ".bin")
             {
-                var nesFile = new NesFile(fileName);
-                PRG = nesFile.PRG;
+                PRG = File.ReadAllBytes(fileName);
             }
-            catch
+            else
             {
-                var nesFile = new UnifFile(fileName);
-                PRG = nesFile.Fields["PRG0"];
+                try
+                {
+                    var nesFile = new NesFile(fileName);
+                    PRG = nesFile.PRG;
+                }
+                catch
+                {
+                    var nesFile = new UnifFile(fileName);
+                    PRG = nesFile.Fields["PRG0"];
+                }
             }
 
             int prgBanks = PRG.Length / 0x8000;
@@ -821,12 +909,77 @@ namespace Cluster.Famicom
             dumper.Reset();
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
-
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            int flashSize = GetCoolgirlSize(dumper);
+            if (PRG.Length > flashSize)
+                throw new Exception("This ROM is too big for this cartridge");
             DateTime lastSectorTime = DateTime.Now;
             TimeSpan timeTotal = new TimeSpan();
+            int errorCount = 0;
+            for (int bank = 0; bank < /*16*/prgBanks; bank++)
+            {
+                if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
+                try
+                {
+                    byte r0 = (byte)(bank >> 7);
+                    byte r1 = (byte)(bank << 1);
+                    dumper.WriteCpu(0x5000, r0);
+                    dumper.WriteCpu(0x5001, r1);
+
+                    var data = new byte[0x8000];
+                    int pos = bank * 0x8000;
+                    if (pos % (128 * 1024) == 0)
+                    {
+                        timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
+                        timeTotal = timeTotal.Add(DateTime.Now - startTime);
+                        lastSectorTime = DateTime.Now;
+                        Console.Write("Erasing sector... ");
+                        dumper.ErasePrgFlash(FamicomDumperConnection.FlashType.Coolgirl);
+                        Console.WriteLine("OK");
+                    }
+                    Array.Copy(PRG, pos, data, 0, data.Length);
+                    var timePassed = DateTime.Now - startTime;
+                    //var timeTotal = new TimeSpan((DateTime.Now - startTime).Ticks * prgBanks / (bank + 1));
+                    Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
+                        timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                    dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashType.Coolgirl, true);
+                    Console.WriteLine("OK");
+                }
+                catch (Exception ex)
+                {
+                    errorCount++;
+                    if (errorCount >= 3)
+                        throw ex;
+                    if (!silent) errorSound.PlaySync();
+                    Console.WriteLine("Error: " + ex.Message);
+                    bank = (bank & ~3) - 1;
+                    Console.WriteLine("Lets try again");
+                    Console.Write("Reset... ");
+                    dumper.Reset();
+                    Console.WriteLine("OK");
+                    dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+                    dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+                    continue;
+                }
+            }
+            if (errorCount > 0)
+                Console.WriteLine("Warning! Error count: {0}", errorCount);
+
+            if (!needCheck) return;
+
+            Console.WriteLine("Starting check process");
+            Console.Write("Reset... ");
+            dumper.Reset();
+            Console.WriteLine("OK");
+            //dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+
+            var readStartTime = DateTime.Now;
+            lastSectorTime = DateTime.Now;
+            timeTotal = new TimeSpan();
             dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
             for (int bank = 0; bank < /*16*/prgBanks; bank++)
             {
+                if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
                 byte r0 = (byte)(bank >> 7);
                 byte r1 = (byte)(bank << 1);
                 dumper.WriteCpu(0x5000, r0);
@@ -837,20 +990,107 @@ namespace Cluster.Famicom
                 if (pos % (128 * 1024) == 0)
                 {
                     timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
-                    timeTotal = timeTotal.Add(DateTime.Now - startTime);
+                    timeTotal = timeTotal.Add(DateTime.Now - readStartTime);
                     lastSectorTime = DateTime.Now;
-                    Console.Write("Erasing sector... ");
+                }
+                Array.Copy(PRG, pos, data, 0, data.Length);
+                var timePassed = DateTime.Now - readStartTime;
+                Console.Write("Reading {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
+                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                var datar = dumper.ReadCpu(0x8000, 0x8000);
+                for (int i = 0; i < data.Length; i++)
+                    if (data[i] != datar[i])
+                    {
+                        throw new Exception("Check failed");
+                    }
+                Console.WriteLine("OK");
+            }
+            if (errorCount > 0)
+                Console.WriteLine("Warning! Error count: {0}", errorCount);
+        }
+
+        static void FindBadsCoolgirl(FamicomDumperConnection dumper, bool silent)
+        {
+
+            Console.Write("Reset... ");
+            dumper.Reset();
+            Console.WriteLine("OK");
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            dumper.WriteCpu(0x5000, 0);
+            dumper.WriteCpu(0x5001, 0);
+            var flashSize = GetCoolgirlSize(dumper);
+            int prgBanks = flashSize / 0x8000;
+
+            Console.Write("Erasing sector #0... ");
+            dumper.ErasePrgFlash(FamicomDumperConnection.FlashType.Coolgirl);
+            Console.WriteLine("OK");
+            var data = new byte[0x8000];
+            new Random().NextBytes(data);
+            Console.Write("Writing sector #0 for test... ");
+            dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashType.Coolgirl, true);
+            Console.WriteLine("OK");
+            Console.Write("Reading sector #0 for test... ");
+            var datar = dumper.ReadCpu(0x8000, 0x8000);
+            for (int i = 0; i < data.Length; i++)
+                if (data[i] != datar[i])
+                {
+                    throw new Exception("Check failed");
+                }
+            Console.WriteLine("OK");
+
+            DateTime lastSectorTime = DateTime.Now;
+            TimeSpan timeTotal = new TimeSpan();
+            var badSectors = new List<int>();
+
+            for (int bank = 0; bank < prgBanks; bank += 4)
+            {
+                byte r0 = (byte)(bank >> 7);
+                byte r1 = (byte)(bank << 1);
+                dumper.WriteCpu(0x5000, r0);
+                dumper.WriteCpu(0x5001, r1);
+
+                timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
+                timeTotal = timeTotal.Add(DateTime.Now - startTime);
+                lastSectorTime = DateTime.Now;
+                var timePassed = DateTime.Now - startTime;
+                Console.Write("Erasing sector {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank / 4 + 1, prgBanks / 4, (int)(100 * bank / prgBanks),
+                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                try
+                {
                     dumper.ErasePrgFlash(FamicomDumperConnection.FlashType.Coolgirl);
                     Console.WriteLine("OK");
                 }
-                Array.Copy(PRG, pos, data, 0, data.Length);
-                var timePassed = DateTime.Now - startTime;
-                //var timeTotal = new TimeSpan((DateTime.Now - startTime).Ticks * prgBanks / (bank + 1));
-                Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
-                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashType.Coolgirl, true);
-                Console.WriteLine("OK");
+                catch
+                {
+                    Console.WriteLine("ERROR!");
+                    if (!silent) errorSound.PlaySync();
+                    Console.Write("Trying again... ");
+                    dumper.Reset();
+                    dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+                    dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+                    dumper.WriteCpu(0x5000, r0);
+                    dumper.WriteCpu(0x5001, r1);
+                    try
+                    {
+                        dumper.ErasePrgFlash(FamicomDumperConnection.FlashType.Coolgirl);
+                        Console.WriteLine("OK");
+                    }
+                    catch
+                    {
+                        Console.WriteLine("ERROR! Sector #{0} is bad.", bank / 4);
+                        if (!silent) errorSound.PlaySync();
+                        badSectors.Add(bank / 4);
+                    }
+                }
             }
+            if (badSectors.Count > 0)
+            {
+                foreach (var bad in badSectors)
+                    Console.WriteLine("Bad sector: {0}", bad);
+                throw new Exception("Bad sectors found");
+            }
+            else Console.WriteLine("There is no bad sectors");
         }
 
         static void WriteJtag(FamicomDumperConnection dumper, string fileName)
@@ -903,7 +1143,7 @@ namespace Cluster.Famicom
                 {
                     luaMapper.Execute(dumper, line, false);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine("Error: " + ex.Message);
                 }

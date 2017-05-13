@@ -68,5 +68,14 @@ namespace Cluster.Famicom.Properties {
                 return ResourceManager.GetStream("DoneSound", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream ErrorSound {
+            get {
+                return ResourceManager.GetStream("ErrorSound", resourceCulture);
+            }
+        }
     }
 }

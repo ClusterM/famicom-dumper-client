@@ -38,7 +38,7 @@ namespace Cluster.Famicom.Mappers
             int outbanks = size / (128 * 1024);
 
             int outbankSize = 512;
-
+            
             for (int outbank = 0; outbank < outbanks; outbank += outbankSize / 128)
             {
                 byte r0 = (byte)((outbank & 0x07) | ((outbank & 0xc0) >> 2));

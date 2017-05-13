@@ -469,10 +469,10 @@ namespace Cluster.Famicom
         public bool PrgReaderInit()
         {
             cpuInitOk = false;
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i < 300; i++)
             {
                 sendData(Command.COMMAND_PRG_INIT, new byte[0]);
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                 if (cpuInitOk) return true;
             }
             return false;
@@ -481,10 +481,10 @@ namespace Cluster.Famicom
         public bool ChrReaderInit()
         {
             ppuInitOk = false;
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i < 300; i++)
             {
                 sendData(Command.COMMAND_CHR_INIT, new byte[0]);
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                 if (ppuInitOk) return true;
             }
             return false;
