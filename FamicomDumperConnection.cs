@@ -100,6 +100,8 @@ namespace Cluster.Famicom
             COMMAND_COOLBOY_WRITE_REQUEST = 36,
             COMMAND_COOLGIRL_ERASE_SECTOR_REQUEST = 37,
             COMMAND_COOLGIRL_WRITE_REQUEST = 38,
+            COMMAND_PRG_CRC_READ_REQUEST = 39,
+            COMMAND_CHR_CRC_READ_REQUEST = 40,
             COMMAND_BOOTLOADER = 0xFE,
             COMMAND_DEBUG = 0xFF
         }
@@ -126,7 +128,7 @@ namespace Cluster.Famicom
 
         public void Open()
         {
-            if (PortName.ToUpper().StartsWith("COM"))
+            if (PortName.ToUpper().StartsWith("COM") || PortName.StartsWith("/dev/tty"))
             {
                 SerialPort sPort;
                 sPort = new SerialPort();
@@ -528,6 +530,23 @@ namespace Cluster.Famicom
             throw new IOException("Read timeout");
         }
 
+        public UInt16 ReadCpuCrc(UInt16 address, int length)
+        {
+            var buffer = new byte[4];
+            buffer[0] = (byte)(address & 0xFF);
+            buffer[1] = (byte)((address >> 8) & 0xFF);
+            buffer[2] = (byte)(length & 0xFF);
+            buffer[3] = (byte)((length >> 8) & 0xFF);
+            cpuReadDone = false;
+            sendData(Command.COMMAND_PRG_CRC_READ_REQUEST, buffer);
+            for (int t = 0; t < Timeout; t += 5)
+            {
+                Thread.Sleep(5);
+                if (cpuReadDone) return (UInt16)(prgRecvData[0] | (prgRecvData[1] * 0x100));
+            }
+            throw new IOException("Read timeout");
+        }
+
         public void WriteCpu(UInt16 address, byte data)
         {
             WriteCpu(address, new byte[] { data });
@@ -745,6 +764,23 @@ namespace Cluster.Famicom
                 throw new IOException("Read timeout");
             }
             return null;
+        }
+
+        public UInt16 ReadPpuCrc(UInt16 address, int length)
+        {
+            var buffer = new byte[4];
+            buffer[0] = (byte)(address & 0xFF);
+            buffer[1] = (byte)((address >> 8) & 0xFF);
+            buffer[2] = (byte)(length & 0xFF);
+            buffer[3] = (byte)((length >> 8) & 0xFF);
+            ppuReadDone = false;
+            sendData(Command.COMMAND_CHR_CRC_READ_REQUEST, buffer);
+            for (int t = 0; t < Timeout; t += 5)
+            {
+                Thread.Sleep(5);
+                if (ppuReadDone) return (UInt16)(chrRecvData[0] | (chrRecvData[1] * 0x100));
+            }
+            throw new IOException("Read timeout");
         }
 
         public void WritePpu(UInt16 address, byte[] data, bool wait = true)

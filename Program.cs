@@ -54,6 +54,7 @@ namespace Cluster.Famicom
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
+            bool writePBBs = false;
             List<int> badSectors = new List<int>();
             int testCount = -1;
             try
@@ -125,6 +126,9 @@ namespace Cluster.Famicom
                             break;
                         case "check":
                             needCheck = true;
+                            break;
+                        case "lock":
+                            writePBBs = true;
                             break;
                         case "testcount":
                             testCount = int.Parse(value);
@@ -218,6 +222,9 @@ namespace Cluster.Famicom
                         case "test-bads-coolgirl":
                             FindBadsCoolgirl(dumper, silent);
                             break;
+                        case "read-crc-coolgirl":
+                            ReadCrcCoolgirl(dumper);
+                            break;
                         case "dump-tiles":
                             DumpTiles(dumper, filename ?? "output.png", mapper, parseSize(csize));
                             break;
@@ -228,7 +235,10 @@ namespace Cluster.Famicom
                             WriteCoolboy(dumper, filename ?? "game.nes");
                             break;
                         case "write-coolgirl":
-                            WriteCoolgirl(dumper, filename ?? "game.nes", badSectors, silent, needCheck);
+                            WriteCoolgirl(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs);
+                            break;
+                        case "write-eeprom":
+                            WriteEeprom(dumper, filename ?? "game.nes");
                             break;
                         case "info-coolgirl":
                             GetCoolgirlInfoOnly(dumper);
@@ -768,6 +778,48 @@ namespace Cluster.Famicom
             Console.WriteLine("Done! {0} banks writed.", chrBanks);
         }
 
+        static void WriteEeprom(FamicomDumperConnection dumper, string fileName)
+        {
+            var nesFile = new NesFile(fileName);
+            var prg = new byte[0x8000];
+            int s = 0;
+            while (s < prg.Length)
+            {
+                var n = Math.Min(nesFile.PRG.Length, prg.Length - s);
+                Array.Copy(nesFile.PRG, s % nesFile.PRG.Length, prg, s, n);
+                s += n;
+            }
+            var chr = new byte[0x2000];
+            s = 0;
+            while (s < chr.Length)
+            {
+                var n = Math.Min(nesFile.CHR.Length, chr.Length - s);
+                Array.Copy(nesFile.CHR, s % nesFile.CHR.Length, chr, s, n);
+                s += n;
+            }
+
+            dumper.Timeout = 1000;
+            var buff = new byte[64];
+            Console.Write("Writing PRG EEPROM");
+            for (UInt16 a = 0; a < prg.Length; a += 64)
+            {
+                Array.Copy(prg, a, buff, 0, buff.Length);
+                dumper.WriteCpu((UInt16)(0x8000 + a), buff);
+                Thread.Sleep(3);
+                Console.Write(".");
+            }
+            Console.WriteLine(" OK");
+            Console.Write("Writing CHR EEPROM");
+            for (UInt16 a = 0; a < chr.Length; a += 64)
+            {
+                Array.Copy(chr, a, buff, 0, buff.Length);
+                dumper.WritePpu(a, buff);
+                Thread.Sleep(3);
+                Console.Write(".");
+            }
+            Console.WriteLine(" OK");
+        }
+
         static void WriteCoolboy(FamicomDumperConnection dumper, string fileName)
         {
             byte[] PRG;
@@ -882,7 +934,135 @@ namespace Cluster.Famicom
             GetCoolgirlSize(dumper);
         }
 
-        static void WriteCoolgirl(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck)
+        static byte PPBReadCoolgirl(FamicomDumperConnection dumper, uint sector)
+        {
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            // Select sector
+            byte r0 = (byte)((sector * 4) >> 7);
+            byte r1 = (byte)((sector * 4) << 1);
+            dumper.WriteCpu(0x5000, r0);
+            dumper.WriteCpu(0x5001, r1);
+            // PPB Command Set Entry
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0xC0);
+            // PPB Status Read
+            var result = dumper.ReadCpu(0x8000, 1)[0];
+            // PPB Command Set Exit
+            dumper.WriteCpu(0x8000, 0x90);
+            dumper.WriteCpu(0x8000, 0x00);
+            return result;
+        }
+
+        static void PPBWriteCoolgirl(FamicomDumperConnection dumper, uint sector)
+        {
+            Console.Write($"Writing PPB for sector #{sector}... ");
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            // Select sector
+            byte r0 = (byte)((sector * 4) >> 7);
+            byte r1 = (byte)((sector * 4) << 1);
+            dumper.WriteCpu(0x5000, r0);
+            dumper.WriteCpu(0x5001, r1);
+            // PPB Command Set Entry
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0xC0);
+            // PPB Program
+            dumper.WriteCpu(0x8000, 0xA0);
+            dumper.WriteCpu(0x8000, 0x00);
+            // Sector 0
+            dumper.WriteCpu(0x5000, 0);
+            dumper.WriteCpu(0x5001, 0);
+            // Check
+            while (true)
+            {
+                var b0 = dumper.ReadCpu(0x8000, 1)[0];
+                //dumper.ReadCpu(0x0000, 1);
+                var b1 = dumper.ReadCpu(0x8000, 1)[0];
+                var tg = b0 ^ b1;
+                if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                {
+                    Thread.Sleep(1);
+                    break;
+                }
+                else// DQ6 = toggle
+                {
+                    if ((b0 & (1 << 5)) != 0) // DQ5 = 1
+                    {
+                        b0 = dumper.ReadCpu(0x8000, 1)[0];
+                        //dumper.ReadCpu(0x0000, 1);
+                        b1 = dumper.ReadCpu(0x8000, 1)[0];
+                        tg = b0 ^ b1;
+                        if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                            break;
+                        else
+                            throw new Exception("PPB write failed");
+                    }
+                }
+            }
+            var r = dumper.ReadCpu(0x8000, 1)[0];
+            if ((r & 1) != 0) // DQ0 = 1
+                throw new Exception("PPB write failed");
+            // PPB Command Set Exit
+            dumper.WriteCpu(0x8000, 0x90);
+            dumper.WriteCpu(0x8000, 0x00);
+            Console.WriteLine("OK");
+        }
+
+        static void PPBEraseCoolgirl(FamicomDumperConnection dumper)
+        {
+            Console.Write($"Erasing all PBBs... ");
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            // Sector 0
+            dumper.WriteCpu(0x5000, 0);
+            dumper.WriteCpu(0x5001, 0);
+            // PPB Command Set Entry
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0xC0);
+            // All PPB Erase
+            dumper.WriteCpu(0x8000, 0x80);
+            dumper.WriteCpu(0x8000, 0x30);
+            // Check
+            while (true)
+            {
+                var b0 = dumper.ReadCpu(0x8000, 1)[0];
+                //dumper.ReadCpu(0x0000, 1);
+                var b1 = dumper.ReadCpu(0x8000, 1)[0];
+                var tg = b0 ^ b1;
+                if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                {
+                    Thread.Sleep(1);
+                    break;
+                }
+                else// DQ6 = toggle
+                {
+                    if ((b0 & (1 << 5)) != 0) // DQ5 = 1
+                    {
+                        b0 = dumper.ReadCpu(0x8000, 1)[0];
+                        //dumper.ReadCpu(0x0000, 1);
+                        b1 = dumper.ReadCpu(0x8000, 1)[0];
+                        tg = b0 ^ b1;
+                        if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                            break;
+                        else
+                            throw new Exception("PPB erase failed");
+                    }
+                }
+            }
+            var r = dumper.ReadCpu(0x8000, 1)[0];
+            if ((r & 1) != 1) // DQ0 = 0
+                throw new Exception("PPB erase failed");
+            // PPB Command Set Exit
+            dumper.WriteCpu(0x8000, 0x90);
+            dumper.WriteCpu(0x8000, 0x00);
+            Console.WriteLine("OK");
+        }
+
+        static void WriteCoolgirl(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -913,10 +1093,12 @@ namespace Cluster.Famicom
             int flashSize = GetCoolgirlSize(dumper);
             if (PRG.Length > flashSize)
                 throw new Exception("This ROM is too big for this cartridge");
+            PPBEraseCoolgirl(dumper);
+
             DateTime lastSectorTime = DateTime.Now;
             TimeSpan timeTotal = new TimeSpan();
             int errorCount = 0;
-            for (int bank = 0; bank < /*16*/prgBanks; bank++)
+            for (int bank = 0; bank < prgBanks; bank++)
             {
                 if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
                 try
@@ -944,6 +1126,8 @@ namespace Cluster.Famicom
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
                     dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashType.Coolgirl, true);
                     Console.WriteLine("OK");
+                    if ((bank % 4 == 3) || (bank == prgBanks - 1))
+                        PPBWriteCoolgirl(dumper, (uint)bank / 4);
                 }
                 catch (Exception ex)
                 {
@@ -965,58 +1149,72 @@ namespace Cluster.Famicom
             if (errorCount > 0)
                 Console.WriteLine("Warning! Error count: {0}", errorCount);
 
-            if (!needCheck) return;
-
-            Console.WriteLine("Starting check process");
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
-            //dumper.WriteCpu(0x5007, 0x04); // enable PRG write
-
-            var readStartTime = DateTime.Now;
-            lastSectorTime = DateTime.Now;
-            timeTotal = new TimeSpan();
-            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
-            for (int bank = 0; bank < /*16*/prgBanks; bank++)
+            if (needCheck)
             {
-                if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
-                byte r0 = (byte)(bank >> 7);
-                byte r1 = (byte)(bank << 1);
-                dumper.WriteCpu(0x5000, r0);
-                dumper.WriteCpu(0x5001, r1);
-
-                var data = new byte[0x8000];
-                int pos = bank * 0x8000;
-                if (pos % (128 * 1024) == 0)
-                {
-                    timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
-                    timeTotal = timeTotal.Add(DateTime.Now - readStartTime);
-                    lastSectorTime = DateTime.Now;
-                }
-                Array.Copy(PRG, pos, data, 0, data.Length);
-                var timePassed = DateTime.Now - readStartTime;
-                Console.Write("Reading {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
-                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                var datar = dumper.ReadCpu(0x8000, 0x8000);
-                for (int i = 0; i < data.Length; i++)
-                    if (data[i] != datar[i])
-                    {
-                        throw new Exception("Check failed");
-                    }
+                Console.WriteLine("Starting check process");
+                Console.Write("Reset... ");
+                dumper.Reset();
                 Console.WriteLine("OK");
+
+                var readStartTime = DateTime.Now;
+                lastSectorTime = DateTime.Now;
+                timeTotal = new TimeSpan();
+                dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+                for (int bank = 0; bank < prgBanks; bank++)
+                {
+                    if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
+                    byte r0 = (byte)(bank >> 7);
+                    byte r1 = (byte)(bank << 1);
+                    dumper.WriteCpu(0x5000, r0);
+                    dumper.WriteCpu(0x5001, r1);
+
+                    var data = new byte[0x8000];
+                    int pos = bank * 0x8000;
+                    if (pos % (128 * 1024) == 0)
+                    {
+                        timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
+                        timeTotal = timeTotal.Add(DateTime.Now - readStartTime);
+                        lastSectorTime = DateTime.Now;
+                    }
+                    Array.Copy(PRG, pos, data, 0, data.Length);
+                    UInt16 crc = 0;
+                    foreach (var a in data)
+                    {
+                        crc ^= a;
+                        for (int i = 0; i < 8; ++i)
+                        {
+                            if ((crc & 1) != 0)
+                                crc = (UInt16)((crc >> 1) ^ 0xA001);
+                            else
+                                crc = (UInt16)(crc >> 1);
+                        }
+                    }
+                    var timePassed = DateTime.Now - readStartTime;
+                    Console.Write("Reading CRC {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
+                        timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                    //var datar = dumper.ReadCpu(0x8000, 0x8000);
+                    var crcr = dumper.ReadCpuCrc(0x8000, 0x8000);
+                    if (crcr != crc)
+                        throw new Exception(string.Format("Check failed: {0:X4} != {1:X4}", crcr, crc));
+                    else
+                        Console.WriteLine("OK (CRC = {0:X4})", crcr);
+                }
+                if (errorCount > 0)
+                {
+                    Console.WriteLine("Warning! Error count: {0}", errorCount);
+                    return;
+                }
             }
-            if (errorCount > 0)
-                Console.WriteLine("Warning! Error count: {0}", errorCount);
         }
 
         static void FindBadsCoolgirl(FamicomDumperConnection dumper, bool silent)
         {
-
             Console.Write("Reset... ");
             dumper.Reset();
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            PPBEraseCoolgirl(dumper);
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
             var flashSize = GetCoolgirlSize(dumper);
@@ -1091,6 +1289,46 @@ namespace Cluster.Famicom
                 throw new Exception("Bad sectors found");
             }
             else Console.WriteLine("There is no bad sectors");
+        }
+
+        static void ReadCrcCoolgirl(FamicomDumperConnection dumper)
+        {
+            Console.Write("Reset... ");
+            dumper.Reset();
+            Console.WriteLine("OK");
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            var flashSize = GetCoolgirlSize(dumper);
+            int prgBanks = flashSize / 0x8000;
+
+            var readStartTime = DateTime.Now;
+            var lastSectorTime = DateTime.Now;
+            var timeTotal = new TimeSpan();
+            UInt16 crc = 0;
+            for (int bank = 0; bank < /*16*/prgBanks; bank++)
+            {
+                byte r0 = (byte)(bank >> 7);
+                byte r1 = (byte)(bank << 1);
+                dumper.WriteCpu(0x5000, r0);
+                dumper.WriteCpu(0x5001, r1);
+
+                var data = new byte[0x8000];
+                int pos = bank * 0x8000;
+                if (pos % (128 * 1024) == 0)
+                {
+                    timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
+                    timeTotal = timeTotal.Add(DateTime.Now - readStartTime);
+                    lastSectorTime = DateTime.Now;
+                }
+                var timePassed = DateTime.Now - readStartTime;
+                Console.Write("Reading CRC {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
+                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                //var datar = dumper.ReadCpu(0x8000, 0x8000);
+                var crcr = dumper.ReadCpuCrc(0x8000, 0x8000);
+                Console.WriteLine("CRC = {0:X4}", crcr);
+                crc ^= crcr;
+            }
+            Console.WriteLine("Total CRC = {0:X4}", crc);
         }
 
         static void WriteJtag(FamicomDumperConnection dumper, string fileName)
