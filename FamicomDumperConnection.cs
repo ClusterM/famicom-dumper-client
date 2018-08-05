@@ -106,11 +106,11 @@ namespace Cluster.Famicom
             COMMAND_DEBUG = 0xFF
         }
 
-        public enum FlashType
+        public enum FlashAccessType
         {
             FirstFlash,
-            Coolboy,
-            Coolgirl
+            CoolboyGPIO,
+            Direct
         }
 
         public FamicomDumperConnection(string portName = null)
@@ -257,14 +257,7 @@ namespace Cluster.Famicom
                     {
                         int c = serialPort.ReadByte();
                         if (c >= 0)
-                        {
-                            //Console.Write((char)c);
-#if DEBUG
-//                            Console.Write("{0:X2} ", c);
-//                            Thread.Sleep(10);
-#endif
                             recvProceed((byte)c);
-                        }
                     }
                     catch (TimeoutException) { }
                 }
@@ -427,10 +420,10 @@ namespace Cluster.Famicom
 
         void showDebugInfo(byte[] data)
         {
-            Console.Write("Debug info:");
+            //Console.Write("Debug info: ");
             foreach (var b in data)
-                Console.Write(" {0:X2}", b);
-            Console.WriteLine();
+                Console.Write("{0:X2} ", b);
+            //Console.WriteLine();
         }
 
         void sendData(Command command, byte[] data)
@@ -492,7 +485,7 @@ namespace Cluster.Famicom
             return false;
         }
 
-        public byte[] ReadCpu(UInt16 address, int length, FlashType flashType = FlashType.FirstFlash)
+        public byte[] ReadCpu(UInt16 address, int length, FlashAccessType flashType = FlashAccessType.FirstFlash)
         {
             var result = new List<byte>();
             while (length > 0)
@@ -504,7 +497,7 @@ namespace Cluster.Famicom
             return result.ToArray();
         }
 
-        private byte[] readCpuBlock(UInt16 address, int length, FlashType flashType = FlashType.FirstFlash)
+        private byte[] readCpuBlock(UInt16 address, int length, FlashAccessType flashType = FlashAccessType.FirstFlash)
         {
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
@@ -514,11 +507,11 @@ namespace Cluster.Famicom
             cpuReadDone = false;
             switch (flashType)
             {
-                case FlashType.FirstFlash:
-                case FlashType.Coolgirl:
+                case FlashAccessType.FirstFlash:
+                case FlashAccessType.Direct:
                     sendData(Command.COMMAND_PRG_READ_REQUEST, buffer);
                     break;
-                case FlashType.Coolboy:
+                case FlashAccessType.CoolboyGPIO:
                     sendData(Command.COMMAND_COOLBOY_READ_REQUEST, buffer);
                     break;
             }
@@ -587,17 +580,17 @@ namespace Cluster.Famicom
             throw new IOException("Write timeout");
         }
 
-        public void ErasePrgFlash(FlashType flashType = FlashType.FirstFlash)
+        public void ErasePrgFlash(FlashAccessType flashType = FlashAccessType.FirstFlash)
         {
             switch (flashType)
             {
-                case FlashType.FirstFlash:
+                case FlashAccessType.FirstFlash:
                     sendData(Command.COMMAND_PRG_FLASH_ERASE_REQUEST, new byte[0]);
                     break;
-                case FlashType.Coolboy:
+                case FlashAccessType.CoolboyGPIO:
                     sendData(Command.COMMAND_COOLBOY_ERASE_REQUEST, new byte[0]);
                     break;
-                case FlashType.Coolgirl:
+                case FlashAccessType.Direct:
                     sendData(Command.COMMAND_COOLGIRL_ERASE_SECTOR_REQUEST, new byte[0]);
                     break;
             }
@@ -610,7 +603,7 @@ namespace Cluster.Famicom
             throw new IOException("Write timeout");
         }
 
-        public void WritePrgFlash(UInt16 address, byte[] data, FlashType flashType = FlashType.FirstFlash, bool accelerated = false)
+        public void WritePrgFlash(UInt16 address, byte[] data, FlashAccessType flashType = FlashAccessType.FirstFlash, bool accelerated = false)
         {
             int wlength = data.Length;
             int pos = 0;
@@ -651,9 +644,8 @@ namespace Cluster.Famicom
             return false;
         }
 
-        private void writePrgFlashBlock(UInt16 address, byte[] data, bool wait = true, FlashType flashType = FlashType.FirstFlash)
+        private void writePrgFlashBlock(UInt16 address, byte[] data, bool wait = true, FlashAccessType flashType = FlashAccessType.FirstFlash)
         {
-            //Console.WriteLine("{0:X8}", address);
             int length = data.Length;
             var buffer = new byte[4 + length];
             buffer[0] = (byte)(address & 0xFF);
@@ -665,13 +657,13 @@ namespace Cluster.Famicom
                 cpuWriteDoneCounter = 0;
             switch (flashType)
             {
-                case FlashType.FirstFlash:
+                case FlashAccessType.FirstFlash:
                     sendData(Command.COMMAND_PRG_FLASH_WRITE_REQUEST, buffer);
                     break;
-                case FlashType.Coolboy:
+                case FlashAccessType.CoolboyGPIO:
                     sendData(Command.COMMAND_COOLBOY_WRITE_REQUEST, buffer);
                     break;
-                case FlashType.Coolgirl:
+                case FlashAccessType.Direct:
                     sendData(Command.COMMAND_COOLGIRL_WRITE_REQUEST, buffer);
                     break;
             }

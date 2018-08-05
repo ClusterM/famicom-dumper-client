@@ -44,6 +44,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommonHelper.cs" />
+    <Compile Include="CoolboyWriter.cs" />
+    <Compile Include="CoolgirlWriter.cs" />
     <Compile Include="FamicomDumperConnection.cs" />
     <Compile Include="FTD2XX_NET.cs" />
     <Compile Include="IMapper.cs" />

@@ -38,7 +38,7 @@ namespace Cluster.Famicom.Mappers
             Console.Write("Reset... ");
             dumper.Reset();
             Console.WriteLine("OK");
-            dumper.WriteCpu(0x5002, 0xFE); // mask = 8K
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             for (int bank = 0; bank < prgBanks; bank++)
             {
                 byte r0 = (byte)(bank >> 7);

@@ -35,32 +35,26 @@ namespace Cluster.Famicom.Mappers
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
             dumper.Reset();
-            int outbanks = size / (128 * 1024);
+            int banks = size / 0x4000;
 
-            int outbankSize = 512;
-            
-            for (int outbank = 0; outbank < outbanks; outbank += outbankSize / 128)
+            for (int bank = 0; bank < banks; bank++)
             {
-                byte r0 = (byte)((outbank & 0x07) | ((outbank & 0xc0) >> 2));
-                byte r1 = (byte)(((outbank & 0x30) >> 2) | ((outbank << 1) & 0x10));
+                byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
+                    | (((bank >> 9) & 0x03) << 4) // 10, 9 bits
+                    | (1 << 6)); // resets 4th mask bit
+                byte r1 = (byte)((((bank >> 7) & 0x03) << 2) // 8, 7
+                    | (((bank >> 6) & 1) << 4) // 6
+                    | (1 << 7)); // resets 5th mask bit
                 byte r2 = 0;
-                byte r3 = 0;
+                byte r3 = (byte)((1 << 4) // NROM mode
+                    | ((bank & 7) << 1)); // 2, 1, 0 bits
                 dumper.WriteCpu(0x6000, new byte[] { r0 });
                 dumper.WriteCpu(0x6001, new byte[] { r1 });
                 dumper.WriteCpu(0x6002, new byte[] { r2 });
                 dumper.WriteCpu(0x6003, new byte[] { r3 });
 
-                int banks = outbankSize * 1024 / 0x2000;
-                for (int bank = 0; bank < banks - 2; bank += 2)
-                {
-                    Console.Write("Reading PRG banks #{2}|{0} and #{2}|{1}... ", bank, bank + 1, outbank);
-                    dumper.WriteCpu(0x8000, new byte[] { 6, (byte)(bank) });
-                    dumper.WriteCpu(0x8000, new byte[] { 7, (byte)(bank | 1) });
-                    data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
-                    Console.WriteLine("OK");
-                }
-                Console.Write("Reading last PRG banks #{2}|{0} and #{2}|{1}... ", banks - 2, banks - 1, outbank);
-                data.AddRange(dumper.ReadCpu(0xC000, 0x4000));
+                Console.Write("Reading PRG banks #{0}/{1}... ", bank, banks);
+                data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                 Console.WriteLine("OK");
             }
         }
