@@ -14,16 +14,25 @@ Usage: **famicom-dumper.exe \<command\> [options]**
 Available commands:  
 - **list-mappers** - list built in mappers  
 - **dump** - dump cartridge  
+- **dump-tiles** - dump CHR data to PNG file  
 - **reset** - simulate reset (M2 goes low for a second)
 - **read-prg-ram** - read PRG RAM (battery backed save if exists)  
 - **write-prg-ram** - write PRG RAM  
-- **write-coolboy** - write COOLBOY cartridge  
+- **write-coolboy-gpio** - write COOLBOY cartridge using GPIO
+- **write-coolboy** - write COOLBOY cartridge directly
 - **write-coolgirl** - write COOLGIRL cartridge  
+- **write-eeprom** - write EEPROM-based cartridge  
 - **console** - start interactive Lua console
-- **test-prg-ram** - run PRG RAM test  
-- **test-chr-ram** - run CHR RAM test  
-- **test-battery** - test battery-backed PRG RAM  
-- **dump-tiles** - dump CHR data to PNG file  
+- **test-prg-ram** - run PRG RAM test
+- **test-chr-ram** - run CHR RAM test
+- **test-battery** - test battery-backed PRG RAM
+- **test-prg-ram-coolgirl** - run PRG RAM test for COOLGIRL cartridge
+- **test-chr-ram-coolgirl** - run CHR RAM test for COOLGIRL cartridge
+- **test-coolgirl** - run all RAM tests for COOLGIRL cartridge
+- **test-bads-coolgirl** - find bad sectors on COOLGIRL cartridge
+- **read-crc-coolgirl** - shows CRC checksum for COOLGIRL
+- **info-coolboy** - show information about COOLBOY's flash memory
+- **info-coolgirl** - show information about COOLGIRL's flash memory
   
 Available options:  
 - --**port** <*com*> - serial port of dumper or serial number of FTDI device, default - auto  
@@ -36,8 +45,10 @@ Available options:
 - --**unifname** <*name*> - internal ROM name for UNIF dumps  
 - --**unifauthor** <*name*> - author of dump for UNIF dumps  
 - --**reset** - do reset first
+- --**badsectors** - comma separated list of bad sectors for COOLBOY/COOLGIRL flashing
 - --**sound** - play sounds
-
+- --**check** - verify COOLBOY/COOLGIRL checksum after writing
+- --**lock** - write-protect COOLBOY/COOLGIRL sectors after writing
 
 ## Examples
 
@@ -152,7 +163,18 @@ Using mapper: #1 (MMC1)
 Writing PRG-RAM... Done in 1 seconds
 ~~~~
 
-Rewrite ultracheap chinese COOLBOY cartridge and play sound when it's done:
+Rewrite ultracheap chinese COOLBOY cartridge using GPIO pins on /OE-/WE and play sound when it's done:
+~~~~
+>famicom-dumper.exe write-coolboy-gpio --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
+PRG reader initialization... OK
+CHR reader initialization... OK
+Reset... OK
+Erasing sector... OK
+Writing 1/2048 (0%, 00:00:02/00:40:53)...
+~~~~
+You need to unsolder pins /OE and /WE and connect them to TCK and TDO pins on JTAG connector.
+
+Same for new COOLBOY where /OE and /WE are connected to mapper, soldering not required:
 ~~~~
 >famicom-dumper.exe write-coolboy --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
 PRG reader initialization... OK
@@ -161,11 +183,10 @@ Reset... OK
 Erasing sector... OK
 Writing 1/2048 (0%, 00:00:02/00:40:53)...
 ~~~~
-But you need to unsolder pins /OE and /WE and connect them to TCK and TDO pins on JTAG connector.
 
 Also you can rewrite [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges:
 ~~~~
->famicom-dumper.exe  write-coolgirl --file multirom.unf --port COM14
+>famicom-dumper.exe write-coolgirl --file multirom.unf --port COM14
 PRG reader initialization... OK
 CHR reader initialization... OK
 Reset... OK
