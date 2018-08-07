@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
 
 namespace Cluster.Famicom.Mappers
 {
@@ -35,7 +32,7 @@ namespace Cluster.Famicom.Mappers
 
         void WriteMMC1(FamicomDumperConnection dumper, UInt16 address, byte data)
         {
-            var buffer = new byte[5];
+            byte[] buffer = new byte[5];
             for (int i = 0; i < 5; i++)
             {
                 buffer[i] = (byte)(data >> i);

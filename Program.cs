@@ -22,12 +22,15 @@
  */
 
 using Cluster.Famicom.Mappers;
+using Microsoft.CSharp;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Media;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -36,11 +39,17 @@ namespace Cluster.Famicom
     class Program
     {
         static DateTime startTime;
+        public static string MappersSearchDirectory = "mappers-cs";
         public static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
         public static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
+            Console.WriteLine("Famicom Dumper Client v{0}.{1}", Assembly.GetExecutingAssembly().GetName().Version.Major, Assembly.GetExecutingAssembly().GetName().Version.Minor);
+            Console.WriteLine("  (c) Cluster, 2018");
+            Console.WriteLine("  http://clusterrr.com");
+            Console.WriteLine("  clusterrr@clusterrr.com");
+            Console.WriteLine();
             startTime = DateTime.Now;
             string port = "auto";
             string mapper = "0";
@@ -65,12 +74,12 @@ namespace Cluster.Famicom
                     return 0;
                 }
 
-                string command = args[0];
+                string command = args[0].ToLower();
 
                 for (int i = 1; i < args.Length; i++)
                 {
                     string param = args[i];
-                    while (param.StartsWith("-")) param = param.Substring(1);
+                    while (param.StartsWith("-") || param.StartsWith("—")) param = param.Substring(1);
                     string value = i < args.Length - 1 ? args[i + 1] : "";
                     switch (param.ToLower())
                     {
@@ -143,6 +152,12 @@ namespace Cluster.Famicom
                     }
                 }
 
+                if (command == "list-mappers")
+                {
+                    ListMappers();
+                    return 0;
+                }
+
                 using (var dumper = new FamicomDumperConnection(port))
                 {
                     dumper.Open();
@@ -175,7 +190,7 @@ namespace Cluster.Famicom
                         luaMapper.Verbose = false;
                     }
 
-                    switch (command.ToLower())
+                    switch (command)
                     {
                         case "reset":
                             if (!reset)
@@ -296,44 +311,43 @@ namespace Cluster.Famicom
             Console.WriteLine("Usage: famicom-dumper.exe <command> [options]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
-            Console.WriteLine(" {0,-20}{1}", "list-mappers", "list built in mappers");
-            Console.WriteLine(" {0,-20}{1}", "dump", "dump cartridge");
-            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump CHR data to PNG file");
-            Console.WriteLine(" {0,-20}{1}", "reset", "simulate reset (M2 goes low for a second)");
-            Console.WriteLine(" {0,-20}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
-            Console.WriteLine(" {0,-20}{1}", "write-prg-ram", "write PRG RAM");
-            Console.WriteLine(" {0,-20}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using GPIO");
-            Console.WriteLine(" {0,-20}{1}", "write-coolboy", "write COOLBOY cartridge directly");
-            Console.WriteLine(" {0,-20}{1}", "write-coolgirl", "write COOLGIRL cartridge");
-            Console.WriteLine(" {0,-20}{1}", "write-eeprom", "write EEPROM-based cartridge");
-            Console.WriteLine(" {0,-20}{1}", "console", "start interactive Lua console");
-            Console.WriteLine(" {0,-20}{1}", "dump-tiles", "dump CHR data to PNG file");
-            Console.WriteLine(" {0,-20}{1}", "test-prg-ram", "run PRG RAM test");
-            Console.WriteLine(" {0,-20}{1}", "test-chr-ram", "run CHR RAM test");
-            Console.WriteLine(" {0,-20}{1}", "test-battery", "test battery-backed PRG RAM");
-            Console.WriteLine(" {0,-20}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-20}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-20}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-20}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge");
-            Console.WriteLine(" {0,-20}{1}", "read-crc-coolgirl", "shows CRC checksum for COOLGIRL");
-            Console.WriteLine(" {0,-20}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
-            Console.WriteLine(" {0,-20}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
+            Console.WriteLine(" {0,-25}{1}", "list-mappers", "list built in mappers");
+            Console.WriteLine(" {0,-25}{1}", "dump", "dump cartridge");
+            Console.WriteLine(" {0,-25}{1}", "dump-tiles", "dump CHR data to PNG file");
+            Console.WriteLine(" {0,-25}{1}", "reset", "simulate reset (M2 goes low for a second)");
+            Console.WriteLine(" {0,-25}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
+            Console.WriteLine(" {0,-25}{1}", "write-prg-ram", "write PRG RAM");
+            Console.WriteLine(" {0,-25}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using GPIO");
+            Console.WriteLine(" {0,-25}{1}", "write-coolboy", "write COOLBOY cartridge directly");
+            Console.WriteLine(" {0,-25}{1}", "write-coolgirl", "write COOLGIRL cartridge");
+            Console.WriteLine(" {0,-25}{1}", "write-eeprom", "write EEPROM-based cartridge");
+            Console.WriteLine(" {0,-25}{1}", "console", "start interactive Lua console");
+            Console.WriteLine(" {0,-25}{1}", "test-prg-ram", "run PRG RAM test");
+            Console.WriteLine(" {0,-25}{1}", "test-chr-ram", "run CHR RAM test");
+            Console.WriteLine(" {0,-25}{1}", "test-battery", "test battery-backed PRG RAM");
+            Console.WriteLine(" {0,-25}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-25}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-25}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-25}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge");
+            Console.WriteLine(" {0,-25}{1}", "read-crc-coolgirl", "shows CRC checksum for COOLGIRL");
+            Console.WriteLine(" {0,-25}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
+            Console.WriteLine(" {0,-25}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
             Console.WriteLine();
             Console.WriteLine("Available options:");
-            Console.WriteLine(" {0,-20}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
-            Console.WriteLine(" {0,-20}{1}", "--mapper <mapper>", "number, name or path to LUA script of mapper for dumping, default is 0 (NROM)");
-            Console.WriteLine(" {0,-20}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
-            Console.WriteLine(" {0,-20}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-20}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-20}{1}", "--luafile \"<lua_code>\"", "execute Lua code from file first");
-            Console.WriteLine(" {0,-20}{1}", "--lua \"<lua_code>\"", "execute this Lua code first");
-            Console.WriteLine(" {0,-20}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
-            Console.WriteLine(" {0,-20}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
-            Console.WriteLine(" {0,-20}{1}", "--reset", "do reset first");
-            Console.WriteLine(" {0,-20}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL flashing");
-            Console.WriteLine(" {0,-20}{1}", "--sound", "play sound when done or error occured");
-            Console.WriteLine(" {0,-20}{1}", "--check", "verify COOLBOY/COOLGIRL checksum after writing");
-            Console.WriteLine(" {0,-20}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
+            Console.WriteLine(" {0,-25}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
+            Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to LUA script of mapper for dumping, default is 0 (NROM)");
+            Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
+            Console.WriteLine(" {0,-25}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-25}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-25}{1}", "--luafile \"<lua_code>\"", "execute Lua code from file first");
+            Console.WriteLine(" {0,-25}{1}", "--lua \"<lua_code>\"", "execute this Lua code first");
+            Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
+            Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
+            Console.WriteLine(" {0,-25}{1}", "--reset", "do reset first");
+            Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL flashing");
+            Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
+            Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL checksum after writing");
+            Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
         static void Reset(FamicomDumperConnection dumper)
@@ -343,28 +357,99 @@ namespace Cluster.Famicom
             Console.WriteLine("OK");
         }
 
+        static IMapper CompileMapperCS(string path)
+        {
+            CSharpCodeProvider provider = new CSharpCodeProvider();
+            CompilerParameters parameters = new CompilerParameters();
+            parameters.ReferencedAssemblies.Add("System.dll");
+            parameters.ReferencedAssemblies.Add("System.Data.dll");
+            parameters.ReferencedAssemblies.Add(Assembly.GetEntryAssembly().Location);
+            parameters.GenerateInMemory = true;
+            parameters.GenerateExecutable = false;
+            parameters.IncludeDebugInformation = true;
+
+            CompilerResults results = provider.CompileAssemblyFromFile(parameters, path);
+            if (results.Errors.HasErrors)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (CompilerError error in results.Errors)
+                {
+                    sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
+                }
+
+                throw new InvalidOperationException(sb.ToString());
+            }
+
+            Assembly assembly = results.CompiledAssembly;
+            var programs = assembly.GetTypes();
+            if (programs.Count() == 0)
+                throw new Exception("There is no assemblies");
+            Type program = programs.First();
+            var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
+            if (constructor == null)
+                throw new Exception("There is no default constructor");
+            return (IMapper)constructor.Invoke(new object[0]);
+        }
+
+        static Dictionary<string, IMapper> CompileAllMappers()
+        {
+            var result = new Dictionary<string, IMapper>();
+            var directory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
+            foreach (var f in Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories))
+            {
+                //try
+                {
+                    result[f] = CompileMapperCS(f);
+                }
+                //catch { }
+            }
+            return result;
+        }
+
         static void ListMappers()
         {
+            var directory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
+            Console.WriteLine("Searching mappers in {0}", directory); ;
             Console.WriteLine("Supported mappers:");
-            Console.WriteLine(" {0,-10}{1}", "Number", "Name");
-            Console.WriteLine("----------------------");
-            foreach (var mapper in MappersContainer.Mappers)
+            Console.WriteLine(" {0,-30}{1,-9}{2}", "File", "Number", "Name");
+            Console.WriteLine("----------------------------- -------- -----------------------");
+            var mappers = CompileAllMappers();
+            foreach (var mapperFile in mappers
+                .Where(m => m.Value.Number >= 0)
+                .OrderBy(m => m.Value.Number)
+                .Union(mappers.Where(m => m.Value.Number < 0)
+                .OrderBy(m => m.Value.Name)))
             {
-                Console.WriteLine(" {0,-10}{1}", mapper.Number, mapper.Name);
+                Console.WriteLine(" {0,-30}{1,-9}{2}", Path.GetFileName(mapperFile.Key), mapperFile.Value.Number >= 0 ? mapperFile.Value.Number.ToString() : "None", mapperFile.Value.Name);
             }
         }
 
         static IMapper GetMapper(string mapperName)
         {
-            if (File.Exists(mapperName)) // LUA script?
+            if (File.Exists(mapperName)) // LUA or CS script?
             {
-                var luaMapper = new LuaMapper();
-                luaMapper.Execute(null, mapperName, true);
-                return luaMapper;
+                switch (Path.GetExtension(mapperName).ToLower())
+                {
+                    case ".cs":
+                        return CompileMapperCS(mapperName);
+                    case ".lua":
+                        var luaMapper = new LuaMapper();
+                        luaMapper.Execute(null, mapperName, true);
+                        return luaMapper;
+                    default:
+                        throw new Exception("Unknown mapper extention");
+                }
             }
-            var mapper = MappersContainer.GetMapper(mapperName ?? "0");
-            if (mapper == null) throw new Exception("can't find mapper");
-            return mapper;
+
+            if (string.IsNullOrEmpty(mapperName))
+                mapperName = "0";
+            var mapperList = CompileAllMappers()
+                .Where(m => m.Value.Name.ToLower() == mapperName.ToLower() 
+                || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
+            if (mapperList.Count() == 0) throw new Exception("can't find mapper");
+            var mapper = mapperList.First();
+            Console.WriteLine("Using {0} as mapper file", mapper.Key);
+            return mapper.Value;
         }
 
         static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor)
@@ -508,7 +593,7 @@ namespace Cluster.Famicom
                 count--;
             }
         }
-               
+
         static void TestBattery(FamicomDumperConnection dumper, string mapperName)
         {
             var mapper = GetMapper(mapperName);
@@ -616,7 +701,7 @@ namespace Cluster.Famicom
             }
             Console.WriteLine(" OK");
         }
-        
+
         static void DumpTiles(FamicomDumperConnection dumper, string fileName, string mapperName, int chrSize, int tilesPerLine = 16)
         {
             var mapper = GetMapper(mapperName);

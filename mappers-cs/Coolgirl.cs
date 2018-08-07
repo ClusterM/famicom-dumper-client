@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace Cluster.Famicom.Mappers
 {
@@ -17,6 +14,7 @@ namespace Cluster.Famicom.Mappers
         {
             get { return -1; }
         }
+
         public string UnifName
         {
             get { return "COOLGIRL"; }

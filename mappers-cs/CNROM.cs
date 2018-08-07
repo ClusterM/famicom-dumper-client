@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Cluster.Famicom.Mappers
 {
@@ -61,7 +59,7 @@ namespace Cluster.Famicom.Mappers
                         break;
                     }
                 }
-                var d = dumper.ReadPpu(0x0000, 0x2000);
+                byte[] d = dumper.ReadPpu(0x0000, 0x2000);
                 data.AddRange(d);
                 Console.WriteLine("OK");
             }

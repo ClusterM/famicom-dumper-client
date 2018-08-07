@@ -4,7 +4,7 @@ DefaultPrgSize = 256 * 1024
 DefaultChrSize = 0
 
 function DumpPrg(size)
-	local banks = size / 0x4000
+	local banks = math.floor(size / 0x4000)
 	print("Reading last PRG bank...")
 	local last = ReadCpu(0xC000, 0x4000)
 	for b = 0, banks-2 do

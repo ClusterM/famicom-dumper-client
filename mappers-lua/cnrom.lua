@@ -14,7 +14,7 @@ function DumpChr(size)
 		print("Reading PRG...")
 		prg = ReadPrg(0x8000, size)
 	end
-	local banks = size / 0x2000
+	local banks = math.floor(size / 0x2000)
 	for b = 0, banks-1 do
 		print("Reading CHR bank #" .. tostring(b) .. "...")
 		for i,v in pairs(prg) do

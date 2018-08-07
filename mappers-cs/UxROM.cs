@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Cluster.Famicom.Mappers
 {
@@ -46,7 +44,7 @@ namespace Cluster.Famicom.Mappers
 
             byte banks = (byte)(size / 0x4000);
             Console.Write("Reading last PRG bank... ");
-            var lastBank = dumper.ReadCpu(0xC000, 0x4000);
+            byte[] lastBank = dumper.ReadCpu(0xC000, 0x4000);
             Console.WriteLine("OK");
             for (int bank = 0; bank < banks-1; bank++)
             {

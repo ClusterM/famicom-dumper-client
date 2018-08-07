@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Cluster.Famicom.Mappers
 {
@@ -16,6 +14,7 @@ namespace Cluster.Famicom.Mappers
         {
             get { return -1; }
         }
+
         public string UnifName
         {
             get { return "BMC-10-24-C-A1"; }

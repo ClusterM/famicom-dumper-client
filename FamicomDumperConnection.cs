@@ -333,7 +333,6 @@ namespace Cluster.Famicom
                 case 0:
                     if (data != 0x46)
                     {
-                        //comm_start(COMMAND_ERROR_INVALID, 0);
                         if (OnError != null)
                             OnError();
                     }
@@ -420,10 +419,8 @@ namespace Cluster.Famicom
 
         void showDebugInfo(byte[] data)
         {
-            //Console.Write("Debug info: ");
             foreach (var b in data)
                 Console.Write("{0:X2} ", b);
-            //Console.WriteLine();
         }
 
         void sendData(Command command, byte[] data)
@@ -485,7 +482,11 @@ namespace Cluster.Famicom
             return false;
         }
 
-        public byte[] ReadCpu(UInt16 address, int length, FlashAccessType flashType = FlashAccessType.FirstFlash)
+        public byte[] ReadCpu(UInt16 address, int length)
+        {
+            return ReadCpu(address, length, FlashAccessType.Direct);
+        }
+        public byte[] ReadCpu(UInt16 address, int length, FlashAccessType flashType)
         {
             var result = new List<byte>();
             while (length > 0)
@@ -497,7 +498,7 @@ namespace Cluster.Famicom
             return result.ToArray();
         }
 
-        private byte[] readCpuBlock(UInt16 address, int length, FlashAccessType flashType = FlashAccessType.FirstFlash)
+        private byte[] readCpuBlock(UInt16 address, int length, FlashAccessType flashType = FlashAccessType.Direct)
         {
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
@@ -580,7 +581,7 @@ namespace Cluster.Famicom
             throw new IOException("Write timeout");
         }
 
-        public void ErasePrgFlash(FlashAccessType flashType = FlashAccessType.FirstFlash)
+        public void ErasePrgFlash(FlashAccessType flashType)
         {
             switch (flashType)
             {
@@ -644,7 +645,7 @@ namespace Cluster.Famicom
             return false;
         }
 
-        private void writePrgFlashBlock(UInt16 address, byte[] data, bool wait = true, FlashAccessType flashType = FlashAccessType.FirstFlash)
+        private void writePrgFlashBlock(UInt16 address, byte[] data, bool wait, FlashAccessType flashType)
         {
             int length = data.Length;
             var buffer = new byte[4 + length];
@@ -677,55 +678,13 @@ namespace Cluster.Famicom
                 throw new IOException("Write timeout");
             }
         }
-
-        public void EraseChrFlash()
+           
+     
+        public byte[] ReadPpu(UInt16 address, int length)
         {
-            sendData(Command.COMMAND_CHR_FLASH_ERASE_REQUEST, new byte[0]);
-            ppuWriteDone = false;
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (ppuWriteDone) return;
-            }
-            throw new IOException("Write timeout");
+            return ReadPpu(address, length, true);
         }
-
-        public void WriteChrFlash(UInt16 address, byte[] data)
-        {
-            int wlength = data.Length;
-            int pos = 0;
-            while (wlength > 0)
-            {
-                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
-                Array.Copy(data, pos, wdata, 0, wdata.Length);
-                writeChrFlashBlock(address, wdata);
-                address += MaxWritePacketSize;
-                pos += MaxWritePacketSize;
-                wlength -= MaxWritePacketSize;
-            }
-            return;
-        }
-
-        private void writeChrFlashBlock(UInt16 address, byte[] data)
-        {
-            int length = data.Length;
-            var buffer = new byte[4 + length];
-            buffer[0] = (byte)(address & 0xFF);
-            buffer[1] = (byte)((address >> 8) & 0xFF);
-            buffer[2] = (byte)(length & 0xFF);
-            buffer[3] = (byte)((length >> 8) & 0xFF);
-            Array.Copy(data, 0, buffer, 4, length);
-            ppuWriteDone = false;
-            sendData(Command.COMMAND_CHR_FLASH_WRITE_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (ppuWriteDone) return;
-            }
-            throw new IOException("Write timeout");
-        }
-
-        public byte[] ReadPpu(UInt16 address, int length, bool wait = true)
+        public byte[] ReadPpu(UInt16 address, int length, bool wait)
         {
             if (length > MaxReadPacketSize) // Split packets;
             {
@@ -775,6 +734,10 @@ namespace Cluster.Famicom
             throw new IOException("Read timeout");
         }
 
+        public void WritePpu(UInt16 address, byte[] data)
+        {
+            WritePpu(address, data, true);
+        }
         public void WritePpu(UInt16 address, byte[] data, bool wait = true)
         {
             if (data.Length > MaxWritePacketSize) // Split packets
@@ -850,12 +813,7 @@ namespace Cluster.Famicom
                 throw new IOException("Write timeout");
             }
         }
-
-        public void PrepareEprom()
-        {
-            sendData(Command.COMMAND_EPROM_PREPARE, new byte[0]);
-        }
-
+     
         public byte[] GetMirroring()
         {
             mirroring = null;
@@ -869,7 +827,11 @@ namespace Cluster.Famicom
             throw new IOException("Read timeout");
         }
 
-        public void Reset(bool wait = true)
+        public void Reset()
+        {
+            Reset(true);
+        }
+        public void Reset(bool wait)
         {
             resetAck = false;
             sendData(Command.COMMAND_RESET, new byte[0]);
@@ -881,79 +843,6 @@ namespace Cluster.Famicom
                     if (resetAck) return;
                 }
                 throw new IOException("Read timeout");
-            }
-        }
-
-        public void JtagSetup(bool wait = true)
-        {
-            jtagResult = null;
-            sendData(Command.COMMAND_JTAG_SETUP, new byte[0]);
-            if (wait)
-            {
-                for (int t = 0; t < Timeout; t += 50)
-                {
-                    Thread.Sleep(5);
-                    if (jtagResult == true) return;
-                    if (jtagResult == false)
-                        throw new IOException("JTAG setup error");
-                }
-                throw new IOException("JTAG setup timeout");
-            }
-        }
-
-        public void JtagShutdown(bool wait = true)
-        {
-            jtagResult = null;
-            sendData(Command.COMMAND_JTAG_SHUTDOWN, new byte[0]);
-            if (wait)
-            {
-                for (int t = 0; t < Timeout; t += 50)
-                {
-                    Thread.Sleep(5);
-                    if (jtagResult == true) return;
-                    if (jtagResult == false)
-                        throw new IOException("JTAG shutdown error");
-                }
-                throw new IOException("JTAG shutdown timeout");
-            }
-        }
-
-        public void WriteJtag(byte[] data, bool wait = true)
-        {
-            if (data.Length > MaxWritePacketSize) // Split packets
-            {
-                int wlength = data.Length;
-                int pos = 0;
-                while (wlength > 0)
-                {
-                    var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
-                    Array.Copy(data, pos, wdata, 0, wdata.Length);
-                    WriteJtag(wdata);
-                    pos += MaxWritePacketSize;
-                    wlength -= MaxWritePacketSize;
-                }
-                return;
-            }
-
-            int length = data.Length;
-            var buffer = new byte[2 + length];
-            buffer[0] = (byte)(length & 0xFF);
-            buffer[1] = (byte)((length >> 8) & 0xFF);
-            Array.Copy(data, 0, buffer, 2, length);
-
-            jtagResult = null;
-            sendData(Command.COMMAND_JTAG_EXECUTE, buffer);
-            //Console.Write("{0:X2} ", buffer[2]);
-            if (wait)
-            {
-                for (int t = 0; t < Timeout; t += 5)
-                {
-                    Thread.Sleep(5);
-                    if (jtagResult == true) return;
-                    if (jtagResult == false)
-                        throw new IOException("JTAG error");
-                }
-                throw new IOException("JTAG write timeout");
             }
         }
 

@@ -8,7 +8,7 @@ function WriteMMC4(address, data)
 end
 
 function DumpPrg(size)
-	local banks = size / 0x4000
+	local banks = math.floor(size / 0x4000)
 	for b = 0, banks-2 do
 		print("Reading PRG bank #" .. tostring(b) .. "...")
 		WriteMMC4(0xA000, b)
@@ -20,7 +20,7 @@ function DumpPrg(size)
 end
 
 function DumpChr(size)
-	local banks = size / 0x1000
+	local banks = math.floor(size / 0x1000)
 	for b = 0, banks-1, 2 do
 		print("Reading CHR banks #" .. tostring(b) .. ", #" .. tostring(b+1) .. "...")
 		WriteMMC4(0xB000, b)

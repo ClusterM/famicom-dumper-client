@@ -50,17 +50,34 @@
     <Compile Include="FamicomDumperConnection.cs" />
     <Compile Include="FTD2XX_NET.cs" />
     <Compile Include="IMapper.cs" />
-    <Compile Include="MappersContainer.cs" />
-    <Compile Include="Mappers\Coolgirl.cs" />
-    <Compile Include="Mappers\Coolboy.cs" />
-    <Compile Include="Mappers\CNROM.cs" />
-    <Compile Include="Mappers\BMC-10-24-C-A1.cs" />
-    <Compile Include="Mappers\LuaMapper.cs" />
-    <Compile Include="Mappers\MMC3.cs" />
-    <Compile Include="Mappers\MMC1.cs" />
-    <Compile Include="Mappers\AxROM.cs" />
-    <Compile Include="Mappers\UxROM.cs" />
-    <Compile Include="Mappers\NROM.cs" />
+    <Compile Include="mappers-cs\Coolgirl.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\Coolboy.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\CNROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\BMC-10-24-C-A1.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\LuaMapper.cs" />
+    <Compile Include="mappers-cs\MMC3.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\MMC1.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\AxROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\UxROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="mappers-cs\NROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
     <Compile Include="NesFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -79,7 +96,13 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="mappers-lua\202.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="mappers-lua\axrom.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="mappers-lua\bmc70in1.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="mappers-lua\cnrom.lua">
@@ -91,7 +114,13 @@
     <None Include="mappers-lua\mmc1.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="mappers-lua\mmc2.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="mappers-lua\mmc3.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="mappers-lua\mmc4.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="mappers-lua\nrom.lua">

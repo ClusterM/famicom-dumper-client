@@ -4,7 +4,7 @@ DefaultPrgSize = 512 * 1024
 DefaultChrSize = 256 * 1024
 
 function DumpPrg(size)
-	local banks = size / 0x2000
+	local banks = math.floor(size / 0x2000)
 	for b = 0, banks-3, 2 do
 		print("Reading PRG banks #" .. tostring(b) .. " and #" .. tostring(b+1) .. "...")
 		WriteCpu(0x8000, {6, b})
@@ -17,7 +17,7 @@ function DumpPrg(size)
 end
 
 function DumpChr(size)
-	local banks = size / 0x0400
+	local banks = math.floor(size / 0x0400)
 	for b = 0, banks-1, 8 do
 		print("Reading CHR banks #" .. tostring(b) .. ", #" .. tostring(b+1) .. ", #" .. tostring(b+2) .. ", #" .. tostring(b+3) .. ", #" .. tostring(b+4) .. ", #" .. tostring(b+5) .. ", #" .. tostring(b+6) .. " and #" .. tostring(b+7) .. "...")
 		WriteCpu(0x8000, {0, b})
