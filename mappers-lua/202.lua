@@ -1,10 +1,13 @@
+--
+-- http://wiki.nesdev.com/w/index.php/INES_Mapper_202
+-- 
+
 MapperName = "Mapper 202"
 MapperNumber = 202
-DefaultPrgSize = 128*1024
-DefaultChrSize = 128*1024
+DefaultPrgSize = 8*16*1024
+DefaultChrSize = 8*8*1024
 
 function DumpPrg(size)
-	Reset();
 	local banks = math.floor(size / 0x4000)
 	for b = 0, banks-1 do		
 		print("Reading PRG bank #" .. tostring(b) .. "...")
@@ -14,7 +17,6 @@ function DumpPrg(size)
 end
 
 function DumpChr(size)
-	Reset();
 	local banks = math.floor(size / 0x2000)
 	for b = 0, banks-1 do		
 		print("Reading CHR bank #" .. tostring(b) .. "... ")
