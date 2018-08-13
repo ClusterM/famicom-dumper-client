@@ -1,13 +1,12 @@
 # Client (PC-software) for Famicom Dumper/Programmer
 
-This is client for Famicom Dumper/Programmer: [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper)
+This is the client for the Famicom Dumper/Programmer hardware: [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper)
 
 You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
 
-
 ## Usage
 
-It's command-line application.
+It's a command-line application.
 
 Usage: **famicom-dumper.exe \<command\> [options]**
 
@@ -33,7 +32,7 @@ Available commands:
 - **read-crc-coolgirl** - shows CRC checksum for COOLGIRL
 - **info-coolboy** - show information about COOLBOY's flash memory
 - **info-coolgirl** - show information about COOLGIRL's flash memory
-  
+
 Available options:  
 - --**port** <*com*> - serial port of dumper or serial number of FTDI device, default - auto  
 - --**mapper** <*mapper*> - number, name or path to LUA script of mapper for dumping, default is 0 (NROM)  
@@ -233,7 +232,7 @@ function DumpPrg(size)
 	ReadAddPrg(0x8000, size)
 end
 
-function DumpChr(size)	
+function DumpChr(size)
 	print("Reading CHR...")
 	ReadAddChr(0x0000, size)
 end
@@ -324,7 +323,7 @@ Writing data to "prg.bin"... OK
 >
 ~~~~
 
-You can create and use Lua file with your own functions:
+You can create and use a Lua script file with your own functions:
 ~~~~
 >famicom-dumper.exe console --port COM14 --luafile myfunctions.lua
 PRG reader initialization... OK
@@ -339,3 +338,7 @@ Reading 8192 bytes from PPU:$0000
 Writing data to NES file "game.nes" (mapper=0, mirroring=horizontal)... OK
 >
 ~~~~
+
+## Building
+ 1. Install packages from NuGet
+ 2. Build the `famicom-dumper.csproj` project
