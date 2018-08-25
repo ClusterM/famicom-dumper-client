@@ -16,7 +16,7 @@ namespace Cluster.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            CommonHelper.GetFlashSize(dumper);
+            CommonHelper.GetFlashSizePrintInfo(dumper);
         }
              
         public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false)
@@ -47,7 +47,7 @@ namespace Cluster.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            int flashSize = CommonHelper.GetFlashSize(dumper);
+            int flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             if (PRG.Length > flashSize)
                 throw new Exception("This ROM is too big for this cartridge");
             PPBErase(dumper);
@@ -83,7 +83,7 @@ namespace Cluster.Famicom
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
                     dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.Direct, true);
                     Console.WriteLine("OK");
-                    if ((bank % 4 == 3) || (bank == prgBanks - 1))
+                    if (writePBBs && ((bank % 4 == 3) || (bank == prgBanks - 1)))
                         PPBWrite(dumper, (uint)bank / 4);
                 }
                 catch (Exception ex)
@@ -301,7 +301,7 @@ namespace Cluster.Famicom
             PPBErase(dumper);
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
-            var flashSize = CommonHelper.GetFlashSize(dumper);
+            var flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             int prgBanks = flashSize / 0x8000;
 
             Console.Write("Erasing sector #0... ");
@@ -383,7 +383,7 @@ namespace Cluster.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            var flashSize = CommonHelper.GetFlashSize(dumper);
+            var flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             int prgBanks = flashSize / 0x8000;
 
             var readStartTime = DateTime.Now;

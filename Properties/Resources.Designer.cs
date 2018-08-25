@@ -19,7 +19,7 @@ namespace Cluster.Famicom.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -75,6 +75,15 @@ namespace Cluster.Famicom.Properties {
         internal static System.IO.UnmanagedMemoryStream ErrorSound {
             get {
                 return ResourceManager.GetStream("ErrorSound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to c2df59b (dirty).
+        /// </summary>
+        internal static string gitCommit {
+            get {
+                return ResourceManager.GetString("gitCommit", resourceCulture);
             }
         }
     }

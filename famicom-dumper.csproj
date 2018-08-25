@@ -96,7 +96,22 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="LICENSE">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="mappers-lua\202.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="mappers-lua\203.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="mappers-lua\204.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="mappers-lua\57.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="mappers-lua\58.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="mappers-lua\axrom.lua">
@@ -106,9 +121,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="mappers-lua\cnrom.lua">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="mappers-lua\coolboy.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="mappers-lua\mmc1.lua">
@@ -129,13 +141,34 @@
     <None Include="mappers-lua\uxrom.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="mappers-lua\vrc6a.lua">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
+    <None Include="README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\8bit-style-bonus-effect.wav" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="commit.txt" />
     <Content Include="Resources\Error.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>echo. &gt; NUL 2&gt; "$(ProjectDir)commit.txt"
+
+git --version &amp;&amp; (
+  for /f %25%25i in ('git rev-parse --short HEAD') do (
+    git diff-index --quiet HEAD -- &amp;&amp; (
+      echo|set /p="%25%25i" &gt;&gt; "$(ProjectDir)commit.txt"
+      SET ERRORLEVEL=0
+    ) || (
+      echo|set /p="%25%25i (dirty)" &gt;&gt; "$(ProjectDir)commit.txt"
+    )
+  )
+) || SET ERRORLEVEL=0</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

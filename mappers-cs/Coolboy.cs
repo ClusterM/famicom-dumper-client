@@ -5,6 +5,8 @@ namespace Cluster.Famicom.Mappers
 {
     public class Coolboy : IMapper
     {
+        int version = 1;
+
         public string Name
         {
             get { return "Coolboy"; }
@@ -17,7 +19,16 @@ namespace Cluster.Famicom.Mappers
 
         public string UnifName
         {
-            get { return "COOLBOY"; }
+            get
+            {
+                switch (version)
+                {
+                    default:
+                        return "COOLBOY";
+                    case 2:
+                        return "COOLBOY2";
+                }
+            }
         }
 
         public int DefaultPrgSize
@@ -33,6 +44,8 @@ namespace Cluster.Famicom.Mappers
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
             dumper.Reset();
+            version = CoolboyWriter.DetectVersion(dumper);
+            UInt16 coolboyReg = (UInt16)(version == 2 ? 0x5000 : 0x6000);
             int banks = size / 0x4000;
 
             for (int bank = 0; bank < banks; bank++)
@@ -46,10 +59,7 @@ namespace Cluster.Famicom.Mappers
                 byte r2 = 0;
                 byte r3 = (byte)((1 << 4) // NROM mode
                     | ((bank & 7) << 1)); // 2, 1, 0 bits
-                dumper.WriteCpu(0x6000, new byte[] { r0 });
-                dumper.WriteCpu(0x6001, new byte[] { r1 });
-                dumper.WriteCpu(0x6002, new byte[] { r2 });
-                dumper.WriteCpu(0x6003, new byte[] { r3 });
+                dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
 
                 Console.Write("Reading PRG banks #{0}/{1}... ", bank, banks);
                 data.AddRange(dumper.ReadCpu(0x8000, 0x4000));

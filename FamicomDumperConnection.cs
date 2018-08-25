@@ -154,7 +154,7 @@ namespace Cluster.Famicom
                 // Determine the number of FTDI devices connected to the machine
                 if (string.IsNullOrEmpty(PortName) || PortName.ToLower() == "auto")
                 {
-                    Console.WriteLine("Searhing for dumper (FTDI device with name \"{0}\")...", DeviceName);
+                    Console.WriteLine("Searching for dumper (FTDI device with name \"{0}\")...", DeviceName);
                     ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
                     // Check status
                     if (ftStatus == FTDI.FT_STATUS.FT_OK)

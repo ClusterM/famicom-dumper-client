@@ -45,7 +45,10 @@ namespace Cluster.Famicom
 
         static int Main(string[] args)
         {
-            Console.WriteLine("Famicom Dumper Client v{0}.{1}", Assembly.GetExecutingAssembly().GetName().Version.Major, Assembly.GetExecutingAssembly().GetName().Version.Minor);
+            Console.WriteLine("Famicom Dumper Client v{0}.{1} (commit: {2})",
+                Assembly.GetExecutingAssembly().GetName().Version.Major, 
+                Assembly.GetExecutingAssembly().GetName().Version.Minor,
+                Properties.Resources.gitCommit);
             Console.WriteLine("  (c) Cluster, 2018");
             Console.WriteLine("  http://clusterrr.com");
             Console.WriteLine("  clusterrr@clusterrr.com");
@@ -243,6 +246,7 @@ namespace Cluster.Famicom
                         case "write-coolboy-gpio":
                             CoolboyWriter.WriteWithGPIO(dumper, filename ?? "game.nes");
                             break;
+                        case "write-coolboy":
                         case "write-coolboy-direct":
                             CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs);
                             break;
@@ -318,7 +322,7 @@ namespace Cluster.Famicom
             Console.WriteLine(" {0,-25}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-25}{1}", "write-prg-ram", "write PRG RAM");
             Console.WriteLine(" {0,-25}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using GPIO");
-            Console.WriteLine(" {0,-25}{1}", "write-coolboy", "write COOLBOY cartridge directly");
+            Console.WriteLine(" {0,-25}{1}", "write-coolboy-direct", "write COOLBOY cartridge directly");
             Console.WriteLine(" {0,-25}{1}", "write-coolgirl", "write COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "write-eeprom", "write EEPROM-based cartridge");
             Console.WriteLine(" {0,-25}{1}", "console", "start interactive Lua console");

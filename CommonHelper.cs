@@ -7,42 +7,34 @@ namespace Cluster.Famicom
 {
     static class CommonHelper
     {
-        public static int GetFlashSize(FamicomDumperConnection dumper)
+        private enum FlashDeviceInterface
         {
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0x90);
-            var autoselect = dumper.ReadCpu(0x8000, 0x100);
-            byte manufacturer = autoselect[0];
-            var device = new byte[] { autoselect[2], autoselect[0x1C], autoselect[0x1E] };
-            dumper.WriteCpu(0x8000, 0xF0); // Reset            
-            Console.WriteLine("Chip manufacturer ID: {0:X2}", manufacturer);
-            Console.WriteLine("Chip device ID: {0:X2} {1:X2} {2:X2}", device[0], device[1], device[2]);
-            string deviceName;
-            int size;
-            switch ((UInt32)((device[0] << 16) | (device[1] << 8) | (device[2])))
+            x8_only = 0x0000,
+            x16_only = 0x0001,
+            x8_and_x16_via_byte_pin = 0x0002,
+            x32_only = 0x0003,
+            x8_and_x16_via_word_pin = 0x0004,
+        }
+
+        public static int GetFlashSizePrintInfo(FamicomDumperConnection dumper)
+        {
+            dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
+            var cfi = dumper.ReadCpu(0x8000, 0x200);
+            dumper.WriteCpu(0x8000, 0xF0); // Reset
+            if (cfi[0x20] != 0x51 || cfi[0x22] != 0x52 || cfi[0x24] != 0x59)
             {
-                case 0x7E2801:
-                    deviceName = "S29GL01GP";
-                    size = 128 * 1024 * 1024;
-                    break;
-                case 0x7E2301:
-                    deviceName = "S29GL512GP";
-                    size = 64 * 1024 * 1024;
-                    break;
-                case 0x7E2201:
-                    deviceName = "S29GL256GP";
-                    size = 32 * 1024 * 1024;
-                    break;
-                case 0x7E2101:
-                    deviceName = "S29GL128GP";
-                    size = 16 * 1024 * 1024;
-                    break;
-                default:
-                    throw new Exception("Unknown device ID");
+                throw new Exception("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
             }
-            Console.WriteLine("Device name: {0}", deviceName);
-            Console.WriteLine("Device size: {0} MBytes / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
+            int size = 1 << cfi[0x27 * 2];
+            FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));
+            Console.WriteLine("Primary Algorithm Command Set and Control Interface ID Code: {0:X2}{1:X2}h", cfi[0x13 * 2], cfi[0x14 * 2]);
+            Console.WriteLine("Vcc Logic Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1B * 2] >> 4) + 0.1 * (cfi[0x1B * 2] & 0x0F));
+            Console.WriteLine("Vcc Logic Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1C * 2] >> 4) + 0.1 * (cfi[0x1C * 2] & 0x0F));
+            Console.WriteLine("Vpp [Programming] Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1D * 2] >> 4) + 0.1 * (cfi[0x1D * 2] & 0x0F));
+            Console.WriteLine("Vpp [Programming] Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1E * 2] >> 4) + 0.1 * (cfi[0x1E * 2] & 0x0F));
+            Console.WriteLine("Maximum number of bytes in multi-byte program: {0}", 1 << (cfi[0x2A * 2] | (cfi[0x2B * 2] << 8)));
+            Console.WriteLine("Device size: {0} MByte / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
+            Console.WriteLine("Flash device interface: {0}", flashDeviceInterface.ToString().Replace("_"," "));            
             return size;
         }
     }

@@ -1,6 +1,8 @@
 # Client (PC-software) for Famicom Dumper/Programmer
 
-This is the client for the Famicom Dumper/Programmer hardware: [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper)
+This is the client for the Famicom Dumper/Programmer hardware:
+- [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper) (my own project, based on AVR)
+- [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) (alternative project by HardWrMan, based on STM32)
 
 You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
 
@@ -18,7 +20,7 @@ Available commands:
 - **read-prg-ram** - read PRG RAM (battery backed save if exists)  
 - **write-prg-ram** - write PRG RAM  
 - **write-coolboy-gpio** - write COOLBOY cartridge using GPIO
-- **write-coolboy** - write COOLBOY cartridge directly
+- **write-coolboy-direct** - write COOLBOY cartridge directly
 - **write-coolgirl** - write COOLGIRL cartridge  
 - **write-eeprom** - write EEPROM-based cartridge  
 - **console** - start interactive Lua console
