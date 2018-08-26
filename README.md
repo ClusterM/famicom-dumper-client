@@ -13,7 +13,7 @@ You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
 It can be used to:
 - Dump Famicom/NES cartridges using C# or Lua scripts to describe any mapper, also it's bundled with scripts for some popular mappers
 - Dump/write battery backed PRG RAM to transfer game saves
-- (Re)write ultra cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free versions (new ones), also it supports both COOLBOY (with 600x registers) and COOLBOY2 (with 500x registers)
+- (Re)write ultra cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both COOLBOY (with $600x registers) and COOLBOY2 (with $500x registers)
 - (Re)write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges
 - Test hardware in cartridges
 - Reverse engineer unknown mappers using interactive Lua console
