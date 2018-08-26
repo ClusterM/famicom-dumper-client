@@ -1,10 +1,22 @@
 # Client (PC-software) for Famicom Dumper/Programmer
 
 This is the client for the Famicom Dumper/Programmer hardware:
-- [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper) (my own project, based on AVR)
-- [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) (alternative project by HardWrMan, based on STM32)
+- [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper) - my own dumper project, based on AVR
+- [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) alternative dumper project by HardWrMan, based on STM32)
+- [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - 
+Arduino MEGA2560 Shield
 
 You need Windows and .NET Framework 3.5 but it works fine on *nix using Mono.
+
+## Features
+
+It can be used to:
+- Dump Famicom/NES cartridges using C# or Lua scripts to describe any mapper, also it's bundled with scripts for some popular mappers
+- Dump/write battery backed PRG RAM to transfer game saves
+- (Re)write ultra cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free versions (new ones), also it supports both COOLBOY (with 600x registers) and COOLBOY2 (with 500x registers)
+- (Re)write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges
+- Test hardware in cartridges
+- Reverse engineer unknown mappers using interactive Lua console
 
 ## Usage
 
@@ -177,7 +189,7 @@ You need to unsolder pins /OE and /WE and connect them to TCK and TDO pins on JT
 
 Same for new COOLBOY where /OE and /WE are connected to mapper, soldering not required:
 ~~~~
->famicom-dumper.exe write-coolboy --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
+>famicom-dumper.exe write-coolboy-direct --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
 PRG reader initialization... OK
 CHR reader initialization... OK
 Reset... OK
@@ -344,3 +356,6 @@ Writing data to NES file "game.nes" (mapper=0, mirroring=horizontal)... OK
 ## Building
  1. Install packages from NuGet
  2. Build the `famicom-dumper.csproj` project
+
+## Donation
+PayPal: clusterrr@clusterrr.com
