@@ -45,13 +45,12 @@ namespace Cluster.Famicom
 
         static int Main(string[] args)
         {
-            Console.WriteLine("Famicom Dumper Client v{0}.{1} (commit: {2})",
-                Assembly.GetExecutingAssembly().GetName().Version.Major, 
-                Assembly.GetExecutingAssembly().GetName().Version.Minor,
-                Properties.Resources.gitCommit);
-            Console.WriteLine("  (c) Cluster, 2018");
-            Console.WriteLine("  http://clusterrr.com");
-            Console.WriteLine("  clusterrr@clusterrr.com");
+            Console.WriteLine("Famicom Dumper Client v{0}.{1}",
+                Assembly.GetExecutingAssembly().GetName().Version.Major,
+                Assembly.GetExecutingAssembly().GetName().Version.Minor);              
+            Console.WriteLine("  Commit {0} @ https://github.com/ClusterM/famicom-dumper-client",
+                 Properties.Resources.gitCommit);
+            Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / http://clusterrr.com");
             Console.WriteLine();
             startTime = DateTime.Now;
             string port = "auto";
