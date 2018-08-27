@@ -50,7 +50,7 @@ namespace Cluster.Famicom
                 Assembly.GetExecutingAssembly().GetName().Version.Minor);              
             Console.WriteLine("  Commit {0} @ https://github.com/ClusterM/famicom-dumper-client",
                  Properties.Resources.gitCommit);
-            Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / http://clusterrr.com");
+            Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine();
             startTime = DateTime.Now;
             string port = "auto";
