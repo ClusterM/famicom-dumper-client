@@ -26,7 +26,7 @@ namespace Cluster.Famicom.Mappers
                     default:
                         return "COOLBOY";
                     case 2:
-                        return "COOLBOY2";
+                        return "MINDKIDS";
                 }
             }
         }
