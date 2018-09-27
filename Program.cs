@@ -217,6 +217,7 @@ namespace Cluster.Famicom
                         case "test-sram":
                             TestPrgRam(dumper, mapper);
                             break;
+                        case "test-prg-coolgirl":
                         case "test-prg-ram-coolgirl":
                         case "test-sram-coolgirl":
                             CoolgirlWriter.TestPrgRam(dumper);
@@ -228,6 +229,7 @@ namespace Cluster.Famicom
                             TestChrRam(dumper);
                             break;
                         case "test-chr-coolgirl":
+                        case "test-chr-ram-coolgirl":
                             CoolgirlWriter.TestChrRam(dumper);
                             break;
                         case "test-coolgirl":

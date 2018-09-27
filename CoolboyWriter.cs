@@ -101,7 +101,7 @@ namespace Cluster.Famicom
                 var timePassed = DateTime.Now - writeStartTime;
                 Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank / 2 + 1, prgBanks / 2, (int)(100 * bank / prgBanks),
                     timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.CoolboyGPIO, true);
+                dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.CoolboyGPIO, false);
                 Console.WriteLine("OK");
             }
         }
@@ -195,7 +195,7 @@ namespace Cluster.Famicom
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                    dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.Direct, true);
+                    dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.Direct, false);
                     Console.WriteLine("OK");
                     if (writePBBs && ((bank % 8 == 7) || (bank == prgBanks - 1)))
                         PPBWrite(dumper, coolboyReg, (uint)bank / 8);
