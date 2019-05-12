@@ -58,7 +58,7 @@ namespace Cluster.Famicom
             int errorCount = 0;
             for (int bank = 0; bank < prgBanks; bank++)
             {
-                if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
+                while (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
                 try
                 {
                     byte r0 = (byte)(bank >> 7);
@@ -119,7 +119,7 @@ namespace Cluster.Famicom
                 dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
                 for (int bank = 0; bank < prgBanks; bank++)
                 {
-                    if (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
+                    while (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
                     byte r0 = (byte)(bank >> 7);
                     byte r1 = (byte)(bank << 1);
                     dumper.WriteCpu(0x5000, r0);

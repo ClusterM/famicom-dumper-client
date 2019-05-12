@@ -166,7 +166,7 @@ namespace Cluster.Famicom
             int errorCount = 0;
             for (int bank = 0; bank < prgBanks; bank++)
             {
-                if (badSectors.Contains(bank / 8)) bank += 8; // bad sector :(
+                while (badSectors.Contains(bank / 8)) bank += 8; // bad sector :(
                 try
                 {
                     byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
@@ -230,6 +230,7 @@ namespace Cluster.Famicom
                 timeTotal = new TimeSpan();
                 for (int bank = 0; bank < prgBanks; bank++)
                 {
+                    while (badSectors.Contains(bank / 8)) bank += 8; // bad sector :(
                     byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
                         | (((bank >> 9) & 0x03) << 4) // 10, 9 bits
                         | (1 << 6)); // resets 4th mask bit
