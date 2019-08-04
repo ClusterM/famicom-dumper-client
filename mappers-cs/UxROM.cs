@@ -32,16 +32,6 @@ namespace Cluster.Famicom.Mappers
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            //dumper.WritePrg(0xFFC9, 1);
-            dumper.WriteCpu((ushort)(0x5000), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5001), (byte)0x08);
-            dumper.WriteCpu((ushort)(0x5002), (byte)0xF8);
-            dumper.WriteCpu((ushort)(0x5003), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5004), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5005), (byte)0x00);
-            dumper.WriteCpu((ushort)(0x5006), (byte)0x02);
-            dumper.WriteCpu((ushort)(0x5007), (byte)0x82);
-
             byte banks = (byte)(size / 0x4000);
             Console.Write("Reading last PRG bank... ");
             byte[] lastBank = dumper.ReadCpu(0xC000, 0x4000);
@@ -50,14 +40,18 @@ namespace Cluster.Famicom.Mappers
             {
                 Console.Write("Reading PRG bank #{0}... ", bank);
                 // Avoiding bus conflicts
+                bool noBusConflict = false;
                 for (int i = 0; i < lastBank.Length; i++)
                 {
                     if (lastBank[i] == bank)
                     {
                         dumper.WriteCpu((ushort)(0xC000 + i), (byte)bank);
+                        noBusConflict = true;
                         break;
                     }
                 }
+                if (!noBusConflict) // Whatever...
+                    dumper.WriteCpu((ushort)0x8000, (byte)bank);
                 data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                 Console.WriteLine("OK");
             }
@@ -67,7 +61,7 @@ namespace Cluster.Famicom.Mappers
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            Console.Write("Dumping CHR... ");
+            Console.Write("Reading CHR... ");
             data.AddRange(dumper.ReadPpu(0x0000, size));
             Console.WriteLine("OK");
         }

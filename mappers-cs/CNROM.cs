@@ -34,7 +34,7 @@ namespace Cluster.Famicom.Mappers
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            Console.Write("Dumping PRG... ");
+            Console.Write("Reading PRG... ");
             prg = dumper.ReadCpu(0x8000, size);
             data.AddRange(prg);
             Console.WriteLine("OK");
@@ -50,7 +50,7 @@ namespace Cluster.Famicom.Mappers
 
             for (int bank = 0; bank < banks; bank++)
             {
-                Console.Write("Dumping CHR bank #{0}... ", bank);
+                Console.Write("Reading CHR bank #{0}... ", bank);
                 for (int i = 0; i < prg.Length; i++)
                 {
                     if (prg[i] == bank)
