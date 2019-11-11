@@ -9,7 +9,7 @@ namespace Cluster.Famicom.Mappers
 
         public string Name
         {
-            get { return "Coolboy"; }
+            get { return "COOLBOY"; }
         }
 
         public int Number

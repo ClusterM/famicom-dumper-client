@@ -7,7 +7,7 @@ namespace Cluster.Famicom.Mappers
     {
         public string Name
         {
-            get { return "Coolgirl"; }
+            get { return "COOLGIRL"; }
         }
 
         public int Number
@@ -53,7 +53,7 @@ namespace Cluster.Famicom.Mappers
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            return; // Нету тут CHR
+            return; // There is no CHR
         }
 
         public void EnablePrgRam(FamicomDumperConnection dumper)
