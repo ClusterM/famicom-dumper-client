@@ -65,34 +65,55 @@
     <Compile Include="FamicomDumperConnection.cs" />
     <Compile Include="FTD2XX_NET.cs" />
     <Compile Include="IMapper.cs" />
-    <Compile Include="mappers-cs\Coolgirl.cs">
+    <Content Include="mappers-cs\19.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\Coolboy.cs">
+    </Content>
+    <Content Include="mappers-cs\210.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\CNROM.cs">
+    </Content>
+    <Content Include="mappers-cs\87.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\BMC-10-24-C-A1.cs">
+    </Content>
+    <Content Include="mappers-cs\Coolgirl.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\LuaMapper.cs" />
-    <Compile Include="mappers-cs\MMC3.cs">
+    </Content>
+    <Content Include="mappers-cs\Coolboy.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\MMC1.cs">
+    </Content>
+    <Content Include="mappers-cs\CNROM.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\AxROM.cs">
+    </Content>
+    <Content Include="mappers-cs\BMC-10-24-C-A1.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\UxROM.cs">
+    </Content>
+    <Compile Include="LuaMapper.cs" />
+    <Content Include="mappers-cs\MMC3.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-    <Compile Include="mappers-cs\NROM.cs">
+    </Content>
+    <Content Include="mappers-cs\MMC1.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
+    </Content>
+    <Content Include="mappers-cs\AxROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mappers-cs\MMC5.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mappers-cs\UxROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mappers-cs\NROM.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mappers-cs\VRC3.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mappers-cs\VRC6a.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="mappers-cs\VRC6b.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Compile Include="NesFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

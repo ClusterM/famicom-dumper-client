@@ -1,0 +1,65 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace Cluster.Famicom.Mappers
+{
+    public class FME7 : IMapper
+    {
+        public string Name
+        {
+            get { return "FME-7"; }
+        }
+
+        public int Number
+        {
+            get { return 69; }
+        }
+
+        public string UnifName
+        {
+            get { return null; }
+        }
+
+        public int DefaultPrgSize
+        {
+            get { return 512 * 1024; }
+        }
+
+        public int DefaultChrSize
+        {
+            get { return 256 * 1024; }
+        }
+
+        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        {
+            int banks = size / 0x2000;
+            for (int bank = 0; bank < banks; bank++)
+            {
+                Console.Write("Reading PRG banks #{0}... ", bank);
+                dumper.WriteCpu(0x8000, 9); // Bank $9 - CPU $8000-$9FFF
+                dumper.WriteCpu(0xA000, (byte)bank);
+                data.AddRange(dumper.ReadCpu(0x8000, 0x2000));
+                Console.WriteLine("OK");
+            }
+        }
+
+        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        {
+            int banks = size / 0x400;
+            for (int bank = 0; bank < banks; bank++)
+            {
+                Console.Write("Reading CHR bank #{0}... ", bank);
+                dumper.WriteCpu(0x8000, 0); // Bank $0 - PPU $0000-$03FF
+                dumper.WriteCpu(0xA000, (byte)bank);
+                data.AddRange(dumper.ReadPpu(0x0000, 0x0400));
+                Console.WriteLine("OK");
+            }
+        }
+
+        public void EnablePrgRam(FamicomDumperConnection dumper)
+        {
+            dumper.WriteCpu(0x8000, 8);    // Bank $8 - CPU $6000-$7FFF
+            dumper.WriteCpu(0x5103, 0xC0); // PRG RAM Enabled (0x80) + PRG RAM (0x40), bank #0 (should i select #0?)
+        }
+    }
+}
