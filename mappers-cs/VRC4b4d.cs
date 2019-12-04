@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace Cluster.Famicom.Mappers
 {
-    public class FME7 : IMapper
+    public class VRC4b4d : IMapper
     {
         public string Name
         {
-            get { return "FME-7"; }
+            get { return "VRC4b/VRC4d"; }
         }
 
         public int Number
         {
-            get { return 69; }
+            get { return 25; }
         }
 
         public string UnifName
@@ -22,22 +22,23 @@ namespace Cluster.Famicom.Mappers
 
         public int DefaultPrgSize
         {
-            get { return 512 * 1024; }
+            get { return 256 * 1024; }
         }
 
         public int DefaultChrSize
         {
-            get { return 256 * 1024; }
+            get { return 512 * 1024; }
         }
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
             int banks = size / 0x2000;
+            
+            dumper.WriteCpu(0x9001 | 0x9004, 0); // disable swap mode
             for (int bank = 0; bank < banks; bank++)
             {
-                Console.Write("Reading PRG banks #{0}... ", bank);
-                dumper.WriteCpu(0x8000, 9); // Bank $9 - CPU $8000-$9FFF
-                dumper.WriteCpu(0xA000, (byte)bank);
+                Console.Write("Reading PRG bank #{0}... ", bank);
+                dumper.WriteCpu(0x8000, (byte)bank); // PRG Select 0
                 data.AddRange(dumper.ReadCpu(0x8000, 0x2000));
                 Console.WriteLine("OK");
             }
@@ -46,11 +47,12 @@ namespace Cluster.Famicom.Mappers
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
             int banks = size / 0x400;
+            
             for (int bank = 0; bank < banks; bank++)
             {
                 Console.Write("Reading CHR bank #{0}... ", bank);
-                dumper.WriteCpu(0x8000, 0); // Bank $0 - PPU $0000-$03FF
-                dumper.WriteCpu(0xA000, (byte)bank);
+                dumper.WriteCpu(0xB000, (byte)(bank & 0x0F)); // CHR Select 0 low
+                dumper.WriteCpu(0xB002 | 0xB008, (byte)(bank >> 4)); // CHR Select 0 high
                 data.AddRange(dumper.ReadPpu(0x0000, 0x0400));
                 Console.WriteLine("OK");
             }
@@ -58,8 +60,7 @@ namespace Cluster.Famicom.Mappers
 
         public void EnablePrgRam(FamicomDumperConnection dumper)
         {
-            dumper.WriteCpu(0x8000, 8);    // Bank $8 - CPU $6000-$7FFF
-            dumper.WriteCpu(0x5103, 0xC0); // PRG RAM Enabled (0x80) + PRG RAM (0x40), bank #0 (should i select #0?)
+            Console.WriteLine("Warning: SRAM is not supported by this mapper");
         }
     }
 }

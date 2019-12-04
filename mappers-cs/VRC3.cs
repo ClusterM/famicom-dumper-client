@@ -49,6 +49,7 @@ namespace Cluster.Famicom.Mappers
 
         public void EnablePrgRam(FamicomDumperConnection dumper)
         {
+            Console.WriteLine("Warning: SRAM is not supported by this mapper");
         }
     }
 }
