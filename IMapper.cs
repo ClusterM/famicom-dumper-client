@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Cluster.Famicom
+namespace com.clusterrr.Famicom
 {
     public interface IMapper
     {

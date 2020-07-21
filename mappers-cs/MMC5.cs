@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Cluster.Famicom.Mappers
+namespace com.clusterrr.Famicom.Mappers
 {
     public class MMC5 : IMapper
     {

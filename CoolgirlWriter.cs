@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Cluster.Famicom
+namespace com.clusterrr.Famicom
 {
     public static class CoolgirlWriter
     {
@@ -50,7 +50,15 @@ namespace Cluster.Famicom
             int flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             if (PRG.Length > flashSize)
                 throw new Exception("This ROM is too big for this cartridge");
-            PPBErase(dumper);
+            try
+            {
+                PPBErase(dumper);
+            }
+            catch (Exception ex)
+            {
+                if (!silent) Program.errorSound.PlaySync();
+                Console.WriteLine($"ERROR! {ex.Message}. Lets try anyway.");
+            }
 
             var writeStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
@@ -205,38 +213,41 @@ namespace Cluster.Famicom
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
             // Check
-            while (true)
+            try
             {
-                var b0 = dumper.ReadCpu(0x8000, 1)[0];
-                //dumper.ReadCpu(0x0000, 1);
-                var b1 = dumper.ReadCpu(0x8000, 1)[0];
-                var tg = b0 ^ b1;
-                if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                while (true)
                 {
-                    Thread.Sleep(1);
-                    break;
-                }
-                else// DQ6 = toggle
-                {
-                    if ((b0 & (1 << 5)) != 0) // DQ5 = 1
+                    var b0 = dumper.ReadCpu(0x8000, 1)[0];
+                    var b1 = dumper.ReadCpu(0x8000, 1)[0];
+                    var tg = b0 ^ b1;
+                    if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
                     {
-                        b0 = dumper.ReadCpu(0x8000, 1)[0];
-                        //dumper.ReadCpu(0x0000, 1);
-                        b1 = dumper.ReadCpu(0x8000, 1)[0];
-                        tg = b0 ^ b1;
-                        if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                            break;
-                        else
-                            throw new Exception("PPB write failed");
+                        break;
+                    }
+                    else// DQ6 = toggle
+                    {
+                        if ((b0 & (1 << 5)) != 0) // DQ5 = 1
+                        {
+                            b0 = dumper.ReadCpu(0x8000, 1)[0];
+                            b1 = dumper.ReadCpu(0x8000, 1)[0];
+                            tg = b0 ^ b1;
+                            if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                                break;
+                            else
+                                throw new Exception("PPB write failed (DQ5 is set)");
+                        }
                     }
                 }
+                var r = dumper.ReadCpu(0x8000, 1)[0];
+                if ((r & 1) != 0) // DQ0 = 1
+                    throw new Exception("PPB write failed (DQ0 is not set)");
             }
-            var r = dumper.ReadCpu(0x8000, 1)[0];
-            if ((r & 1) != 0) // DQ0 = 1
-                throw new Exception("PPB write failed");
-            // PPB Command Set Exit
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
+            finally
+            {
+                // PPB Command Set Exit
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
             Console.WriteLine("OK");
         }
 
@@ -256,38 +267,42 @@ namespace Cluster.Famicom
             dumper.WriteCpu(0x8000, 0x80);
             dumper.WriteCpu(0x8000, 0x30);
             // Check
-            while (true)
+            try
             {
-                var b0 = dumper.ReadCpu(0x8000, 1)[0];
-                //dumper.ReadCpu(0x0000, 1);
-                var b1 = dumper.ReadCpu(0x8000, 1)[0];
-                var tg = b0 ^ b1;
-                if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                while (true)
                 {
-                    Thread.Sleep(1);
-                    break;
-                }
-                else// DQ6 = toggle
-                {
-                    if ((b0 & (1 << 5)) != 0) // DQ5 = 1
+                    var b0 = dumper.ReadCpu(0x8000, 1)[0];
+                    var b1 = dumper.ReadCpu(0x8000, 1)[0];
+                    var tg = b0 ^ b1;
+                    if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
                     {
-                        b0 = dumper.ReadCpu(0x8000, 1)[0];
-                        //dumper.ReadCpu(0x0000, 1);
-                        b1 = dumper.ReadCpu(0x8000, 1)[0];
-                        tg = b0 ^ b1;
-                        if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                            break;
-                        else
-                            throw new Exception("PPB erase failed");
+                        break;
+                    }
+                    else // DQ6 = toggle
+                    {
+                        if ((b0 & (1 << 5)) != 0) // DQ5 = 1
+                        {
+                            b0 = dumper.ReadCpu(0x8000, 1)[0];
+                            b1 = dumper.ReadCpu(0x8000, 1)[0];
+                            tg = b0 ^ b1;
+                            if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
+                                break;
+                            else
+                                throw new Exception("PPB erase failed (DQ5 is set)");
+                        }
                     }
                 }
+                dumper.ReadCpu(0x0000, 1);
+                var r = dumper.ReadCpu(0x8000, 1)[0];
+                if ((r & 1) != 1) // DQ0 = 0
+                    throw new Exception("PPB erase failed (DQ0 is not set)");
             }
-            var r = dumper.ReadCpu(0x8000, 1)[0];
-            if ((r & 1) != 1) // DQ0 = 0
-                throw new Exception("PPB erase failed");
-            // PPB Command Set Exit
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
+            finally
+            {
+                // PPB Command Set Exit
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
             Console.WriteLine("OK");
         }
 
@@ -298,7 +313,14 @@ namespace Cluster.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            PPBErase(dumper);
+            try
+            {
+                PPBErase(dumper);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}. Lets try anyway.");
+            }
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
             var flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);

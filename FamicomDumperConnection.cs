@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Cluster.Famicom
+namespace com.clusterrr.Famicom
 {
     public class FamicomDumperConnection : IDisposable
     {

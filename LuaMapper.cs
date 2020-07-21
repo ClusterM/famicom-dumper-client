@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Cluster.Famicom.Mappers
+namespace com.clusterrr.Famicom.Mappers
 {
     public class LuaMapper : IMapper
     {

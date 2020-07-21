@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Cluster.Famicom.Mappers
+namespace com.clusterrr.Famicom.Mappers
 {
     public class Namco_129_163 : IMapper
     {

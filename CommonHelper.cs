@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Cluster.Famicom
+namespace com.clusterrr.Famicom
 {
     static class CommonHelper
     {
@@ -18,6 +18,7 @@ namespace Cluster.Famicom
 
         public static int GetFlashSizePrintInfo(FamicomDumperConnection dumper)
         {
+            dumper.WriteCpu(0x8000, 0xF0); // Reset
             dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
             var cfi = dumper.ReadCpu(0x8000, 0x200);
             dumper.WriteCpu(0x8000, 0xF0); // Reset

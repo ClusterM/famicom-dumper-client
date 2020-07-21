@@ -21,7 +21,7 @@
  *
  */
 
-using Cluster.Famicom.Mappers;
+using com.clusterrr.Famicom.Mappers;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -34,7 +34,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 
-namespace Cluster.Famicom
+namespace com.clusterrr.Famicom
 {
     class Program
     {
