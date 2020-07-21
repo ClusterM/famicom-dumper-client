@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace famicom_dumper_core.Properties {
+namespace FamicomDumper.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace famicom_dumper_core.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("famicom_dumper_core.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("FamicomDumper.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -79,7 +79,7 @@ namespace famicom_dumper_core.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 0c23726 (dirty).
+        ///   Looks up a localized string similar to f6e0254 (dirty).
         /// </summary>
         internal static string gitCommit {
             get {

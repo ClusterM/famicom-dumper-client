@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.DumperConnection
 {
     public class FamicomDumperConnection : IDisposable
     {
@@ -40,14 +40,12 @@ namespace com.clusterrr.Famicom
         byte[] prgRecvData, chrRecvData;
         byte[] mirroring;
         bool resetAck = false;
-        bool? jtagResult = null;
-
+        
         private delegate void OnReadResultDelegate(byte[] data);
         private delegate void OnWriteDoneDelegate();
         private delegate void OnMirroringDelegate(byte[] mirroring);
         private delegate void OnResetAckDelegate();
         private delegate void OnErrorDelegate();
-        private delegate void OnJtagResultDelegate(bool success);
         private event OnReadResultDelegate OnCpuReadResult;
         private event OnWriteDoneDelegate OnCpuWriteDone;
         private event OnReadResultDelegate OnPpuReadResult;
@@ -55,7 +53,6 @@ namespace com.clusterrr.Famicom
         private event OnMirroringDelegate OnMirroring;
         private event OnErrorDelegate OnError;
         private event OnResetAckDelegate OnResetAck;
-        private event OnJtagResultDelegate OnJtagResult;
 
         public int Timeout { get; set; }
 
@@ -89,10 +86,6 @@ namespace com.clusterrr.Famicom
             COMMAND_PRG_FLASH_WRITE_REQUEST = 25,
             COMMAND_CHR_FLASH_ERASE_REQUEST = 26,
             COMMAND_CHR_FLASH_WRITE_REQUEST = 27,
-            COMMAND_JTAG_SETUP = 28,
-            COMMAND_JTAG_SHUTDOWN = 29,
-            COMMAND_JTAG_EXECUTE = 30,
-            COMMAND_JTAG_RESULT = 31,
             COMMAND_TEST_SET = 32,
             COMMAND_TEST_RESULT = 33,
             COMMAND_COOLBOY_READ_REQUEST = 34,
@@ -122,7 +115,6 @@ namespace com.clusterrr.Famicom
             OnPpuWriteDone += FamicomDumperConnection_OnChrWriteDone;
             OnMirroring += FamicomDumperConnection_OnMirroring;
             OnResetAck += FamicomDumperConnection_OnResetAck;
-            OnJtagResult += FamicomDumperConnection_OnJtagResult;
             Timeout = 10000;
         }
 
@@ -406,10 +398,6 @@ namespace com.clusterrr.Famicom
                 case Command.COMMAND_RESET_ACK:
                     if (OnResetAck != null)
                         OnResetAck();
-                    break;
-                case Command.COMMAND_JTAG_RESULT:
-                    if (OnJtagResult != null)
-                        OnJtagResult(data[0] != 0);
                     break;
                 case Command.COMMAND_DEBUG:
                     showDebugInfo(data);
@@ -876,10 +864,6 @@ namespace com.clusterrr.Famicom
         void FamicomDumperConnection_OnResetAck()
         {
             resetAck = true;
-        }
-        void FamicomDumperConnection_OnJtagResult(bool success)
-        {
-            jtagResult = success;
         }
 
         public void Dispose()

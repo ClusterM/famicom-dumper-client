@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Containers
 {
     public class NesFile
     {

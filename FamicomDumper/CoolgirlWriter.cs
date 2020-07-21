@@ -1,4 +1,6 @@
-﻿using System;
+﻿using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.DumperConnection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

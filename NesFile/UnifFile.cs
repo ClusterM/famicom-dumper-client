@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Containers
 {
     public class UnifFile
     {

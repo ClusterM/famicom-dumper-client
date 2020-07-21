@@ -21,6 +21,8 @@
  *
  */
 
+using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.DumperConnection;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -39,14 +41,13 @@ namespace com.clusterrr.Famicom
     {
         static DateTime startTime;
         public static string MappersSearchDirectory = "mappers";
-        public static SoundPlayer doneSound = new SoundPlayer(famicom_dumper_core.Properties.Resources.DoneSound);
-        public static SoundPlayer errorSound = new SoundPlayer(famicom_dumper_core.Properties.Resources.ErrorSound);
+        public static SoundPlayer doneSound = new SoundPlayer(FamicomDumper.Properties.Resources.DoneSound);
+        public static SoundPlayer errorSound = new SoundPlayer(FamicomDumper.Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
             Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}");
-            Console.WriteLine("  Commit {0} @ https://github.com/ClusterM/famicom-dumper-client",
-                 famicom_dumper_core.Properties.Resources.gitCommit);
+            Console.WriteLine($"  Commit {FamicomDumper.Properties.Resources.gitCommit} @ https://github.com/ClusterM/famicom-dumper-client");
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine();
             startTime = DateTime.Now;
