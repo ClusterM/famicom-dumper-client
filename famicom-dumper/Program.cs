@@ -21,7 +21,6 @@
  *
  */
 
-using com.clusterrr.Famicom.Mappers;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -39,17 +38,15 @@ namespace com.clusterrr.Famicom
     class Program
     {
         static DateTime startTime;
-        public static string MappersSearchDirectory = "mappers-cs";
-        public static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
-        public static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
+        public static string MappersSearchDirectory = "mappers";
+        public static SoundPlayer doneSound = new SoundPlayer(famicom_dumper_core.Properties.Resources.DoneSound);
+        public static SoundPlayer errorSound = new SoundPlayer(famicom_dumper_core.Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
-            Console.WriteLine("Famicom Dumper Client v{0}.{1}",
-                Assembly.GetExecutingAssembly().GetName().Version.Major,
-                Assembly.GetExecutingAssembly().GetName().Version.Minor);              
+            Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}");
             Console.WriteLine("  Commit {0} @ https://github.com/ClusterM/famicom-dumper-client",
-                 Properties.Resources.gitCommit);
+                 famicom_dumper_core.Properties.Resources.gitCommit);
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine();
             startTime = DateTime.Now;
@@ -58,8 +55,8 @@ namespace com.clusterrr.Famicom
             string psize = null;
             string csize = null;
             string filename = null;
-            string luaCode = null;
-            string luaFile = null;
+            //string luaCode = null;
+            //string luaFile = null;
             string unifName = null;
             string unifAuthor = null;
             bool reset = false;
@@ -100,16 +97,18 @@ namespace com.clusterrr.Famicom
                             filename = value;
                             i++;
                             break;
-                        case "lua":
-                        case "script":
-                            luaCode = value;
-                            i++;
-                            break;
-                        case "luafile":
-                        case "scriptfile":
-                            luaFile = value;
-                            i++;
-                            break;
+                        /*
+                    case "lua":
+                    case "script":
+                        luaCode = value;
+                        i++;
+                        break;
+                    case "luafile":
+                    case "scriptfile":
+                        luaFile = value;
+                        i++;
+                        break;
+                    */
                         case "psize":
                             psize = value;
                             i++;
@@ -174,6 +173,7 @@ namespace com.clusterrr.Famicom
                     if (reset)
                         Reset(dumper);
 
+                    /*
                     LuaMapper luaMapper = null;
                     if (!string.IsNullOrEmpty(luaFile) || !string.IsNullOrEmpty(luaCode) || command.ToLower() == "console")
                         luaMapper = new LuaMapper();
@@ -191,6 +191,7 @@ namespace com.clusterrr.Famicom
                         luaMapper.Execute(dumper, luaCode, false);
                         luaMapper.Verbose = false;
                     }
+                    */
 
                     switch (command)
                     {
@@ -266,9 +267,11 @@ namespace com.clusterrr.Famicom
                         case "bootloader":
                             Bootloader(dumper);
                             break;
+                        /*
                         case "console":
                             LuaConsole(dumper, luaMapper);
                             break;
+                        */
                         case "nop":
                         case "none":
                         case "-":
@@ -431,25 +434,15 @@ namespace com.clusterrr.Famicom
 
         static IMapper GetMapper(string mapperName)
         {
-            if (File.Exists(mapperName)) // LUA or CS script?
+            if (File.Exists(mapperName)) // CS script?
             {
-                switch (Path.GetExtension(mapperName).ToLower())
-                {
-                    case ".cs":
-                        return CompileMapperCS(mapperName);
-                    case ".lua":
-                        var luaMapper = new LuaMapper();
-                        luaMapper.Execute(null, mapperName, true);
-                        return luaMapper;
-                    default:
-                        throw new Exception("Unknown mapper extention");
-                }
+                return CompileMapperCS(mapperName);
             }
 
             if (string.IsNullOrEmpty(mapperName))
                 mapperName = "0";
             var mapperList = CompileAllMappers()
-                .Where(m => m.Value.Name.ToLower() == mapperName.ToLower() 
+                .Where(m => m.Value.Name.ToLower() == mapperName.ToLower()
                 || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
             if (mapperList.Count() == 0) throw new Exception("can't find mapper");
             var mapper = mapperList.First();
@@ -731,6 +724,7 @@ namespace com.clusterrr.Famicom
             dumper.Bootloader();
         }
 
+        /*
         static void LuaConsole(FamicomDumperConnection dumper, LuaMapper luaMapper)
         {
             luaMapper.Verbose = true;
@@ -750,5 +744,6 @@ namespace com.clusterrr.Famicom
                 }
             }
         }
+        */
     }
 }

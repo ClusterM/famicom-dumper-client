@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace com.clusterrr.Famicom.Properties {
+namespace famicom_dumper_core.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace com.clusterrr.Famicom.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("com.clusterrr.Famicom.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("famicom_dumper_core.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -79,7 +79,7 @@ namespace com.clusterrr.Famicom.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to cf38f67 (dirty).
+        ///   Looks up a localized string similar to 0c23726 (dirty).
         /// </summary>
         internal static string gitCommit {
             get {
