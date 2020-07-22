@@ -32,7 +32,12 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Reflection;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
+using System.Security;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace com.clusterrr.Famicom
@@ -41,6 +46,7 @@ namespace com.clusterrr.Famicom
     {
         static DateTime startTime;
         public static string MappersSearchDirectory = "mappers";
+        private const string ScriptStartMethod = "Run";
         public static SoundPlayer doneSound = new SoundPlayer(FamicomDumper.Properties.Resources.DoneSound);
         public static SoundPlayer errorSound = new SoundPlayer(FamicomDumper.Properties.Resources.ErrorSound);
 
@@ -56,8 +62,7 @@ namespace com.clusterrr.Famicom
             string psize = null;
             string csize = null;
             string filename = null;
-            //string luaCode = null;
-            //string luaFile = null;
+            string csFile = null;
             string unifName = null;
             string unifAuthor = null;
             bool reset = false;
@@ -66,6 +71,8 @@ namespace com.clusterrr.Famicom
             bool writePBBs = false;
             List<int> badSectors = new List<int>();
             int testCount = -1;
+            uint tcpPort = 26672;
+            string remoteHost = null;
             try
             {
                 if (args.Length == 0)
@@ -98,18 +105,11 @@ namespace com.clusterrr.Famicom
                             filename = value;
                             i++;
                             break;
-                        /*
-                    case "lua":
-                    case "script":
-                        luaCode = value;
-                        i++;
-                        break;
-                    case "luafile":
-                    case "scriptfile":
-                        luaFile = value;
-                        i++;
-                        break;
-                    */
+                        case "csfile":
+                        case "scriptfile":
+                            csFile = value;
+                            i++;
+                            break;
                         case "psize":
                             psize = value;
                             i++;
@@ -147,6 +147,14 @@ namespace com.clusterrr.Famicom
                                 badSectors.Add(int.Parse(v));
                             i++;
                             break;
+                        case "tcpport":
+                            tcpPort = uint.Parse(value);
+                            i++;
+                            break;
+                        case "host":
+                            remoteHost = value;
+                            i++;
+                            break;
                         default:
                             Console.WriteLine("Unknown parameter: " + param);
                             PrintHelp();
@@ -160,39 +168,42 @@ namespace com.clusterrr.Famicom
                     return 0;
                 }
 
-                using (var dumper = new FamicomDumperConnection(port))
+                FamicomDumperConnection dumper;
+                if (string.IsNullOrEmpty(remoteHost))
                 {
+                    dumper = new FamicomDumperConnection(port);
                     dumper.Open();
-                    Console.Write("PRG reader initialization... ");
-                    bool prgInit = dumper.PrgReaderInit();
-                    if (!prgInit) throw new Exception("can't init PRG reader");
+                }
+                else
+                {
+                    BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
+                        = new BinaryServerFormatterSinkProvider();
+                    BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
+                        = new BinaryClientFormatterSinkProvider();                    
+                    binaryServerFormatterSinkProvider.TypeFilterLevel
+                        = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
+                    var dict = new System.Collections.Hashtable();
+                    dict["name"] = "FamicomDumperClient";
+                    dict["port"] = 0;
+                    dict["secure"] = true;
+                    var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
+                    ChannelServices.RegisterChannel(channel, true);
+                    dumper = (FamicomDumperConnection)Activator.GetObject(typeof(FamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
+                }
+                try
+                {
+                    Console.Write("Dumper initialization... ");
+                    bool prgInit = dumper.DumperInit();
+                    if (!prgInit) throw new IOException("can't init dumper");
                     Console.WriteLine("OK");
-                    Console.Write("CHR reader initialization... ");
-                    bool chrInit = dumper.ChrReaderInit();
-                    if (!chrInit) throw new Exception("can't init CHR reader");
-                    Console.WriteLine("OK");
+
                     if (reset)
                         Reset(dumper);
 
-                    /*
-                    LuaMapper luaMapper = null;
-                    if (!string.IsNullOrEmpty(luaFile) || !string.IsNullOrEmpty(luaCode) || command.ToLower() == "console")
-                        luaMapper = new LuaMapper();
-                    if (!string.IsNullOrEmpty(luaFile))
+                    if (!string.IsNullOrEmpty(csFile))
                     {
-                        Console.WriteLine("Executing Lua script \"{0}\"...", Path.GetFileName(luaFile));
-                        luaMapper.Verbose = true;
-                        luaMapper.Execute(dumper, luaFile, true);
-                        luaMapper.Verbose = false;
+                        CompileAndExecute(csFile, dumper);
                     }
-                    if (!string.IsNullOrEmpty(luaCode))
-                    {
-                        Console.WriteLine("Executing Lua code: \"{0}\"", luaCode);
-                        luaMapper.Verbose = true;
-                        luaMapper.Execute(dumper, luaCode, false);
-                        luaMapper.Verbose = false;
-                    }
-                    */
 
                     switch (command)
                     {
@@ -204,7 +215,7 @@ namespace com.clusterrr.Famicom
                             ListMappers();
                             break;
                         case "dump":
-                            Dump(dumper, filename ?? "output.nes", mapper, parseSize(psize), parseSize(csize), unifName, unifAuthor);
+                            Dump(dumper, filename ?? "output.nes", mapper, ParseSize(psize), ParseSize(csize), unifName, unifAuthor);
                             break;
                         case "read-prg-ram":
                         case "dump-prg-ram":
@@ -244,7 +255,7 @@ namespace com.clusterrr.Famicom
                             CoolgirlWriter.ReadCrc(dumper);
                             break;
                         case "dump-tiles":
-                            DumpTiles(dumper, filename ?? "output.png", mapper, parseSize(csize));
+                            DumpTiles(dumper, filename ?? "output.png", mapper, ParseSize(csize));
                             break;
                         case "write-coolboy-gpio":
                             CoolboyWriter.WriteWithGPIO(dumper, filename ?? "game.nes");
@@ -268,14 +279,12 @@ namespace com.clusterrr.Famicom
                         case "bootloader":
                             Bootloader(dumper);
                             break;
-                        /*
-                        case "console":
-                            LuaConsole(dumper, luaMapper);
+                        case "script":
+                            if (string.IsNullOrEmpty(csFile))
+                                throw new ArgumentNullException("Please specify C# script using --csfile argument");
                             break;
-                        */
-                        case "nop":
-                        case "none":
-                        case "-":
+                        case "server":
+                            StartServer(dumper, tcpPort);
                             break;
                         default:
                             Console.WriteLine("Unknown command: " + command);
@@ -285,19 +294,32 @@ namespace com.clusterrr.Famicom
                     }
                     Console.WriteLine("Done in {0} seconds", (int)(DateTime.Now - startTime).TotalSeconds);
                     if (!silent) doneSound.PlaySync();
-                    return 0;
+                }
+                finally
+                {
+                    if (string.IsNullOrEmpty(remoteHost))
+                        dumper.Dispose();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine($"Error {ex.GetType()}: " + ex.Message);
                 if (!silent)
                     errorSound.PlaySync();
+#if DEBUG
+                Console.WriteLine("Press any key");
+                Console.ReadKey();
+#endif
                 return 1;
             }
+#if DEBUG
+            Console.WriteLine("Press any key");
+            Console.ReadKey();
+#endif
+            return 0;
         }
 
-        static int parseSize(string size)
+        static int ParseSize(string size)
         {
             if (string.IsNullOrEmpty(size)) return -1;
             size = size.ToUpper();
@@ -320,17 +342,18 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("Usage: famicom-dumper.exe <command> [options]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
-            Console.WriteLine(" {0,-25}{1}", "list-mappers", "list built in mappers");
+            Console.WriteLine(" {0,-25}{1}", "list-mappers", "list available mappers to dump");
             Console.WriteLine(" {0,-25}{1}", "dump", "dump cartridge");
+            Console.WriteLine(" {0,-25}{1}", "server", "start server for remote dumping");
+            Console.WriteLine(" {0,-25}{1}", "script", "execute C# script specified by --csfile option");
+            Console.WriteLine(" {0,-25}{1}", "reset", "simulate reset (M2 goes to Z-state for a second)");
             Console.WriteLine(" {0,-25}{1}", "dump-tiles", "dump CHR data to PNG file");
-            Console.WriteLine(" {0,-25}{1}", "reset", "simulate reset (M2 goes low for a second)");
             Console.WriteLine(" {0,-25}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-25}{1}", "write-prg-ram", "write PRG RAM");
             Console.WriteLine(" {0,-25}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using GPIO");
             Console.WriteLine(" {0,-25}{1}", "write-coolboy-direct", "write COOLBOY cartridge directly");
             Console.WriteLine(" {0,-25}{1}", "write-coolgirl", "write COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "write-eeprom", "write EEPROM-based cartridge");
-            Console.WriteLine(" {0,-25}{1}", "console", "start interactive Lua console");
             Console.WriteLine(" {0,-25}{1}", "test-prg-ram", "run PRG RAM test");
             Console.WriteLine(" {0,-25}{1}", "test-chr-ram", "run CHR RAM test");
             Console.WriteLine(" {0,-25}{1}", "test-battery", "test battery-backed PRG RAM");
@@ -338,22 +361,23 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge");
-            Console.WriteLine(" {0,-25}{1}", "read-crc-coolgirl", "shows CRC checksum for COOLGIRL");
+            Console.WriteLine(" {0,-25}{1}", "read-crc-coolgirl", "show CRC checksum for COOLGIRL");
             Console.WriteLine(" {0,-25}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
             Console.WriteLine(" {0,-25}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
             Console.WriteLine();
             Console.WriteLine("Available options:");
             Console.WriteLine(" {0,-25}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
+            Console.WriteLine(" {0,-25}{1}", "--tcpport <port>", "TCP port for client/server communication, default - 26672");
+            Console.WriteLine(" {0,-25}{1}", "--host <host>", "enable network client and connect to specified host");
             Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to LUA script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
             Console.WriteLine(" {0,-25}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-25}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-25}{1}", "--luafile \"<lua_code>\"", "execute Lua code from file first");
-            Console.WriteLine(" {0,-25}{1}", "--lua \"<lua_code>\"", "execute this Lua code first");
+            Console.WriteLine(" {0,-25}{1}", "--csfile \"<C#_file>\"", "execute C# script from file");
             Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--reset", "do reset first");
-            Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL flashing");
+            Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL checksum after writing");
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
@@ -366,70 +390,134 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        static IMapper CompileMapperCS(string path)
+        static Assembly Compile(string path)
         {
             CSharpCodeProvider provider = new CSharpCodeProvider();
-            CompilerParameters parameters = new CompilerParameters();
-            parameters.ReferencedAssemblies.Add("System.dll");
-            parameters.ReferencedAssemblies.Add("System.Data.dll");
-            parameters.ReferencedAssemblies.Add(Assembly.GetEntryAssembly().Location);
-            parameters.GenerateInMemory = true;
-            parameters.GenerateExecutable = false;
-            parameters.IncludeDebugInformation = true;
+            CompilerParameters options = new CompilerParameters();
+            var entryAssemblyLocation = Assembly.GetEntryAssembly().Location;
+            // Automatically add references
+            options.ReferencedAssemblies.Add("System.dll");
+            options.ReferencedAssemblies.Add("System.Data.dll");
+            options.ReferencedAssemblies.Add("System.Core.dll");
+            options.ReferencedAssemblies.Add(entryAssemblyLocation);
+            options.ReferencedAssemblies.Add(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "FamicomDumperConnection.dll"));
+            options.GenerateInMemory = true;
+            options.GenerateExecutable = false;
+            options.IncludeDebugInformation = true;
 
-            CompilerResults results = provider.CompileAssemblyFromFile(parameters, path);
-            if (results.Errors.HasErrors)
+
+            var source = File.ReadAllText(path);
+            // And usings
+            int linesOffset = 0;
+            if (!new Regex(@"^using\s+System\s*;").IsMatch(source))
             {
-                StringBuilder sb = new StringBuilder();
-                foreach (CompilerError error in results.Errors)
-                {
-                    sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
-                }
-
-                throw new InvalidOperationException(sb.ToString());
+                source = "using System;\r\n" + source;
+                linesOffset++;
+            }
+            if (!new Regex(@"^using\s+System\.Collections\.Generic\s*;").IsMatch(source))
+            {
+                source = "using System.Collections.Generic;\r\n" + source;
+                linesOffset++;
+            }
+            if (!new Regex(@"^using\s+System\.Linq\s*;").IsMatch(source))
+            {
+                source = "using System.Linq;\r\n" + source;
+                linesOffset++;
+            }
+            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.DumperConnection\s*;").IsMatch(source))
+            {
+                source = "using com.clusterrr.Famicom.DumperConnection;\r\n" + source;
+                linesOffset++;
             }
 
-            Assembly assembly = results.CompiledAssembly;
+            CompilerResults results = provider.CompileAssemblyFromSource(options, source);
+            if (results.Errors.HasErrors)
+            {
+                foreach (CompilerError error in results.Errors)
+                    Console.WriteLine($"In {Path.GetFileName(path)} on line {error.Line - linesOffset}: ({error.ErrorNumber}) {error.ErrorText}");
+                throw new InvalidProgramException();
+            }
+
+            return results.CompiledAssembly;
+        }
+
+        static IMapper CompileMapper(string path)
+        {
+            Assembly assembly = Compile(path);
             var programs = assembly.GetTypes();
-            if (programs.Count() == 0)
-                throw new Exception("There is no assemblies");
+            if (!programs.Any())
+                throw new InvalidProgramException("there is no assemblies");
             Type program = programs.First();
             var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
             if (constructor == null)
-                throw new Exception("There is no default constructor");
-            return (IMapper)constructor.Invoke(new object[0]);
+                throw new InvalidProgramException("there is no valid default constructor");
+            var mapper = constructor.Invoke(new object[0]);
+            if (!(mapper is IMapper))
+                throw new InvalidProgramException("class doesn't implement IMapper interface");
+            return mapper as IMapper;
         }
 
         static Dictionary<string, IMapper> CompileAllMappers()
         {
             var result = new Dictionary<string, IMapper>();
             var directory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
+            Console.WriteLine($"Compiling mappers in {directory}...");
             foreach (var f in Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories))
             {
-                //try
-                {
-                    result[f] = CompileMapperCS(f);
-                }
-                //catch { }
+                result[f] = CompileMapper(f);
             }
             return result;
+        }
+
+        static void CompileAndExecute(string path, FamicomDumperConnection dumper)
+        {
+            Console.WriteLine($"Compiling {path}...");
+            Assembly assembly = Compile(path);
+            var programs = assembly.GetTypes();
+            if (!programs.Any())
+                throw new InvalidProgramException("there is no assemblies");
+            Type program = programs.First();
+
+            // Is it static method?
+            var staticMethod = program.GetMethod(ScriptStartMethod, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+            if (staticMethod != null)
+            {
+                Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                staticMethod.Invoke(program, new object[] { dumper });
+                return;
+            }
+
+            // Let's try instance method, need to call constructor first
+            var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
+            if (constructor == null)
+                throw new InvalidProgramException("there is no valid default constructor");
+            var obj = constructor.Invoke(new object[0]);
+            var instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+            if (instanceMethod == null)
+                throw new InvalidProgramException($"there is no {ScriptStartMethod} method");
+            Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+            instanceMethod.Invoke(obj, new object[] { dumper });
         }
 
         static void ListMappers()
         {
             var directory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
-            Console.WriteLine("Searching mappers in {0}", directory); ;
-            Console.WriteLine("Supported mappers:");
-            Console.WriteLine(" {0,-30}{1,-9}{2}", "File", "Number", "Name");
-            Console.WriteLine("----------------------------- -------- -----------------------");
+
             var mappers = CompileAllMappers();
+            Console.WriteLine("Supported mappers:");
+            Console.WriteLine(" {0,-30}{1,-9}{2,-24}{3}", "File", "Number", "UNIF name", "Name");
+            Console.WriteLine("----------------------------- -------- ----------------------- -----------------------");
             foreach (var mapperFile in mappers
                 .Where(m => m.Value.Number >= 0)
                 .OrderBy(m => m.Value.Number)
                 .Union(mappers.Where(m => m.Value.Number < 0)
                 .OrderBy(m => m.Value.Name)))
             {
-                Console.WriteLine(" {0,-30}{1,-9}{2}", Path.GetFileName(mapperFile.Key), mapperFile.Value.Number >= 0 ? mapperFile.Value.Number.ToString() : "None", mapperFile.Value.Name);
+                Console.WriteLine(" {0,-30}{1,-9}{2,-24}{3}",
+                    Path.GetFileName(mapperFile.Key),
+                    mapperFile.Value.Number >= 0 ? mapperFile.Value.Number.ToString() : "None",
+                    mapperFile.Value.UnifName ?? "None",
+                    mapperFile.Value.Name);
             }
         }
 
@@ -437,7 +525,7 @@ namespace com.clusterrr.Famicom
         {
             if (File.Exists(mapperName)) // CS script?
             {
-                return CompileMapperCS(mapperName);
+                return CompileMapper(mapperName);
             }
 
             if (string.IsNullOrEmpty(mapperName))
@@ -445,9 +533,9 @@ namespace com.clusterrr.Famicom
             var mapperList = CompileAllMappers()
                 .Where(m => m.Value.Name.ToLower() == mapperName.ToLower()
                 || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
-            if (mapperList.Count() == 0) throw new Exception("can't find mapper");
+            if (mapperList.Count() == 0) throw new KeyNotFoundException("can't find mapper");
             var mapper = mapperList.First();
-            Console.WriteLine("Using {0} as mapper file", mapper.Key);
+            Console.WriteLine($"Using {Path.GetFileName(mapper.Key)} as mapper file");
             return mapper.Value;
         }
 
@@ -455,9 +543,9 @@ namespace com.clusterrr.Famicom
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
-                Console.WriteLine("Using mapper: {0}", mapper.Name);
+                Console.WriteLine($"Using mapper: {mapper.Name}");
             Console.WriteLine("Dumping...");
             List<byte> prg = new List<byte>();
             List<byte> chr = new List<byte>();
@@ -586,7 +674,7 @@ namespace com.clusterrr.Famicom
                     Console.WriteLine("sramgood.bin writed");
                     File.WriteAllBytes("srambad.bin", rdata);
                     Console.WriteLine("srambad.bin writed");
-                    throw new Exception("Test failed");
+                    throw new VerificationException("Failed!");
                 }
                 Console.WriteLine("OK!");
                 count--;
@@ -624,7 +712,7 @@ namespace com.clusterrr.Famicom
             if (ok)
                 Console.WriteLine("OK!");
             else
-                throw new Exception("Failed!");
+                throw new VerificationException("Failed!");
         }
 
         static void TestChrRam(FamicomDumperConnection dumper)
@@ -653,7 +741,7 @@ namespace com.clusterrr.Famicom
                     Console.WriteLine("chrgood.bin writed");
                     File.WriteAllBytes("chrbad.bin", rdata);
                     Console.WriteLine("chrbad.bin writed");
-                    throw new Exception("Test failed");
+                    throw new VerificationException("Failed!");
                 }
                 Console.WriteLine("OK!");
             }
@@ -723,6 +811,28 @@ namespace com.clusterrr.Famicom
         {
             Console.WriteLine("Rebooting to bootloader...");
             dumper.Bootloader();
+        }
+
+        static void StartServer(FamicomDumperConnection dumper, uint tcpPort)
+        {
+            BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
+                = new BinaryServerFormatterSinkProvider();
+            BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
+                = new BinaryClientFormatterSinkProvider();
+            binaryServerFormatterSinkProvider.TypeFilterLevel
+                = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
+            var dict = new System.Collections.Hashtable();
+            dict["name"] = "FamicomDumperServer";
+            dict["port"] = tcpPort;
+            dict["secure"] = true;
+            var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
+            ChannelServices.RegisterChannel(channel, true);
+            dumper.Verbose = true;
+            RemotingServices.Marshal(dumper, "dumper");
+            Console.WriteLine($"Listening port {tcpPort}, press any key to stop");
+            Console.ReadKey();
+            ChannelServices.UnregisterChannel(channel);
+            channel.StopListening(null);
         }
 
         /*

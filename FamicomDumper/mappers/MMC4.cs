@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace com.clusterrr.Famicom.Mappers
+﻿namespace com.clusterrr.Famicom.Mappers
 {
-    public class MMC4 : IMapper
+    class MMC4 : IMapper
     {
         public string Name
         {

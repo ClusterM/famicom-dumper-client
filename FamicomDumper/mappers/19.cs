@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace com.clusterrr.Famicom.Mappers
+﻿namespace com.clusterrr.Famicom.Mappers
 {
-    public class Namco_129_163 : IMapper
+    class Namco_129_163 : IMapper
     {
         public string Name
         {

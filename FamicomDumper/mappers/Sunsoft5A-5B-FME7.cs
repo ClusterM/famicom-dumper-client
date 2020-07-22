@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace com.clusterrr.Famicom.Mappers
+﻿namespace com.clusterrr.Famicom.Mappers
 {
-    public class Sunsoft5A_5B_FME7 : IMapper
+    class Sunsoft5A_5B_FME7 : IMapper
     {
         public string Name
         {

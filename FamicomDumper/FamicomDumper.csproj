@@ -36,6 +36,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -44,6 +45,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="DemoScript.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -149,20 +153,20 @@
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FamicomDumperConnection\FamicomDumperConnection.csproj">
-      <Project>{854e344e-aaea-40b8-98b4-928001d62a38}</Project>
-      <Name>FamicomDumperConnection</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\NesFile\NesFile.csproj">
-      <Project>{41f6c311-a281-46fc-a60f-298523585b25}</Project>
-      <Name>NesFile</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FamicomDumperConnection\FamicomDumperConnection.csproj">
+      <Project>{E9721416-3405-41A4-A1E4-12F91E02D36A}</Project>
+      <Name>FamicomDumperConnection</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NesContainers\NesContainers.csproj">
+      <Project>{dbde5f39-ff67-496f-999f-65f86dcec1d5}</Project>
+      <Name>NesContainers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

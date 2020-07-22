@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -96,14 +97,14 @@ namespace com.clusterrr.Famicom
                     timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                     lastSectorTime = DateTime.Now;
                     Console.Write("Erasing sector... ");
-                    dumper.ErasePrgFlash(FamicomDumperConnection.FlashAccessType.CoolboyGPIO);
+                    dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO);
                     Console.WriteLine("OK");
                 }
                 Array.Copy(PRG, pos, data, 0, data.Length);
                 var timePassed = DateTime.Now - writeStartTime;
                 Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank / 2 + 1, prgBanks / 2, (int)(100 * bank / prgBanks),
                     timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.CoolboyGPIO, false);
+                dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO, false);
                 Console.WriteLine("OK");
             }
         }
@@ -198,14 +199,14 @@ namespace com.clusterrr.Famicom
                         timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write("Erasing sector... ");
-                        dumper.ErasePrgFlash(FamicomDumperConnection.FlashAccessType.Direct);
+                        dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                    dumper.WritePrgFlash(0x0000, data, FamicomDumperConnection.FlashAccessType.Direct, false);
+                    dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct, false);
                     Console.WriteLine("OK");
                     if (writePBBs && ((bank % 8 == 7) || (bank == prgBanks - 1)))
                         PPBWrite(dumper, coolboyReg, (uint)bank / 8);
@@ -278,7 +279,7 @@ namespace com.clusterrr.Famicom
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
                     var crcr = dumper.ReadCpuCrc(0x8000, 0x4000);
                     if (crcr != crc)
-                        throw new Exception(string.Format("Check failed: {0:X4} != {1:X4}", crcr, crc));
+                        throw new VerificationException($"Check failed: {crcr:X4} != {crc:X4}");
                     else
                         Console.WriteLine("OK (CRC = {0:X4})", crcr);
                 }

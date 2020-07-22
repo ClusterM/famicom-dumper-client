@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace com.clusterrr.Famicom.Mappers
+﻿namespace com.clusterrr.Famicom.Mappers
 {
-    public class BMC1024CA1 : IMapper
+    class BMC1024CA1 : IMapper
     {
         public string Name
         {

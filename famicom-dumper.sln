@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30225.117
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FamicomDumperConnection", "FamicomDumperConnection\FamicomDumperConnection.csproj", "{854E344E-AAEA-40B8-98B4-928001D62A38}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NesFile", "NesFile\NesFile.csproj", "{41F6C311-A281-46FC-A60F-298523585B25}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FamicomDumper", "FamicomDumper\FamicomDumper.csproj", "{573099B2-FEBB-466A-A607-CF4968E181B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FamicomDumperConnection", "FamicomDumperConnection\FamicomDumperConnection.csproj", "{E9721416-3405-41A4-A1E4-12F91E02D36A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NesContainers", "NesContainers\NesContainers.csproj", "{DBDE5F39-FF67-496F-999F-65F86DCEC1D5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,18 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{854E344E-AAEA-40B8-98B4-928001D62A38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{854E344E-AAEA-40B8-98B4-928001D62A38}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{854E344E-AAEA-40B8-98B4-928001D62A38}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{854E344E-AAEA-40B8-98B4-928001D62A38}.Release|Any CPU.Build.0 = Release|Any CPU
-		{41F6C311-A281-46FC-A60F-298523585B25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{41F6C311-A281-46FC-A60F-298523585B25}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{41F6C311-A281-46FC-A60F-298523585B25}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{41F6C311-A281-46FC-A60F-298523585B25}.Release|Any CPU.Build.0 = Release|Any CPU
 		{573099B2-FEBB-466A-A607-CF4968E181B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{573099B2-FEBB-466A-A607-CF4968E181B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{573099B2-FEBB-466A-A607-CF4968E181B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{573099B2-FEBB-466A-A607-CF4968E181B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9721416-3405-41A4-A1E4-12F91E02D36A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9721416-3405-41A4-A1E4-12F91E02D36A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9721416-3405-41A4-A1E4-12F91E02D36A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9721416-3405-41A4-A1E4-12F91E02D36A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBDE5F39-FF67-496F-999F-65F86DCEC1D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBDE5F39-FF67-496F-999F-65F86DCEC1D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBDE5F39-FF67-496F-999F-65F86DCEC1D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBDE5F39-FF67-496F-999F-65F86DCEC1D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
