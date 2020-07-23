@@ -27,7 +27,7 @@
             get { return 0; }
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x4000;
 
@@ -40,7 +40,7 @@
             }
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x1000;
 
@@ -54,9 +54,9 @@
             }
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
-            Console.WriteLine("Warning: SRAM is not supported by this mapper");
+            throw new NotSupportedException("SRAM is not supported by this mapper");
         }
     }
 }

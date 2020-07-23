@@ -29,7 +29,7 @@
 
         byte[] prg;
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             Console.Write("Reading PRG... ");
             prg = dumper.ReadCpu(0x8000, size);
@@ -37,7 +37,7 @@
             Console.WriteLine("OK");
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             if (prg == null)
             {
@@ -62,9 +62,9 @@
             }
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
-            Console.WriteLine("Warning: SRAM is not supported by this mapper");
+            throw new NotSupportedException("SRAM is not supported by this mapper");
         }
     }
 }

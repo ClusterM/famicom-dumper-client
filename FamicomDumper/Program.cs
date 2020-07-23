@@ -373,14 +373,14 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
             Console.WriteLine(" {0,-25}{1}", "--tcpport <port>", "TCP port for client/server communication, default - 26672");
             Console.WriteLine(" {0,-25}{1}", "--host <host>", "enable network client and connect to specified host");
-            Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to LUA script of mapper for dumping, default is 0 (NROM)");
+            Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
             Console.WriteLine(" {0,-25}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-25}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-25}{1}", "--csfile \"<C#_file>\"", "execute C# script from file");
+            Console.WriteLine(" {0,-25}{1}", "--csfile <C#_file>", "execute C# script from file");
+            Console.WriteLine(" {0,-25}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
-            Console.WriteLine(" {0,-25}{1}", "--reset", "do reset first");
             Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL checksum after writing");
@@ -529,6 +529,7 @@ namespace com.clusterrr.Famicom
         {
             if (File.Exists(mapperName)) // CS script?
             {
+                Console.WriteLine($"Compiling {mapperName}...");
                 return CompileMapper(mapperName);
             }
 
@@ -555,40 +556,47 @@ namespace com.clusterrr.Famicom
             List<byte> chr = new List<byte>();
             prgSize = prgSize >= 0 ? prgSize : mapper.DefaultPrgSize;
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
-            Console.WriteLine("PRG memory size: {0}K", prgSize / 1024);
-            mapper.DumpPrg(dumper, prg, prgSize);
-            while (prg.Count % 0x4000 != 0) prg.Add(0);
-            Console.WriteLine("CHR memory size: {0}K", chrSize / 1024);
-            mapper.DumpChr(dumper, chr, chrSize);
-            while (chr.Count % 0x2000 != 0) chr.Add(0);
-            byte[] mirroringRaw = dumper.GetMirroring();
+            if (prgSize > 0)
+            {
+                Console.WriteLine("PRG memory size: {0}K", prgSize / 1024);
+                mapper.DumpPrg(dumper, prg, prgSize);
+                while (prg.Count % 0x4000 != 0) prg.Add(0);
+            }
+            if (chrSize > 0)
+            {
+                Console.WriteLine("CHR memory size: {0}K", chrSize / 1024);
+                mapper.DumpChr(dumper, chr, chrSize);
+                while (chr.Count % 0x2000 != 0) chr.Add(0);
+            }
+            bool[] mirroringRaw = dumper.GetMirroring();
             NesFile.MirroringType mirroring = NesFile.MirroringType.Unknown_none;
             if (mirroringRaw.Length == 1)
             {
-                mirroring = (NesFile.MirroringType)mirroringRaw[0];
+                // Backward compatibility with old firmwares
+                mirroring = mirroringRaw[0] ? NesFile.MirroringType.Vertical : NesFile.MirroringType.Horizontal;
                 Console.WriteLine("Mirroring: " + mirroring);
             }
             else if (mirroringRaw.Length == 4)
             {
-                switch (string.Format("{0:X2}{1:X2}{2:X2}{3:X2}", mirroringRaw[0], mirroringRaw[1], mirroringRaw[2], mirroringRaw[3]))
+                switch (string.Format("{0}{1}{2}{3}", mirroringRaw[0] ? 1 : 0, mirroringRaw[1] ? 1 : 0, mirroringRaw[2] ? 1 : 0, mirroringRaw[3] ? 1 : 0))
                 {
-                    case "00000101":
+                    case "0011":
                         mirroring = NesFile.MirroringType.Horizontal; // Horizontal
                         break;
-                    case "00010001":
+                    case "0101":
                         mirroring = NesFile.MirroringType.Vertical; // Vertical
                         break;
-                    case "00000000":
+                    case "0000":
                         mirroring = NesFile.MirroringType.OneScreenA; // One-screen A
                         break;
-                    case "01010101":
+                    case "1111":
                         mirroring = NesFile.MirroringType.OneScreenB; // One-screen B
                         break;
                     default:
                         mirroring = NesFile.MirroringType.Unknown_none; // Unknown
                         break;
                 }
-                Console.WriteLine("Mirroring: {0} ({1:X2} {2:X2} {3:X2} {4:X2})", mirroring, mirroringRaw[0], mirroringRaw[1], mirroringRaw[2], mirroringRaw[3]);
+                Console.WriteLine("Mirroring: {0} ({1} {2} {3} {4})", mirroring, mirroringRaw[0] ? 1 : 0, mirroringRaw[1] ? 1 : 0, mirroringRaw[2] ? 1 : 0, mirroringRaw[3] ? 1 : 0);
             }
             Console.WriteLine("Saving to {0}...", fileName);
             if (mapper.Number >= 0)

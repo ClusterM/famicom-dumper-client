@@ -27,7 +27,7 @@
             get { return 0; }
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var prgBanks = size / 0x8000;
             Console.Write("Reset... ");
@@ -47,12 +47,12 @@
             }
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
-            // There is no CHR ROM
+            throw new NotSupportedException("This mapper doesn't have a CHR ROM");
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             dumper.Reset();
             dumper.WriteCpu(0x5007, 0x01); // enable SRAM

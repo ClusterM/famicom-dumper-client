@@ -1,4 +1,6 @@
-﻿namespace com.clusterrr.Famicom.Mappers
+﻿using System.IO;
+
+namespace com.clusterrr.Famicom.Mappers
 {
     class Coolboy : IMapper
     {
@@ -38,10 +40,43 @@
             get { return 0; }
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public static byte DetectVersion(IFamicomDumperConnection dumper)
+        {
+            byte version;
+            Console.Write("Detecting COOLBOY version... ");
+            // 0th CHR bank using both methods
+            dumper.WriteCpu(0x5000, new byte[] { 0, 0, 0, 0x10 });
+            dumper.WriteCpu(0x6000, new byte[] { 0, 0, 0, 0x10 });
+            // Writing 0
+            dumper.WritePpu(0x0000, new byte[] { 0 });
+            // First CHR bank using both methods
+            dumper.WriteCpu(0x5000, new byte[] { 0, 0, 1, 0x10 });
+            dumper.WriteCpu(0x6000, new byte[] { 0, 0, 1, 0x10 });
+            // Writing 1
+            dumper.WritePpu(0x0000, new byte[] { 1 });
+            // 0th bank using first method
+            dumper.WriteCpu(0x6000, new byte[] { 0, 0, 0, 0x10 });
+            byte v6000 = dumper.ReadPpu(0x0000, 1)[0];
+            // return
+            dumper.WriteCpu(0x6000, new byte[] { 0, 0, 1, 0x10 });
+            // 0th bank using second method
+            dumper.WriteCpu(0x5000, new byte[] { 0, 0, 0, 0x10 });
+            byte v5000 = dumper.ReadPpu(0x0000, 1)[0];
+
+            if (v6000 == 0 && v5000 == 1)
+                version = 1;
+            else if (v6000 == 1 && v5000 == 0)
+                version = 2;
+            else 
+                throw new InvalidDataException("Can't detect COOLBOY version");
+            Console.WriteLine("Version: {0}", version);
+            return version;
+        }
+
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             dumper.Reset();
-            version = CoolboyWriter.DetectVersion(dumper);
+            version = DetectVersion(dumper);
             UInt16 coolboyReg = (UInt16)(version == 2 ? 0x5000 : 0x6000);
             int banks = size / 0x4000;
 
@@ -64,12 +99,12 @@
             }
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
-            // There is no CHR ROM
+            throw new NotSupportedException("This mapper doesn't have a CHR ROM");
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             dumper.Reset();
             dumper.WriteCpu(0xA001, 0x00);

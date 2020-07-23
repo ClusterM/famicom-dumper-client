@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
-    public class FamicomDumperConnection : MarshalByRefObject, IDisposable
+    public class FamicomDumperConnection : MarshalByRefObject, IDisposable, IFamicomDumperConnection
     {
         const int PortBaudRate = 250000;
         const int MaxReadPacketSize = 1024;
@@ -19,6 +19,7 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public string PortName { get; set; }
         public bool Verbose { get; set; } = false;
+        public int Timeout { get; set; }
 
         private SerialPort serialPort = null;
         private FTDI d2xxPort = null;
@@ -37,18 +38,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         private byte[] prgRecvData, chrRecvData;
         private byte[] mirroring;
         private bool resetAck = false;
-
-        /*
-        private event EventHandler<byte[]> OnCpuReadResult;
-        private event EventHandler<EventArgs> OnCpuWriteDone;
-        private event EventHandler<byte[]> OnPpuReadResult;
-        private event EventHandler OnPpuWriteDone;
-        private event EventHandler<byte[]> OnMirroring;
-        private event EventHandler OnError;
-        private event EventHandler OnResetAck;
-        */
-
-        public int Timeout { get; set; }
 
         enum Command
         {
@@ -438,7 +427,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             return false;
         }
 
-        public byte[] ReadCpu(ushort address, int length, MemoryAccessMethod flashType = MemoryAccessMethod.Direct)
+        public byte[] ReadCpu(ushort address, int length)
+            => ReadCpu(address, length, MemoryAccessMethod.Direct);
+
+        public byte[] ReadCpu(ushort address, int length, MemoryAccessMethod flashType)
         {
             if (Verbose)
                 Console.Write($"Reading 0x{length:X4}B <= 0x{address:X4} @ CPU...");
@@ -510,9 +502,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         public void WriteCpu(ushort address, byte data)
-        {
-            WriteCpu(address, new byte[] { data });
-        }
+            => WriteCpu(address, new byte[] { data });
 
         public void WriteCpu(ushort address, byte[] data)
         {
@@ -738,6 +728,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             throw new IOException("Read timeout");
         }
 
+        public void WritePpu(ushort address, byte data)
+            => WritePpu(address, new byte[] { data });
+
         public void WritePpu(ushort address, byte[] data)
         {
             if (Verbose)
@@ -824,7 +817,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             throw new IOException("Write timeout");
         }
 
-        public byte[] GetMirroring()
+        public bool[] GetMirroring()
         {
             mirroring = null;
             SendData(Command.COMMAND_MIRRORING_REQUEST, new byte[0]);
@@ -832,28 +825,24 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 Thread.Sleep(5);
                 if (mirroring != null)
-                    return mirroring;
+                    return mirroring.Select(v => v != 0).ToArray();
             }
             throw new IOException("Read timeout");
         }
 
+        /// <summary>
+        /// Simulate reset (M2 goes to Z-state for a second)
+        /// </summary>
         public void Reset()
-        {
-            Reset(true);
-        }
-        public void Reset(bool wait)
         {
             resetAck = false;
             SendData(Command.COMMAND_RESET, new byte[0]);
-            if (wait)
+            for (int t = 0; t < Timeout; t += 5)
             {
-                for (int t = 0; t < Timeout; t += 5)
-                {
-                    Thread.Sleep(5);
-                    if (resetAck) return;
-                }
-                throw new IOException("Read timeout");
+                Thread.Sleep(5);
+                if (resetAck) return;
             }
+            throw new IOException("Read timeout");
         }
 
         public void Bootloader()

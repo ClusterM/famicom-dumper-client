@@ -27,7 +27,7 @@
             get { return 128 * 1024; }
         }
 
-        void WriteMMC1(FamicomDumperConnection dumper, ushort address, byte data)
+        void WriteMMC1(IFamicomDumperConnection dumper, ushort address, byte data)
         {
             var buffer = new byte[5];
             for (var i = 0; i < 5; i++)
@@ -37,7 +37,7 @@
             dumper.WriteCpu(address, buffer);
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             dumper.WriteCpu(0x8000, 0x80);
             WriteMMC1(dumper, 0x8000, 0x0C);
@@ -59,7 +59,7 @@
             }
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             dumper.WriteCpu(0x8000, 0x80);
             WriteMMC1(dumper, 0x8000, 0x0C);
@@ -75,7 +75,7 @@
             }
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             dumper.WriteCpu(0x8000, 0x80);
             WriteMMC1(dumper, 0xE000, 0x00);

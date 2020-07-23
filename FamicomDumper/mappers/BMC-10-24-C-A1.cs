@@ -27,7 +27,7 @@
             get { return 512 * 1024; }
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var outbanks = size / (256 * 1024);
 
@@ -52,7 +52,7 @@
             }
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var outbanks = size / (256 * 1024);
             for (var outbank = 0; outbank < outbanks; outbank += 1)
@@ -76,7 +76,7 @@
             }
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             dumper.WriteCpu(0xA001, 0x80);
         }

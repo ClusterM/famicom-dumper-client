@@ -3,7 +3,7 @@
     class DemoScript // Class name also doesn't matter
     {
         // But method signature must be like this. Also you can make this method static.
-        void Run(FamicomDumperConnection dumper)
+        void Run(IFamicomDumperConnection dumper)
         {
             Console.WriteLine("Please insert MMC3 cartridge and press any key");
             Console.ReadKey();

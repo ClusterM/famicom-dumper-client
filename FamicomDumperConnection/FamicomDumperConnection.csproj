@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="FamicomDumperConnection.cs" />
     <Compile Include="FTD2XX_NET.cs" />
+    <Compile Include="IFamicomDumperConnection.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

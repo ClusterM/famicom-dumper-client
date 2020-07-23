@@ -27,7 +27,7 @@
             get { return 256 * 1024; }
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x2000;
             for (var bank = 0; bank < banks - 2; bank += 2)
@@ -43,7 +43,7 @@
             Console.WriteLine("OK");
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x400;
             if (banks > 256) throw new Exception("CHR size is too big");
@@ -59,7 +59,7 @@
             }
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             dumper.WriteCpu(0xA001, 0x80);
         }

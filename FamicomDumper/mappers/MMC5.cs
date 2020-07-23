@@ -27,7 +27,7 @@
             get { return 1024 * 1024; }
         }
 
-        public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x2000;
             dumper.WriteCpu(0x5100, 3); // bank mode #3, four 8KB banks
@@ -40,7 +40,7 @@
             }
         }
 
-        public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
+        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x2000;
             dumper.WriteCpu(0x2000, 0); // 8x8 sprites mode
@@ -54,7 +54,7 @@
             }
         }
 
-        public void EnablePrgRam(FamicomDumperConnection dumper)
+        public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             dumper.WriteCpu(0x5102, 0x02); // PRG-RAM protection
             dumper.WriteCpu(0x5103, 0x01); // PRG-RAM protection
