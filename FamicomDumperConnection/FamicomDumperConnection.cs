@@ -107,7 +107,7 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public void Open()
         {
-            if (PortName.ToUpper().StartsWith("COM") || PortName.StartsWith("/dev/tty"))
+            if (PortName.ToUpper().StartsWith("COM") || IsRunningOnMono())
             {
                 SerialPort sPort;
                 sPort = new SerialPort();
@@ -120,13 +120,13 @@ namespace com.clusterrr.Famicom.DumperConnection
                 sPort.Handshake = Handshake.None;
                 sPort.DtrEnable = false;
                 sPort.RtsEnable = false;
-                sPort.NewLine = System.Environment.NewLine;
+                sPort.NewLine = Environment.NewLine;
                 sPort.Open();
                 serialPort = sPort;
             }
             else
             {
-                UInt32 ftdiDeviceCount = 0;
+                uint ftdiDeviceCount = 0;
                 FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
                 // Create new instance of the FTDI device class
                 FTDI myFtdiDevice = new FTDI();
@@ -522,7 +522,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 {
                     Console.Write($"Writing ");
                     foreach (var b in data)
-                        Console.Write($"0x{b:X2}");
+                        Console.Write($"0x{b:X2} ");
                     Console.Write($"=> 0x{address:X4} @ CPU...");
                 }
                 else
@@ -593,7 +593,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 {
                     Console.Write($"Writing ");
                     foreach (var b in data)
-                        Console.Write($"0x{b:X2}");
+                        Console.Write($"0x{b:X2} ");
                     Console.Write($"=> 0x{address:X4} @ CPU flash ({flashType})...");
                 }
                 else
@@ -746,8 +746,8 @@ namespace com.clusterrr.Famicom.DumperConnection
                 {
                     Console.Write($"Writing ");
                     foreach (var b in data)
-                        Console.Write($" 0x{b:X2}");
-                    Console.Write($" => 0x{address:X4} @ PPU...");
+                        Console.Write($"0x{b:X2} ");
+                    Console.Write($"=> 0x{address:X4} @ PPU...");
                 }
                 else
                 {
@@ -895,6 +895,11 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         private void OnError()
         {
+        }
+
+        private static bool IsRunningOnMono()
+        {
+            return Type.GetType("Mono.Runtime") != null;
         }
 
         public void Dispose()

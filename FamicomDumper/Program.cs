@@ -36,7 +36,6 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Security;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -171,6 +170,8 @@ namespace com.clusterrr.Famicom
                 FamicomDumperConnection dumper;
                 if (string.IsNullOrEmpty(remoteHost))
                 {
+                    if ((string.IsNullOrEmpty(port) || port == "auto") && IsRunningOnMono())
+                        throw new NotSupportedException("Port autodetect is not supported on Linux, please specify dumper port using --port parameter");
                     dumper = new FamicomDumperConnection(port);
                     dumper.Open();
                 }
@@ -179,22 +180,21 @@ namespace com.clusterrr.Famicom
                     BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
                         = new BinaryServerFormatterSinkProvider();
                     BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
-                        = new BinaryClientFormatterSinkProvider();                    
+                        = new BinaryClientFormatterSinkProvider();
                     binaryServerFormatterSinkProvider.TypeFilterLevel
                         = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
                     var dict = new System.Collections.Hashtable();
                     dict["name"] = "FamicomDumperClient";
-                    dict["port"] = 0;
-                    dict["secure"] = true;
+                    dict["secure"] = false;
                     var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
-                    ChannelServices.RegisterChannel(channel, true);
+                    ChannelServices.RegisterChannel(channel, false);
                     dumper = (FamicomDumperConnection)Activator.GetObject(typeof(FamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
                 }
                 try
                 {
                     Console.Write("Dumper initialization... ");
                     bool prgInit = dumper.DumperInit();
-                    if (!prgInit) throw new IOException("can't init dumper");
+                    if (!prgInit) throw new IOException("Can't init dumper");
                     Console.WriteLine("OK");
 
                     if (reset)
@@ -303,7 +303,11 @@ namespace com.clusterrr.Famicom
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error {ex.GetType()}: " + ex.Message);
+                Console.WriteLine($"Error {ex.GetType()}: " + ex.Message
+#if DEBUG
+                    + ex.StackTrace
+#endif
+                    );
                 if (!silent)
                     errorSound.PlaySync();
 #if DEBUG
@@ -392,7 +396,7 @@ namespace com.clusterrr.Famicom
 
         static Assembly Compile(string path)
         {
-            CSharpCodeProvider provider = new CSharpCodeProvider();
+            var provider = new CSharpCodeProvider();
             CompilerParameters options = new CompilerParameters();
             var entryAssemblyLocation = Assembly.GetEntryAssembly().Location;
             // Automatically add references
@@ -446,14 +450,14 @@ namespace com.clusterrr.Famicom
             Assembly assembly = Compile(path);
             var programs = assembly.GetTypes();
             if (!programs.Any())
-                throw new InvalidProgramException("there is no assemblies");
+                throw new InvalidProgramException("There is no assemblies");
             Type program = programs.First();
             var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
             if (constructor == null)
-                throw new InvalidProgramException("there is no valid default constructor");
+                throw new InvalidProgramException("There is no valid default constructor");
             var mapper = constructor.Invoke(new object[0]);
             if (!(mapper is IMapper))
-                throw new InvalidProgramException("class doesn't implement IMapper interface");
+                throw new InvalidProgramException("Class doesn't implement IMapper interface");
             return mapper as IMapper;
         }
 
@@ -475,7 +479,7 @@ namespace com.clusterrr.Famicom
             Assembly assembly = Compile(path);
             var programs = assembly.GetTypes();
             if (!programs.Any())
-                throw new InvalidProgramException("there is no assemblies");
+                throw new InvalidProgramException("There is no assemblies");
             Type program = programs.First();
 
             // Is it static method?
@@ -490,11 +494,11 @@ namespace com.clusterrr.Famicom
             // Let's try instance method, need to call constructor first
             var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
             if (constructor == null)
-                throw new InvalidProgramException("there is no valid default constructor");
+                throw new InvalidProgramException("There is no valid default constructor");
             var obj = constructor.Invoke(new object[0]);
             var instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
             if (instanceMethod == null)
-                throw new InvalidProgramException($"there is no {ScriptStartMethod} method");
+                throw new InvalidProgramException($"There is no {ScriptStartMethod} method");
             Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
             instanceMethod.Invoke(obj, new object[] { dumper });
         }
@@ -533,7 +537,7 @@ namespace com.clusterrr.Famicom
             var mapperList = CompileAllMappers()
                 .Where(m => m.Value.Name.ToLower() == mapperName.ToLower()
                 || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
-            if (mapperList.Count() == 0) throw new KeyNotFoundException("can't find mapper");
+            if (mapperList.Count() == 0) throw new KeyNotFoundException("Can't find mapper");
             var mapper = mapperList.First();
             Console.WriteLine($"Using {Path.GetFileName(mapper.Key)} as mapper file");
             return mapper.Value;
@@ -695,8 +699,8 @@ namespace com.clusterrr.Famicom
             Console.Write("Writing SRAM... ");
             dumper.WriteCpu(0x6000, data);
             dumper.Reset();
-            Console.WriteLine("Replug cartridge and press enter");
-            Console.ReadLine();
+            Console.WriteLine("Replug cartridge and press any key");
+            Console.ReadKey();
             mapper.EnablePrgRam(dumper);
             Console.Write("Reading SRAM... ");
             var rdata = dumper.ReadCpu(0x6000, 0x2000);
@@ -824,9 +828,9 @@ namespace com.clusterrr.Famicom
             var dict = new System.Collections.Hashtable();
             dict["name"] = "FamicomDumperServer";
             dict["port"] = tcpPort;
-            dict["secure"] = true;
+            dict["secure"] = false;
             var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
-            ChannelServices.RegisterChannel(channel, true);
+            ChannelServices.RegisterChannel(channel, false);
             dumper.Verbose = true;
             RemotingServices.Marshal(dumper, "dumper");
             Console.WriteLine($"Listening port {tcpPort}, press any key to stop");
@@ -835,26 +839,9 @@ namespace com.clusterrr.Famicom
             channel.StopListening(null);
         }
 
-        /*
-        static void LuaConsole(FamicomDumperConnection dumper, LuaMapper luaMapper)
+        private static bool IsRunningOnMono()
         {
-            luaMapper.Verbose = true;
-            Console.WriteLine("Starting interactive Lua console, type \"exit\" to exit.");
-            while (true)
-            {
-                Console.Write("> ");
-                var line = Console.ReadLine();
-                if (line.ToLower().Trim() == "exit") break;
-                try
-                {
-                    luaMapper.Execute(dumper, line, false);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error: " + ex.Message);
-                }
-            }
+            return Type.GetType("Mono.Runtime") != null;
         }
-        */
     }
 }
