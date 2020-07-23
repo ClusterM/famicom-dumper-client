@@ -33,8 +33,8 @@
             byte[] lastBank = dumper.ReadCpu(0x8000, 0x8000);
             Console.WriteLine("OK");
 
-            byte banks = (byte)(size / 0x8000);
-            for (int bank = 0; bank < banks; bank++)
+            var banks = size / 0x8000;
+            for (var bank = 0; bank < banks; bank++)
             {
                 Console.Write("Reading PRG bank #{0}... ", bank);
                 // Avoiding bus conflicts
@@ -58,6 +58,7 @@
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
+            // There is no CHR ROM
         }
 
         public void EnablePrgRam(FamicomDumperConnection dumper)

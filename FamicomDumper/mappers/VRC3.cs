@@ -29,9 +29,9 @@
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            int banks = size / 0x4000;
-            
-            for (int bank = 0; bank < banks; bank++)
+            var banks = size / 0x4000;
+
+            for (var bank = 0; bank < banks; bank++)
             {
                 Console.Write("Reading PRG bank #{0}... ", bank);
                 dumper.WriteCpu(0xF000, (byte)bank);

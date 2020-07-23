@@ -29,7 +29,6 @@
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            //dumper.WritePrg((ushort)(0x5001), (byte)0x02);
             Console.Write("Reading PRG... ");
             data.AddRange(dumper.ReadCpu(0x8000, size));
             Console.WriteLine("OK");

@@ -29,7 +29,7 @@
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            byte outbanks = (byte)(size / (256 * 1024));
+            var outbanks = size / (256 * 1024);
 
             for (byte outbank = 0; outbank < outbanks; outbank += 1)
             {
@@ -37,11 +37,11 @@
                 dumper.WriteCpu(0xA001, 0x80); // RAM protect
                 dumper.WriteCpu((ushort)(0x6828 | (outbank << 1)), 0x00);
                 dumper.WriteCpu(0xA001, 0); // disable W-RAM
-                byte banks = 32;//(byte)(size / 0x2000);
-                for (byte bank = 0; bank < banks - 2; bank += 2)
+                const int banks = 32;
+                for (var bank = 0; bank < banks - 2; bank += 2)
                 {
                     Console.Write("Reading PRG banks #{2}|{0} and #{2}|{1}... ", bank, bank + 1, outbank);
-                    dumper.WriteCpu(0x8000, new byte[] { 6, bank });
+                    dumper.WriteCpu(0x8000, new byte[] { 6, (byte)bank });
                     dumper.WriteCpu(0x8000, new byte[] { 7, (byte)(bank | 1) });
                     data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                     Console.WriteLine("OK");
@@ -54,17 +54,16 @@
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            byte outbanks = (byte)(size / (256 * 1024));
-            for (byte outbank = 0; outbank < outbanks; outbank += 1)
+            var outbanks = size / (256 * 1024);
+            for (var outbank = 0; outbank < outbanks; outbank += 1)
             {
                 dumper.Reset();
                 dumper.WriteCpu(0xA001, 0x80); // RAM protect
                 dumper.WriteCpu((ushort)(0x6828 | (outbank << 1)), 0x00);
                 dumper.WriteCpu(0xA001, 0); // disable W-RAM
 
-                int banks = 256;
-                if (banks > 256) throw new Exception("CHR size is too big");
-                for (int bank = 0; bank < banks; bank += 4)
+                const int banks = 256;
+                for (var bank = 0; bank < banks; bank += 4)
                 {
                     Console.Write("Reading CHR banks #{4}|{0}, #{4}|{1}, #{4}|{2}, #{4}|{3}... ", bank, bank + 1, bank + 2, bank + 3, outbank);
                     dumper.WriteCpu(0x8000, new byte[] { 2, (byte)bank });

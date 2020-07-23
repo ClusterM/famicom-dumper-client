@@ -505,19 +505,19 @@ namespace com.clusterrr.Famicom
 
             var mappers = CompileAllMappers();
             Console.WriteLine("Supported mappers:");
-            Console.WriteLine(" {0,-30}{1,-9}{2,-24}{3}", "File", "Number", "UNIF name", "Name");
-            Console.WriteLine("----------------------------- -------- ----------------------- -----------------------");
+            Console.WriteLine(" {0,-30}{1,-24}{2,-9}{3,-24}", "File", "Name", "Number", "UNIF name");
+            Console.WriteLine("----------------------------- ----------------------- -------- -----------------------");
             foreach (var mapperFile in mappers
                 .Where(m => m.Value.Number >= 0)
                 .OrderBy(m => m.Value.Number)
                 .Union(mappers.Where(m => m.Value.Number < 0)
                 .OrderBy(m => m.Value.Name)))
             {
-                Console.WriteLine(" {0,-30}{1,-9}{2,-24}{3}",
+                Console.WriteLine(" {0,-30}{1,-24}{2,-9}{3,-24}",
                     Path.GetFileName(mapperFile.Key),
+                    mapperFile.Value.Name,
                     mapperFile.Value.Number >= 0 ? mapperFile.Value.Number.ToString() : "None",
-                    mapperFile.Value.UnifName ?? "None",
-                    mapperFile.Value.Name);
+                    mapperFile.Value.UnifName ?? "None");
             }
         }
 

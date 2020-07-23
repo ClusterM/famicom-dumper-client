@@ -24,7 +24,7 @@
 
         public int DefaultChrSize
         {
-            get { return 0x2000*4; }
+            get { return 0x2000 * 4; }
         }
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
@@ -36,12 +36,12 @@
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            byte banks = (byte)(size / 0x2000);
+            var banks = size / 0x2000;
 
-            for (int bank = 0; bank < banks; bank++)
+            for (var bank = 0; bank < banks; bank++)
             {
                 Console.Write("Reading CHR bank #{0}... ", bank);
-                dumper.WriteCpu(0x6000, (byte)(((bank&1) << 1) | (bank >> 1)));
+                dumper.WriteCpu(0x6000, (byte)(((bank & 1) << 1) | (bank >> 1)));
                 data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
                 Console.WriteLine("OK");
             }

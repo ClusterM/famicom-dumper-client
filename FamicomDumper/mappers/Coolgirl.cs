@@ -29,15 +29,15 @@
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            int prgBanks = size / 0x8000;
+            var prgBanks = size / 0x8000;
             Console.Write("Reset... ");
             dumper.Reset();
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             for (int bank = 0; bank < prgBanks; bank++)
             {
-                byte r0 = (byte)(bank >> 7);
-                byte r1 = (byte)(bank << 1);
+                var r0 = (byte)(bank >> 7);
+                var r1 = (byte)(bank << 1);
                 dumper.WriteCpu(0x5000, r0);
                 dumper.WriteCpu(0x5001, r1);
 
@@ -45,12 +45,11 @@
                 data.AddRange(dumper.ReadCpu(0x8000, 0x8000));
                 Console.WriteLine("OK");
             }
-            Console.WriteLine("Done!");
         }
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            return; // There is no CHR
+            // There is no CHR ROM
         }
 
         public void EnablePrgRam(FamicomDumperConnection dumper)

@@ -24,7 +24,7 @@
 
         public int DefaultChrSize
         {
-            get { return 0x2000*4; }
+            get { return 0x2000 * 4; }
         }
 
         byte[] prg;
@@ -43,12 +43,13 @@
             {
                 prg = dumper.ReadCpu(0x8000, DefaultPrgSize);
             }
-            byte banks = (byte)(size / 0x2000);
+            var banks = size / 0x2000;
 
-            for (int bank = 0; bank < banks; bank++)
+            for (var bank = 0; bank < banks; bank++)
             {
                 Console.Write("Reading CHR bank #{0}... ", bank);
-                for (int i = 0; i < prg.Length; i++)
+                // Avoiding bus conflicts
+                for (var i = 0; i < prg.Length; i++)
                 {
                     if (prg[i] == bank)
                     {
@@ -56,8 +57,7 @@
                         break;
                     }
                 }
-                byte[] d = dumper.ReadPpu(0x0000, 0x2000);
-                data.AddRange(d);
+                data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
                 Console.WriteLine("OK");
             }
         }

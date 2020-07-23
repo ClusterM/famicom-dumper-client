@@ -24,21 +24,21 @@
 
         public int DefaultChrSize
         {
-            get { return 0; /* 0x2000; */ }
+            get { return 0; }
         }
 
         public void DumpPrg(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            byte banks = (byte)(size / 0x4000);
+            var banks = (byte)(size / 0x4000);
             Console.Write("Reading last PRG bank... ");
-            byte[] lastBank = dumper.ReadCpu(0xC000, 0x4000);
+            var lastBank = dumper.ReadCpu(0xC000, 0x4000);
             Console.WriteLine("OK");
-            for (int bank = 0; bank < banks-1; bank++)
+            for (int bank = 0; bank < banks - 1; bank++)
             {
                 Console.Write("Reading PRG bank #{0}... ", bank);
                 // Avoiding bus conflicts
-                bool noBusConflict = false;
-                for (int i = 0; i < lastBank.Length; i++)
+                var noBusConflict = false;
+                for (var i = 0; i < lastBank.Length; i++)
                 {
                     if (lastBank[i] == bank)
                     {
@@ -48,12 +48,11 @@
                     }
                 }
                 if (!noBusConflict) // Whatever...
-                    dumper.WriteCpu((ushort)0x8000, (byte)bank);
+                    dumper.WriteCpu(0x8000, (byte)bank);
                 data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                 Console.WriteLine("OK");
             }
             data.AddRange(lastBank);
-            
         }
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)

@@ -45,16 +45,16 @@
             UInt16 coolboyReg = (UInt16)(version == 2 ? 0x5000 : 0x6000);
             int banks = size / 0x4000;
 
-            for (int bank = 0; bank < banks; bank++)
+            for (var bank = 0; bank < banks; bank++)
             {
-                byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
+                var r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
                     | (((bank >> 9) & 0x03) << 4) // 10, 9 bits
                     | (1 << 6)); // resets 4th mask bit
-                byte r1 = (byte)((((bank >> 7) & 0x03) << 2) // 8, 7
+                var r1 = (byte)((((bank >> 7) & 0x03) << 2) // 8, 7
                     | (((bank >> 6) & 1) << 4) // 6
                     | (1 << 7)); // resets 5th mask bit
-                byte r2 = 0;
-                byte r3 = (byte)((1 << 4) // NROM mode
+                var r2 = (byte)0;
+                var r3 = (byte)((1 << 4) // NROM mode
                     | ((bank & 7) << 1)); // 2, 1, 0 bits
                 dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
 
@@ -66,7 +66,7 @@
 
         public void DumpChr(FamicomDumperConnection dumper, List<byte> data, int size)
         {
-            return;
+            // There is no CHR ROM
         }
 
         public void EnablePrgRam(FamicomDumperConnection dumper)
