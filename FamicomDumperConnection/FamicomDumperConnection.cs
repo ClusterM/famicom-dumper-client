@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace com.clusterrr.Famicom.DumperConnection
@@ -889,6 +888,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         private static bool IsRunningOnMono()
         {
             return Type.GetType("Mono.Runtime") != null;
+        }
+
+        public override object InitializeLifetimeService()
+        {
+            return null; // Infinity
         }
 
         public void Dispose()

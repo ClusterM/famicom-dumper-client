@@ -189,6 +189,7 @@ namespace com.clusterrr.Famicom
                     var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
                     ChannelServices.RegisterChannel(channel, false);
                     dumper = (FamicomDumperConnection)Activator.GetObject(typeof(FamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
+                    var lifetime = dumper.GetLifetimeService();
                 }
                 try
                 {

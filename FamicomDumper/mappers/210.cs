@@ -4,7 +4,7 @@
     {
         public string Name
         {
-            get { return "Mapper210"; }
+            get { return "Mapper 210"; }
         }
 
         public int Number
