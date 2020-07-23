@@ -132,12 +132,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="LICENSE">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="README.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\8bit-style-bonus-effect.wav" />
@@ -181,5 +175,9 @@ git --version &amp;&amp; (
     )
   )
 ) || SET ERRORLEVEL=0</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(SolutionDir)README.md"
+copy /Y "$(SolutionDir)LICENSE"</PostBuildEvent>
   </PropertyGroup>
 </Project>
