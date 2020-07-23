@@ -200,7 +200,7 @@ Or execute it before main action like this:
 FamicomDumper.exe dump --mapper MMC3 --file game.nes --csfile DemoScript.cs
 ```
 
-Check DemoScript.cs file for example script.
+So you can write your own code to interact with dumper object and read/write data from/to cartridge. This dumper object can be even on another PC (read below)! Check DemoScript.cs file for example script.
 
 
 ## Remoting
