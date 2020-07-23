@@ -70,7 +70,7 @@ Available options:
 Mapper files are stored in "mappers" subdirectory. When you specify a mapper number or name, the application compiles the scripts in that directory to find a matching one.
 
 Mapper scripts are written in C# language. Each script must contain namespace (any name allowed) with class (also any name) that impliments [IMapper](https://www.google.com) interface.
-```
+```C#
     public interface IMapper
     {
         /// <summary>
@@ -122,8 +122,8 @@ Mapper scripts are written in C# language. Each script must contain namespace (a
     }
 ```
 
-FamicomDumperConnection implements IFamicomDumperConnection interface:
-```
+FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
+```C#
     public interface IFamicomDumperConnection
     {
         /// <summary>
@@ -200,7 +200,7 @@ Or execute it before main action like this:
 FamicomDumper.exe dump --mapper MMC3 --file game.nes --csfile DemoScript.cs
 ```
 
-Check DemoScript.cs file for example script.
+So you can write your own code to interact with dumper object and read/write data from/to cartridge. This dumper object can be even on another PC (read below)! Check DemoScript.cs file for example script.
 
 
 ## Remoting
