@@ -1,6 +1,7 @@
 ﻿using com.clusterrr.Famicom.DumperConnection;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -25,7 +26,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x8000, 0xF0); // Reset
             if (cfi[0x20] != 0x51 || cfi[0x22] != 0x52 || cfi[0x24] != 0x59)
             {
-                throw new Exception("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
+                throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
             }
             int size = 1 << cfi[0x27 * 2];
             FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));

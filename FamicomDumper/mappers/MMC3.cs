@@ -30,6 +30,7 @@
         public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x2000;
+            if (banks > 256) throw new ArgumentOutOfRangeException("size", "PRG size is too big");
             for (var bank = 0; bank < banks - 2; bank += 2)
             {
                 Console.Write("Reading PRG banks #{0} and #{1}... ", bank, bank + 1);
@@ -46,7 +47,7 @@
         public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             var banks = size / 0x400;
-            if (banks > 256) throw new Exception("CHR size is too big");
+            if (banks > 256) throw new ArgumentOutOfRangeException("size", "CHR size is too big");
             for (var bank = 0; bank < banks; bank += 4)
             {
                 Console.Write("Reading CHR banks #{0}, #{1}, #{2}, #{3}... ", bank, bank + 1, bank + 2, bank + 3);

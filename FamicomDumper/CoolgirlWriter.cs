@@ -52,7 +52,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             int flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             if (PRG.Length > flashSize)
-                throw new Exception("This ROM is too big for this cartridge");
+                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
             {
                 PPBErase(dumper);
@@ -237,13 +237,13 @@ namespace com.clusterrr.Famicom
                             if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
                                 break;
                             else
-                                throw new Exception("PPB write failed (DQ5 is set)");
+                                throw new IOException("PPB write failed (DQ5 is set)");
                         }
                     }
                 }
                 var r = dumper.ReadCpu(0x8000, 1)[0];
                 if ((r & 1) != 0) // DQ0 = 1
-                    throw new Exception("PPB write failed (DQ0 is not set)");
+                    throw new IOException("PPB write failed (DQ0 is not set)");
             }
             finally
             {
@@ -291,14 +291,14 @@ namespace com.clusterrr.Famicom
                             if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
                                 break;
                             else
-                                throw new Exception("PPB erase failed (DQ5 is set)");
+                                throw new IOException("PPB erase failed (DQ5 is set)");
                         }
                     }
                 }
                 dumper.ReadCpu(0x0000, 1);
                 var r = dumper.ReadCpu(0x8000, 1)[0];
                 if ((r & 1) != 1) // DQ0 = 0
-                    throw new Exception("PPB erase failed (DQ0 is not set)");
+                    throw new IOException("PPB erase failed (DQ0 is not set)");
             }
             finally
             {
@@ -342,7 +342,7 @@ namespace com.clusterrr.Famicom
             for (int i = 0; i < data.Length; i++)
                 if (data[i] != datar[i])
                 {
-                    throw new Exception("Check failed");
+                    throw new VerificationException("Check failed");
                 }
             Console.WriteLine("OK");
 
@@ -396,7 +396,7 @@ namespace com.clusterrr.Famicom
             {
                 foreach (var bad in badSectors)
                     Console.WriteLine("Bad sector: {0}", bad);
-                throw new Exception("Bad sectors found");
+                throw new IOException("Bad sectors found");
             }
             else Console.WriteLine("There is no bad sectors");
         }
@@ -475,7 +475,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("sramgood.bin writed");
                         File.WriteAllBytes("srambad.bin", rdata);
                         Console.WriteLine("srambad.bin writed");
-                        throw new Exception("Test failed");
+                        throw new IOException("Test failed");
                     }
                     Console.WriteLine("OK!");
                 }
@@ -520,7 +520,7 @@ namespace com.clusterrr.Famicom
                 Console.WriteLine("chrgood.bin writed");
                 File.WriteAllBytes("chrbad.bin", rdata);
                 Console.WriteLine("chrbad.bin writed");
-                throw new Exception("Test failed");
+                throw new IOException("Test failed");
             }
             Console.WriteLine("OK!");
 
@@ -559,7 +559,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("chrgoodf.bin writed");
                         File.WriteAllBytes("chrbad.bin", rdata);
                         Console.WriteLine("chrbad.bin writed");
-                        throw new Exception("Test failed");
+                        throw new IOException("Test failed");
                     }
                     Console.WriteLine("OK!");
                 }

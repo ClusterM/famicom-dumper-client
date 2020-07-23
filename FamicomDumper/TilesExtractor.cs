@@ -42,18 +42,7 @@ namespace com.clusterrr.Famicom
 
         public Image GetAllTiles()
         {
-            /*
-            const int tilesPerRow = 16;
-            var rows = TilesCount / tilesPerRow;
-            for (int y = 0; y < rows; y++)
-                for (int x = 0; x < tilesPerRow; x++)
-                {
-                    var tile = GetTile(x + y * tilesPerRow);
-                    gr.DrawImageUnscaled(tile, x * 8, y * 8);
-                }
-            gr.Flush();
-             */
-            if (TilesCount == 0) throw new Exception("There are no CHR data in this ROM");
+            if (TilesCount == 0) throw new ArgumentOutOfRangeException("TilesCount", "There are no CHR data in this ROM");
             int pages = TilesCount / 256;
             var result = new Bitmap(256, pages * 128 / 2);
             var gr = Graphics.FromImage(result);

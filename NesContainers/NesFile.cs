@@ -40,7 +40,7 @@ namespace com.clusterrr.Famicom.Containers
             if (data[0] != 0x4E ||
             data[1] != 0x45 ||
             data[2] != 0x53 ||
-            data[3] != 0x1A) throw new Exception("Invalid NES file " + fileName);
+            data[3] != 0x1A) throw new InvalidDataException("Invalid NES file " + fileName);
 
             if (!(data[12] == 0 && data[13] == 0 && data[14] == 0 && data[15] == 0))
             {

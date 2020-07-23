@@ -1,6 +1,7 @@
 ﻿using FTD2XX_NET;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -818,13 +819,23 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public bool[] GetMirroring()
         {
+            if (Verbose)
+                Console.Write("Reading mirroring... ");
             mirroring = null;
             SendData(Command.COMMAND_MIRRORING_REQUEST, new byte[0]);
             for (int t = 0; t < Timeout; t += 5)
             {
                 Thread.Sleep(5);
                 if (mirroring != null)
+                {
+                    if (Verbose)
+                    {
+                        foreach (var b in mirroring)
+                            Console.Write($"{b} ");
+                        Console.WriteLine();
+                    }
                     return mirroring.Select(v => v != 0).ToArray();
+                }
             }
             throw new IOException("Read timeout");
         }

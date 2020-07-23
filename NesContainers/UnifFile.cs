@@ -17,7 +17,7 @@ namespace com.clusterrr.Famicom.Containers
             var header = new byte[32];
             Array.Copy(file, header, 32);
             if (header[0] != 'U' || header[1] != 'N' || header[2] != 'I' || header[3] != 'F')
-                throw new Exception("Invalid UNIF file");
+                throw new InvalidDataException("Invalid UNIF file");
             Version = header[4] | (header[5] << 8) | (header[6] << 16) | (header[7] << 24);
             int pos = 32;
             while (pos < file.Length)

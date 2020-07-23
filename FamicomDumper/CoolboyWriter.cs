@@ -39,7 +39,7 @@ namespace com.clusterrr.Famicom
                 version = 1;
             else if (v6000 == 1 && v5000 == 0)
                 version = 2;
-            else throw new Exception("Can't detect COOLBOY version");
+            else throw new IOException("Can't detect COOLBOY version");
             Console.WriteLine("Version: {0}", version);
             return version;
         }
@@ -160,7 +160,7 @@ namespace com.clusterrr.Famicom
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             int flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             if (PRG.Length > flashSize)
-                throw new Exception("This ROM is too big for this cartridge");
+                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge") ;
             try
             {
                 PPBErase(dumper, coolboyReg);
@@ -361,13 +361,13 @@ namespace com.clusterrr.Famicom
                             if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
                                 break;
                             else
-                                throw new Exception("PPB write failed (DQ5 is set)");
+                                throw new IOException("PPB write failed (DQ5 is set)");
                         }
                     }
                 }
                 var r = dumper.ReadCpu(0x8000, 1)[0];
                 if ((r & 1) != 0) // DQ0 = 1
-                    throw new Exception("PPB write failed (DQ0 is not set)");
+                    throw new IOException("PPB write failed (DQ0 is not set)");
             }
             finally
             {
@@ -422,13 +422,13 @@ namespace com.clusterrr.Famicom
                             if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
                                 break;
                             else
-                                throw new Exception("PPB erase failed (DQ5 is set)");
+                                throw new IOException("PPB erase failed (DQ5 is set)");
                         }
                     }
                 }
                 var r = dumper.ReadCpu(0x8000, 1)[0];
                 if ((r & 1) != 1) // DQ0 = 0
-                    throw new Exception("PPB erase failed (DQ0 is not set)");
+                    throw new IOException("PPB erase failed (DQ0 is not set)");
             }
             finally
             {
