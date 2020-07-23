@@ -122,7 +122,7 @@ Mapper scripts are written in C# language. Each script must contain namespace (a
     }
 ```
 
-FamicomDumperConnection implements IFamicomDumperConnection interface:
+FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
 ```
     public interface IFamicomDumperConnection
     {
