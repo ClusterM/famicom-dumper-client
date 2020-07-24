@@ -69,7 +69,7 @@ Available options:
 ## Mapper script files
 Mapper files are stored in "mappers" subdirectory. When you specify a mapper number or name, the application compiles the scripts in that directory to find a matching one.
 
-Mapper scripts are written in C# language. Each script must contain namespace (any name allowed) with class (also any name) that impliments [IMapper](https://www.google.com) interface.
+Mapper scripts are written in C# language. Each script must contain namespace (any name allowed) with class (also any name) that impliments [IMapper](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumper/IMapper.cs) interface.
 ```C#
     public interface IMapper
     {
