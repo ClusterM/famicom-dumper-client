@@ -189,7 +189,7 @@ Check "mappers" directory for examples.
 
 ## Other scripts
 
-You can run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain namespace (any name allowed) with class (also any name) that contains **void Run(IFamicomDumperConnection dumper)** method. This method will be executed if --csfile option is specified.
+You can run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain namespace (any name allowed) with class (also any name) that contains **void Run(IFamicomDumperConnection dumper)** method. This method will be executed if --csfile option is specified. Also you can use [NesFile](https://github.com/ClusterM/famicom-dumper-client/blob/master/NesContainers/NesFile.cs) and [UnifFile](https://github.com/ClusterM/famicom-dumper-client/blob/master/NesContainers/UnifFile.cs) containers.
 
 You can run script alone like this:
 ```
