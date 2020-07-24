@@ -398,6 +398,7 @@ namespace com.clusterrr.Famicom
             options.ReferencedAssemblies.Add("System.Core.dll");
             options.ReferencedAssemblies.Add(entryAssemblyLocation);
             options.ReferencedAssemblies.Add(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "FamicomDumperConnection.dll"));
+            options.ReferencedAssemblies.Add(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "NesContainers.dll"));
             options.GenerateInMemory = true;
             options.GenerateExecutable = false;
             options.IncludeDebugInformation = true;
@@ -424,6 +425,11 @@ namespace com.clusterrr.Famicom
             if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.DumperConnection\s*;").IsMatch(source))
             {
                 source = "using com.clusterrr.Famicom.DumperConnection;\r\n" + source;
+                linesOffset++;
+            }
+            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.Containers\s*;").IsMatch(source))
+            {
+                source = "using com.clusterrr.Famicom.Containers;\r\n" + source;
                 linesOffset++;
             }
 
