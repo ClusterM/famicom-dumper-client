@@ -311,16 +311,8 @@ namespace com.clusterrr.Famicom
                     );
                 if (!silent)
                     errorSound.PlaySync();
-#if DEBUG
-                Console.WriteLine("Press any key");
-                Console.ReadKey();
-#endif
                 return 1;
             }
-#if DEBUG
-            Console.WriteLine("Press any key");
-            Console.ReadKey();
-#endif
             return 0;
         }
 
