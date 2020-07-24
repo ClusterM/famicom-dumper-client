@@ -7,40 +7,75 @@ namespace com.clusterrr.Famicom.Containers
 {
     public class NesFile
     {
-        public byte[] PRG = null;
-        public byte[] CHR = null;
-        public byte[] Trainer = null;
-        public byte Mapper = 0;
-        public MirroringType Mirroring = MirroringType.Horizontal;
-        public TvSystemType TvSystem = TvSystemType.Ntsc;
-        public bool Battery = false;
-        public bool VSunisystem = false;
-        public bool PlayChoice10 = false;
-        private readonly string fileName = null;
+        /// <summary>
+        /// PRG data
+        /// </summary>
+        public byte[] PRG { get; set; } = null;
+        /// <summary>
+        /// CHR data (can be null if none)
+        /// </summary>
+        public byte[] CHR { get; set; } = null;
+        /// <summary>
+        /// Trainer (can be null if none)
+        /// </summary>
+        public byte[] Trainer { get; set; } = null;
+        /// <summary>
+        /// Mapper number
+        /// </summary>
+        public byte Mapper { get; set; } = 0;
+        /// <summary>
+        /// Mirroring type
+        /// </summary>
+        public MirroringType Mirroring { get; set; } = MirroringType.Horizontal;
+        /// <summary>
+        /// TV system type
+        /// </summary>
+        public TvSystemType TvSystem { get; set; } = TvSystemType.Ntsc;
+        /// <summary>
+        /// Battery backed
+        /// </summary>
+        public bool Battery { get; set; } = false;
+        /// <summary>
+        /// VS. UniSystem ROM
+        /// </summary>
+        public bool VSunisystem { get; set; } = false;
+        /// <summary>
+        /// PlayChoice-10 ROM
+        /// </summary>
+        public bool PlayChoice10 { get; set; } = false;
 
-        public enum MirroringType { 
-			Horizontal = 0, 
-			Vertical = 1, 
-			FourScreenVram = 2, 
-			OneScreenA = 3, 
-			OneScreenB = 4, 
-			Unknown_both = 0xfe, 
-			Unknown_none = 0xff 
-		};
+        public enum MirroringType
+        {
+            Horizontal = 0,
+            Vertical = 1,
+            FourScreenVram = 2,
+            OneScreenA = 3,
+            OneScreenB = 4,
+            Unknown_both = 0xfe,
+            Unknown_none = 0xff
+        };
         public enum TvSystemType { Ntsc = 0, Pal = 1 };
 
+        [Flags]
         public enum NesFixType { NoFix = 0, Mapper = 1, Mirroring = 2, Battery = 4, NoChr = 8 };
 
+        /// <summary>
+        /// Constructor to create empty NesFile object
+        /// </summary>
         public NesFile()
         {
         }
 
+        /// <summary>
+        /// Create NesFile object from raw .nes file data
+        /// </summary>
+        /// <param name="data">Raw .nes file data</param>
         public NesFile(byte[] data)
         {
             if (data[0] != 0x4E ||
             data[1] != 0x45 ||
             data[2] != 0x53 ||
-            data[3] != 0x1A) throw new InvalidDataException("Invalid NES file " + fileName);
+            data[3] != 0x1A) throw new InvalidDataException("Invalid NES file");
 
             if (!(data[12] == 0 && data[13] == 0 && data[14] == 0 && data[15] == 0))
             {
@@ -89,13 +124,20 @@ namespace com.clusterrr.Famicom.Containers
             Array.Copy(data, offset, CHR, 0, Math.Max(0, Math.Min(chrSize, data.Length - offset)));
         }
 
+        /// <summary>
+        /// Create NesFile object from specified .nes file 
+        /// </summary>
+        /// <param name="fileName">Path to .nes file</param>
         public NesFile(string fileName)
             : this(File.ReadAllBytes(fileName))
         {
-            this.fileName = fileName;
         }
 
-        public byte[] GetRaw()
+        /// <summary>
+        /// Returns iNES data (header + PRG + CHR)
+        /// </summary>
+        /// <returns>iNES data</returns>
+        public byte[] GetINes()
         {
             if (PRG == null) PRG = new byte[0];
             if (CHR == null) CHR = new byte[0];
@@ -133,11 +175,18 @@ namespace com.clusterrr.Famicom.Containers
             return data.ToArray();
         }
 
+        /// <summary>
+        /// Save iNES file
+        /// </summary>
+        /// <param name="fileName">Target filename</param>
         public void Save(string fileName)
         {
-            File.WriteAllBytes(fileName, GetRaw());
+            File.WriteAllBytes(fileName, GetINes());
         }
 
+        /// <summary>
+        /// Calculate MD5 checksum of ROM (CHR+PRG without header)
+        /// </summary>
         public byte[] MD5
         {
             get
@@ -152,6 +201,9 @@ namespace com.clusterrr.Famicom.Containers
             }
         }
 
+        /// <summary>
+        /// Calculate CRC32 checksum of ROM (CHR+PRG without header)
+        /// </summary>
         public uint CRC32
         {
             get
@@ -190,6 +242,10 @@ namespace com.clusterrr.Famicom.Containers
             }
         }
 
+        /// <summary>
+        /// Fix ROM header using database of popular incorrect ROMs
+        /// </summary>
+        /// <returns>Flags showing what has been changed</returns>
         public NesFixType CorrectRom()
         {
             int result = 0;

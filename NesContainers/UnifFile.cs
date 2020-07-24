@@ -11,32 +11,48 @@ namespace com.clusterrr.Famicom.Containers
         public Dictionary<string, byte[]> Fields = new Dictionary<string, byte[]>();
         public int Version;
 
-        public UnifFile(string fileName)
-        {
-            var file = File.ReadAllBytes(fileName);
-            var header = new byte[32];
-            Array.Copy(file, header, 32);
-            if (header[0] != 'U' || header[1] != 'N' || header[2] != 'I' || header[3] != 'F')
-                throw new InvalidDataException("Invalid UNIF file");
-            Version = header[4] | (header[5] << 8) | (header[6] << 16) | (header[7] << 24);
-            int pos = 32;
-            while (pos < file.Length)
-            {
-                var type = Encoding.UTF8.GetString(file, pos, 4);
-                pos += 4;
-                int length = file[pos] | (file[pos + 1] << 8) | (file[pos + 2] << 16) | (file[pos + 3] << 24);
-                pos += 4;
-                var data = new byte[length];
-                Array.Copy(file, pos, data, 0, length);
-                Fields[type] = data;
-                pos += length;
-            }
-        }
-
         public UnifFile()
         {
         }
 
+        /// <summary>
+        /// Create UnifFile object from raw data
+        /// </summary>
+        /// <param name="data">Raw UNIF data</param>
+        public UnifFile(byte[] data)
+        {
+            var header = new byte[32];
+            Array.Copy(data, header, 32);
+            if (header[0] != 'U' || header[1] != 'N' || header[2] != 'I' || header[3] != 'F')
+                throw new Exception("Invalid UNIF file");
+            Version = header[4] | (header[5] << 8) | (header[6] << 16) | (header[7] << 24);
+            int pos = 32;
+            while (pos < data.Length)
+            {
+                var type = Encoding.UTF8.GetString(data, pos, 4);
+                pos += 4;
+                int length = data[pos] | (data[pos + 1] << 8) | (data[pos + 2] << 16) | (data[pos + 3] << 24);
+                pos += 4;
+                var fieldData = new byte[length];
+                Array.Copy(data, pos, fieldData, 0, length);
+                Fields[type] = fieldData;
+                pos += length;
+            }
+        }
+
+        /// <summary>
+        /// Create UnifFile object from specified file
+        /// </summary>
+        /// <param name="fileName"></param>
+        public UnifFile(string fileName) : this(File.ReadAllBytes(fileName))
+        {            
+        }
+
+        /// <summary>
+        /// Save UNIF file
+        /// </summary>
+        /// <param name="fileName">Target filename</param>
+        /// <param name="dumperName"></param>
         public void Save(string fileName, string dumperName = null)
         {
             var data = new List<byte>();
@@ -54,7 +70,7 @@ namespace com.clusterrr.Famicom.Containers
             {
                 var dinf = new byte[204];
                 if (dumperName == null) dumperName = "Cluster / clusterrr@clusterrr.com / http://clusterrr.com";
-                var name = UnifFile.StringToUTF8N(dumperName);
+                var name = StringToUTF8N(dumperName);
                 Array.Copy(name, dinf, name.Length);
                 var dt = DateTime.Now;
                 dinf[100] = (byte)dt.Month;
@@ -80,14 +96,22 @@ namespace com.clusterrr.Famicom.Containers
             File.WriteAllBytes(fileName, data.ToArray());
         }
 
-        public static byte[] StringToUTF8N(string value)
+        /// <summary>
+        /// Convert string to null-terminated UTF string
+        /// </summary>
+        /// <param name="text">Input text</param>
+        /// <returns>Output byte[] array</returns>
+        public static byte[] StringToUTF8N(string text)
         {
-            var str = Encoding.UTF8.GetBytes(value);
+            var str = Encoding.UTF8.GetBytes(text);
             var result = new byte[str.Length + 1];
             Array.Copy(str, result, str.Length);
             return result;
         }
 
+        /// <summary>
+        /// Mapper name
+        /// </summary>
         public string Mapper
         {
             get
