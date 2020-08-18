@@ -160,7 +160,7 @@ namespace com.clusterrr.Famicom
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             int flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
             if (PRG.Length > flashSize)
-                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge") ;
+                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
             {
                 PPBErase(dumper, coolboyReg);
@@ -179,7 +179,7 @@ namespace com.clusterrr.Famicom
             var badSectorsList = new List<int>(badSectors);
             for (int bank = 0; bank < prgBanks; bank++)
             {
-                while (badSectors.Contains(bank / 8)) bank += 8; // bad sector :(
+                while (badSectorsList.Contains(bank / 8)) bank += 8; // bad sector :(
                 try
                 {
                     byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
@@ -200,7 +200,7 @@ namespace com.clusterrr.Famicom
                         timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 8);
                         timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
-                        Console.Write("Erasing sector... ");
+                        Console.Write($"Erasing sector #{bank / 8}... ");
                         dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
                         Console.WriteLine("OK");
                     }
@@ -210,9 +210,12 @@ namespace com.clusterrr.Famicom
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
                     dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct, false);
                     Console.WriteLine("OK");
-                    if (writePBBs && ((bank % 8 == 7) || (bank == prgBanks - 1)))
-                        PPBWrite(dumper, coolboyReg, (uint)bank / 8);
-                    currentErrorCount = 0;
+                    if ((bank % 8 == 7) || (bank == prgBanks - 1)) // After last bank in sector
+                    {
+                        if (writePBBs)
+                            PPBWrite(dumper, coolboyReg, (uint)bank / 8);
+                        currentErrorCount = 0;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -227,11 +230,10 @@ namespace com.clusterrr.Famicom
                         else
                         {
                             badSectorsList.Add(bank / 8);
-                            continue;
+                            Console.WriteLine($"Lets skip sector #{bank / 8}");
                         }
-                    }
-                    bank = (bank & ~7) - 1;
-                    Console.WriteLine("Lets try again");
+                    } else Console.WriteLine("Lets try again");
+                    bank = (bank & ~7) - 1;                    
                     Console.Write("Reset... ");
                     dumper.Reset();
                     Console.WriteLine("OK");
@@ -241,7 +243,7 @@ namespace com.clusterrr.Famicom
             if (totalErrorCount > 0)
             {
                 Console.WriteLine($"Warning! Error count: {totalErrorCount}");
-                Console.WriteLine($"Bad sectors: {string.Join(", ", badSectorsList)}");
+                Console.WriteLine($"Bad sectors: {string.Join(", ", badSectorsList.OrderBy(s => s))}");
             }
 
             if (needCheck)
