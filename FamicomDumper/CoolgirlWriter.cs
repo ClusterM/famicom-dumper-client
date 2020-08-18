@@ -22,7 +22,7 @@ namespace com.clusterrr.Famicom
             CommonHelper.GetFlashSizePrintInfo(dumper);
         }
              
-        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false)
+        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool skipBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -66,7 +66,9 @@ namespace com.clusterrr.Famicom
             var writeStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
             var timeTotal = new TimeSpan();
-            int errorCount = 0;
+            int totalErrorCount = 0;
+            int currentErrorCount = 0;
+            var badSectorsList = new List<int>(badSectors);
             for (int bank = 0; bank < prgBanks; bank++)
             {
                 while (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
@@ -96,14 +98,24 @@ namespace com.clusterrr.Famicom
                     Console.WriteLine("OK");
                     if (writePBBs && ((bank % 4 == 3) || (bank == prgBanks - 1)))
                         PPBWrite(dumper, (uint)bank / 4);
+                    currentErrorCount = 0;
                 }
                 catch (Exception ex)
                 {
-                    errorCount++;
-                    if (errorCount >= 3)
-                        throw ex;
+                    totalErrorCount++;
+                    currentErrorCount++;
                     if (!silent) Program.errorSound.PlaySync();
                     Console.WriteLine("Error: " + ex.Message);
+                    if (currentErrorCount >= 3)
+                    {
+                        if (!skipBadSectors)
+                            throw ex;
+                        else
+                        {
+                            badSectorsList.Add(bank / 4);
+                            continue;
+                        }
+                    }
                     bank = (bank & ~3) - 1;
                     Console.WriteLine("Lets try again");
                     Console.Write("Reset... ");
@@ -114,8 +126,11 @@ namespace com.clusterrr.Famicom
                     continue;
                 }
             }
-            if (errorCount > 0)
-                Console.WriteLine("Warning! Error count: {0}", errorCount);
+            if (totalErrorCount > 0)
+            {
+                Console.WriteLine($"Warning! Error count: {totalErrorCount}");
+                Console.WriteLine($"Bad sectors: {string.Join(", ", badSectorsList)}");
+            }
 
             if (needCheck)
             {
@@ -166,9 +181,9 @@ namespace com.clusterrr.Famicom
                     else
                         Console.WriteLine("OK (CRC = {0:X4})", crcr);
                 }
-                if (errorCount > 0)
+                if (totalErrorCount > 0)
                 {
-                    Console.WriteLine("Warning! Error count: {0}", errorCount);
+                    Console.WriteLine("Warning! Error count: {0}", totalErrorCount);
                     return;
                 }
             }
