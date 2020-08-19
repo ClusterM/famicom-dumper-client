@@ -21,8 +21,8 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             CommonHelper.GetFlashSizePrintInfo(dumper);
         }
-             
-        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool skipBadSectors = false)
+
+        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -68,10 +68,10 @@ namespace com.clusterrr.Famicom
             var timeTotal = new TimeSpan();
             int totalErrorCount = 0;
             int currentErrorCount = 0;
-            var badSectorsList = new List<int>(badSectors);
+            var newBadSectorsList = new List<int>();
             for (int bank = 0; bank < prgBanks; bank++)
             {
-                while (badSectorsList.Contains(bank / 4)) bank += 4; // bad sector :(
+                while (badSectors.Contains(bank / 4) || newBadSectorsList.Contains(bank / 4)) bank += 4; // bad sector :(
                 try
                 {
                     byte r0 = (byte)(bank >> 7);
@@ -107,19 +107,20 @@ namespace com.clusterrr.Famicom
                 {
                     totalErrorCount++;
                     currentErrorCount++;
+                    Console.WriteLine($"ERROR {ex.GetType()}: {ex.Message}");
                     if (!silent) Program.errorSound.PlaySync();
-                    Console.WriteLine("Error: " + ex.Message);
                     if (currentErrorCount >= 3)
                     {
-                        if (!skipBadSectors)
+                        if (!ignoreBadSectors)
                             throw ex;
                         else
                         {
-                            badSectorsList.Add(bank / 4);
+                            newBadSectorsList.Add(bank / 4);
                             Console.WriteLine($"Lets skip sector #{bank / 4}");
                         }
-                    } else Console.WriteLine("Lets try again");
-                    bank = (bank & ~3) - 1;                    
+                    }
+                    else Console.WriteLine("Lets try again");
+                    bank = (bank & ~3) - 1;
                     Console.Write("Reset... ");
                     dumper.Reset();
                     Console.WriteLine("OK");
@@ -128,12 +129,8 @@ namespace com.clusterrr.Famicom
                     continue;
                 }
             }
-            if (totalErrorCount > 0)
-            {
-                Console.WriteLine($"Warning! Error count: {totalErrorCount}");
-                Console.WriteLine($"Bad sectors: {string.Join(", ", badSectorsList.OrderBy(s => s))}");
-            }
 
+            var wrongCrcSectorsList = new List<int>();
             if (needCheck)
             {
                 Console.WriteLine("Starting check process");
@@ -179,16 +176,24 @@ namespace com.clusterrr.Famicom
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
                     var crcr = dumper.ReadCpuCrc(0x8000, 0x8000);
                     if (crcr != crc)
-                        throw new VerificationException($"Check failed: {crcr:X4} != {crc:X4}");
+                    {
+                        Console.WriteLine($"Check failed: {crcr:X4} != {crc:X4}");
+                        if (!silent) Program.errorSound.PlaySync();
+                        wrongCrcSectorsList.Add(bank / 4);
+                    }
                     else
                         Console.WriteLine("OK (CRC = {0:X4})", crcr);
                 }
-                if (totalErrorCount > 0)
-                {
-                    Console.WriteLine("Warning! Error count: {0}", totalErrorCount);
-                    return;
-                }
             }
+
+            if (totalErrorCount > 0)
+                Console.WriteLine($"Write error count: {totalErrorCount}");
+            if (newBadSectorsList.Any())
+                Console.WriteLine($"Can't write sectors: {string.Join(", ", newBadSectorsList.OrderBy(s => s))}");
+            if (wrongCrcSectorsList.Any())
+                Console.WriteLine($"Sectors with wrong CRC: {string.Join(", ", wrongCrcSectorsList.Distinct().OrderBy(s => s))}");
+            if (newBadSectorsList.Any() || wrongCrcSectorsList.Any())
+                throw new IOException("Cartridge is not writed correctly");
         }
 
         public static byte PPBRead(FamicomDumperConnection dumper, uint sector)

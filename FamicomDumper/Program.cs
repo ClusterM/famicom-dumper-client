@@ -1,7 +1,7 @@
 ﻿/* Famicom Dumper/Programmer
  *
  * Copyright notice for this file:
- *  Copyright (C) 2016 Cluster
+ *  Copyright (C) 2020 Cluster
  *  http://clusterrr.com
  *  clusterrr@clusterrr.com
  *
@@ -71,7 +71,7 @@ namespace com.clusterrr.Famicom
             List<int> badSectors = new List<int>();
             int testCount = -1;
             uint tcpPort = 26672;
-            bool skipBadSectors = false;
+            bool ignoreBadSectors = false;
             string remoteHost = null;
             try
             {
@@ -155,8 +155,8 @@ namespace com.clusterrr.Famicom
                             remoteHost = value;
                             i++;
                             break;
-                        case "skipbadsectors":
-                            skipBadSectors = true;
+                        case "ignorebadsectors":
+                            ignoreBadSectors = true;
                             break;
                         default:
                             Console.WriteLine("Unknown parameter: " + param);
@@ -267,10 +267,10 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
-                            CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs, skipBadSectors);
+                            CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
-                            CoolgirlWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs, skipBadSectors);
+                            CoolgirlWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-eeprom":
                             WriteEeprom(dumper, filename ?? "game.nes");
@@ -379,7 +379,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
-            Console.WriteLine(" {0,-25}{1}", "--skipbadsectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
+            Console.WriteLine(" {0,-25}{1}", "--ignorebadsectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL checksum after writing");
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
