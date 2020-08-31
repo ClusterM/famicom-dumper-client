@@ -116,6 +116,7 @@ namespace com.clusterrr.Famicom
                         else
                         {
                             newBadSectorsList.Add(bank / 4);
+                            currentErrorCount = 0;
                             Console.WriteLine($"Lets skip sector #{bank / 4}");
                         }
                     }

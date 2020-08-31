@@ -230,6 +230,7 @@ namespace com.clusterrr.Famicom
                         else
                         {
                             newBadSectorsList.Add(bank / 8);
+                            currentErrorCount = 0;
                             Console.WriteLine($"Lets skip sector #{bank / 8}");
                         }
                     } else Console.WriteLine("Lets try again");
