@@ -59,7 +59,7 @@ namespace com.clusterrr.Famicom
             }
             catch (Exception ex)
             {
-                if (!silent) Program.errorSound.PlaySync();
+                if (!silent) Program.PlayErrorSound();
                 Console.WriteLine($"ERROR! {ex.Message}. Lets try anyway.");
             }
 
@@ -108,7 +108,7 @@ namespace com.clusterrr.Famicom
                     totalErrorCount++;
                     currentErrorCount++;
                     Console.WriteLine($"ERROR {ex.GetType()}: {ex.Message}");
-                    if (!silent) Program.errorSound.PlaySync();
+                    if (!silent) Program.PlayErrorSound();
                     if (currentErrorCount >= 3)
                     {
                         if (!ignoreBadSectors)
@@ -179,7 +179,7 @@ namespace com.clusterrr.Famicom
                     if (crcr != crc)
                     {
                         Console.WriteLine($"Check failed: {crcr:X4} != {crc:X4}");
-                        if (!silent) Program.errorSound.PlaySync();
+                        if (!silent) Program.PlayErrorSound();
                         wrongCrcSectorsList.Add(bank / 4);
                     }
                     else
@@ -395,7 +395,7 @@ namespace com.clusterrr.Famicom
                 catch
                 {
                     Console.WriteLine("ERROR!");
-                    if (!silent) Program.errorSound.PlaySync();
+                    if (!silent) Program.PlayErrorSound();
                     Console.Write("Trying again... ");
                     dumper.Reset();
                     dumper.WriteCpu(0x5007, 0x04); // enable PRG write
@@ -410,7 +410,7 @@ namespace com.clusterrr.Famicom
                     catch
                     {
                         Console.WriteLine("ERROR! Sector #{0} is bad.", bank / 4);
-                        if (!silent) Program.errorSound.PlaySync();
+                        if (!silent) Program.PlayErrorSound();
                         badSectors.Add(bank / 4);
                     }
                 }

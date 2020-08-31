@@ -167,7 +167,7 @@ namespace com.clusterrr.Famicom
             }
             catch (Exception ex)
             {
-                if (!silent) Program.errorSound.PlaySync();
+                if (!silent) Program.PlayErrorSound();
                 Console.WriteLine($"ERROR! {ex.Message}. Lets try anyway.");
             }
 
@@ -222,7 +222,7 @@ namespace com.clusterrr.Famicom
                     totalErrorCount++;
                     currentErrorCount++;
                     Console.WriteLine($"Error {ex.GetType()}: {ex.Message}");
-                    if (!silent) Program.errorSound.PlaySync();
+                    if (!silent) Program.PlayErrorSound();
                     if (currentErrorCount >= 3)
                     {
                         if (!ignoreBadSectors)
@@ -295,7 +295,7 @@ namespace com.clusterrr.Famicom
                     if (crcr != crc)
                     {
                         Console.WriteLine($"ERROR: {crcr:X4} != {crc:X4}");
-                        if (!silent) Program.errorSound.PlaySync();
+                        if (!silent) Program.PlayErrorSound();
                         wrongCrcSectorsList.Add(bank / 8);
                     }
                     else

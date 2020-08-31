@@ -43,11 +43,11 @@ namespace com.clusterrr.Famicom
 {
     class Program
     {
-        static DateTime startTime;
-        public static string MappersSearchDirectory = "mappers";
+        private static DateTime startTime;
+        private static string MappersSearchDirectory = "mappers";
         private const string ScriptStartMethod = "Run";
-        public static SoundPlayer doneSound = new SoundPlayer(FamicomDumper.Properties.Resources.DoneSound);
-        public static SoundPlayer errorSound = new SoundPlayer(FamicomDumper.Properties.Resources.ErrorSound);
+        private static SoundPlayer doneSound = new SoundPlayer(FamicomDumper.Properties.Resources.DoneSound);
+        private static SoundPlayer errorSound = new SoundPlayer(FamicomDumper.Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
@@ -298,7 +298,7 @@ namespace com.clusterrr.Famicom
 
                     }
                     Console.WriteLine("Done in {0} seconds", (int)(DateTime.Now - startTime).TotalSeconds);
-                    if (!silent) doneSound.PlaySync();
+                    if (!silent) PlayDoneSound();
                 }
                 finally
                 {
@@ -313,8 +313,7 @@ namespace com.clusterrr.Famicom
                     + ex.StackTrace
 #endif
                     );
-                if (!silent)
-                    errorSound.PlaySync();
+                if (!silent) PlayErrorSound();
                 return 1;
             }
             return 0;
@@ -336,6 +335,19 @@ namespace com.clusterrr.Famicom
                 mul *= 1024 * 1024;
             }
             return int.Parse(size) * mul;
+        }
+
+        public static void PlayErrorSound()
+        {
+            if (!IsRunningOnMono())
+                errorSound.PlaySync();
+            else
+                Console.Beep();
+        }
+
+        public static void PlayDoneSound()
+        {
+            doneSound.PlaySync();
         }
 
         static void PrintHelp()
