@@ -174,8 +174,6 @@ namespace com.clusterrr.Famicom
                 FamicomDumperConnection dumper;
                 if (string.IsNullOrEmpty(remoteHost))
                 {
-                    if ((string.IsNullOrEmpty(port) || port == "auto") && IsRunningOnMono())
-                        throw new NotSupportedException("Port autodetect is not supported on Linux, please specify dumper port using --port parameter");
                     dumper = new FamicomDumperConnection(port);
                     dumper.Open();
                 }

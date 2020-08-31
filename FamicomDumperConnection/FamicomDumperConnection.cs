@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
+using System.Management;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
@@ -94,10 +95,100 @@ namespace com.clusterrr.Famicom.DumperConnection
             Timeout = 10000;
         }
 
+        /// <summary>
+        /// Method to obtain list of Linux USB devices
+        /// </summary>
+        /// <returns>Array of usb devices </returns>
+        private static string[] GetLinuxUsbDevices()
+        {
+            return Directory.GetDirectories("/sys/bus/usb/devices").Where(d => File.Exists(Path.Combine(d, "dev"))).ToArray();
+        }
+
+        private static string LinuxDeviceToPort(string deviceSerial)
+        {
+            var devices = GetLinuxUsbDevices().Where(d =>
+            {
+                var serialFile = Path.Combine(d, "serial");
+                return File.Exists(serialFile) && File.ReadAllText(serialFile).Trim() == deviceSerial;
+            });
+            if (!devices.Any()) return null;
+            var device = devices.First();
+            var subdirectories = Directory.GetDirectories(device);
+            foreach(var subdir in subdirectories)
+            {
+                var subsubdirectories = Directory.GetDirectories(subdir);
+                var ports = subsubdirectories.Where(d => Path.GetFileName(d).StartsWith("tty"));
+                if (ports.Any())
+                    return $"/dev/{Path.GetFileName(ports.First())}";
+            }
+            return null;
+        }
+
         public void Open()
         {
+            if (string.IsNullOrEmpty(PortName) || PortName.ToLower() == "auto")
+            {
+                if (!IsRunningOnMono()) // Is it running on Windows?
+                {
+                    // Using Windows FTDI driver to determine serial number
+                    FTDI myFtdiDevice = new FTDI();
+                    uint ftdiDeviceCount = 0;
+                    FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
+                    // FTDI serial number autodetect
+                    ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
+                    // Check status
+                    if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                        throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
+
+                    // If no devices available, return
+                    if (ftdiDeviceCount == 0)
+                        throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
+
+                    // Allocate storage for device info list
+                    FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
+
+                    // Populate our device list
+                    ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
+
+                    PortName = null;
+                    if (ftStatus == FTDI.FT_STATUS.FT_OK)
+                    {
+                        var dumpers = ftdiDeviceList.Where(d => d.Description == DeviceName);
+                        if (!dumpers.Any())
+                            throw new IOException($"{DeviceName} not found");
+                        var PortName = dumpers.First().SerialNumber;
+                    }
+                    if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                        throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
+                }
+                else
+                {
+                    // Linux?
+                    var devices = GetLinuxUsbDevices();
+                    var dumpers = devices.Where(d =>
+                    {
+                        var productFile = Path.Combine(d, "product");
+                        return File.Exists(productFile) && File.ReadAllText(productFile).Trim() == DeviceName;
+                    });
+                    if (!dumpers.Any())
+                        throw new IOException($"{DeviceName} not found");
+                    PortName = File.ReadAllText(Path.Combine(dumpers.First(), "serial")).Trim();
+                }
+                Console.WriteLine($"Autodetected USB device serial number: {PortName}");
+            }
+
             if (PortName.ToUpper().StartsWith("COM") || IsRunningOnMono())
             {
+                if (IsRunningOnMono() && !PortName.StartsWith("/dev/tty"))
+                {
+                    // Need to convert serial number to port address
+                    var ttyPath = LinuxDeviceToPort(PortName);
+                    if (string.IsNullOrEmpty(ttyPath))
+                        throw new IOException($"Device with serial number {PortName} not found");
+                    PortName = ttyPath;
+                    Console.WriteLine($"Autodetected USB device path: {PortName}");
+                }
+                // Port specified 
                 SerialPort sPort;
                 sPort = new SerialPort();
                 sPort.PortName = PortName;
@@ -115,55 +206,11 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             else
             {
-                uint ftdiDeviceCount = 0;
+                // It's Windows and serial number specified
+                // Using Windows FTDI driver
                 FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
                 // Create new instance of the FTDI device class
                 FTDI myFtdiDevice = new FTDI();
-                // Determine the number of FTDI devices connected to the machine
-                if (string.IsNullOrEmpty(PortName) || PortName.ToLower() == "auto")
-                {
-                    //Console.WriteLine("Searching for dumper (FTDI device with name \"{0}\")...", DeviceName);
-                    ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
-                    // Check status
-                    if (ftStatus == FTDI.FT_STATUS.FT_OK)
-                    {
-                        //Console.WriteLine("Number of FTDI devices: " + ftdiDeviceCount.ToString());
-                        //Console.WriteLine("");
-                    }
-                    else
-                        throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                    // If no devices available, return
-                    if (ftdiDeviceCount == 0)
-                        throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                    // Allocate storage for device info list
-                    FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
-
-                    // Populate our device list
-                    ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
-
-                    PortName = null;
-                    if (ftStatus == FTDI.FT_STATUS.FT_OK)
-                    {
-                        for (UInt32 i = 0; i < ftdiDeviceCount; i++)
-                        {
-                            //Console.WriteLine("Device Index: " + i.ToString());
-                            //Console.WriteLine("Flags: " + String.Format("{0:x}", ftdiDeviceList[i].Flags));
-                            //Console.WriteLine("Type: " + ftdiDeviceList[i].Type.ToString());
-                            //Console.WriteLine("ID: " + String.Format("{0:x}", ftdiDeviceList[i].ID));
-                            //Console.WriteLine("Location ID: " + String.Format("{0:x}", ftdiDeviceList[i].LocId));
-                            //Console.WriteLine("Serial Number: " + ftdiDeviceList[i].SerialNumber.ToString());
-                            //Console.WriteLine("Description: " + ftdiDeviceList[i].Description.ToString());
-                            //Console.WriteLine("");
-                            if (ftdiDeviceList[i].Description == DeviceName)
-                                PortName = ftdiDeviceList[i].SerialNumber;
-                        }
-                    }
-                    if (PortName == null)
-                        throw new IOException("Famicom Dumper/Programmer not found");
-                }
-
                 // Open first device in our list by serial number
                 ftStatus = myFtdiDevice.OpenBySerialNumber(PortName);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
