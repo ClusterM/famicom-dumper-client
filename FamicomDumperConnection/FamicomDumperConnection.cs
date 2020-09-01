@@ -161,7 +161,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                         var dumpers = ftdiDeviceList.Where(d => d.Description == DeviceName);
                         if (!dumpers.Any())
                             throw new IOException($"{DeviceName} not found");
-                        var PortName = dumpers.First().SerialNumber;
+                        PortName = dumpers.First().SerialNumber;
                     }
                     if (ftStatus != FTDI.FT_STATUS.FT_OK)
                         throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
