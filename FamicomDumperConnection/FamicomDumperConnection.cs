@@ -13,14 +13,15 @@ namespace com.clusterrr.Famicom.DumperConnection
     public class FamicomDumperConnection : MarshalByRefObject, IDisposable, IFamicomDumperConnection
     {
         const int PortBaudRate = 250000;
-        const int MaxReadPacketSize = 1024;
-        const int MaxWritePacketSize = 1024;
+        const ushort DefaultmaxReadPacketSize = 1024;
+        const ushort DefaultmaxWritePacketSize = 1024;
         const byte Magic = 0x46;
         const string DeviceName = "Famicom Dumper/Programmer";
 
         public string PortName { get; set; }
         public bool Verbose { get; set; } = false;
         public int Timeout { get; set; }
+        public byte ProtocolVersion { get; private set; } = 0;
 
         private SerialPort serialPort = null;
         private FTDI d2xxPort = null;
@@ -39,6 +40,8 @@ namespace com.clusterrr.Famicom.DumperConnection
         private byte[] prgRecvData, chrRecvData;
         private byte[] mirroring;
         private bool resetAck = false;
+        private ushort maxReadPacketSize = DefaultmaxReadPacketSize;
+        private ushort maxWritePacketSize = DefaultmaxWritePacketSize;
 
         enum Command
         {
@@ -109,17 +112,10 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// </summary>
         /// <param name="deviceSerial">Serial number of USB to serial converter</param>
         /// <returns>Path of serial port</returns>
-        private static string LinuxDeviceToPort(string deviceSerial)
+        private static string LinuxDeviceToPort(string device)
         {
-            var devices = GetLinuxUsbDevices().Where(d =>
-            {
-                var serialFile = Path.Combine(d, "serial");
-                return File.Exists(serialFile) && File.ReadAllText(serialFile).Trim() == deviceSerial;
-            });
-            if (!devices.Any()) return null;
-            var device = devices.First();
             var subdirectories = Directory.GetDirectories(device);
-            foreach(var subdir in subdirectories)
+            foreach (var subdir in subdirectories)
             {
                 var subsubdirectories = Directory.GetDirectories(subdir);
                 var ports = subsubdirectories.Where(d => Path.GetFileName(d).StartsWith("tty"));
@@ -129,9 +125,32 @@ namespace com.clusterrr.Famicom.DumperConnection
             return null;
         }
 
+        /// <summary>
+        /// Method to get serial port path for specified USB converter
+        /// </summary>
+        /// <param name="deviceSerial">Serial number of USB to serial converter</param>
+        /// <returns>Path of serial port</returns>
+        private static string LinuxDeviceSerialToPort(string deviceSerial)
+        {
+            var devices = GetLinuxUsbDevices().Where(d =>
+            {
+                var serialFile = Path.Combine(d, "serial");
+                return File.Exists(serialFile) && File.ReadAllText(serialFile).Trim() == deviceSerial;
+            });
+            if (!devices.Any()) return null;
+            var device = devices.First();
+            return LinuxDeviceToPort(device);
+        }
+
         public void Open()
         {
-            if (string.IsNullOrEmpty(PortName) || PortName.ToLower() == "auto")
+            dumperInitOk = false;
+            ProtocolVersion = 0;
+            maxReadPacketSize = DefaultmaxReadPacketSize;
+            maxWritePacketSize = DefaultmaxWritePacketSize;
+
+            string portName = PortName;
+            if (string.IsNullOrEmpty(portName) || portName.ToLower() == "auto")
             {
                 if (!IsRunningOnMono()) // Is it running on Windows?
                 {
@@ -155,13 +174,13 @@ namespace com.clusterrr.Famicom.DumperConnection
                     // Populate our device list
                     ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
 
-                    PortName = null;
+                    portName = null;
                     if (ftStatus == FTDI.FT_STATUS.FT_OK)
                     {
                         var dumpers = ftdiDeviceList.Where(d => d.Description == DeviceName);
                         if (!dumpers.Any())
                             throw new IOException($"{DeviceName} not found");
-                        PortName = dumpers.First().SerialNumber;
+                        portName = dumpers.First().SerialNumber;
                     }
                     if (ftStatus != FTDI.FT_STATUS.FT_OK)
                         throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
@@ -177,26 +196,26 @@ namespace com.clusterrr.Famicom.DumperConnection
                     });
                     if (!dumpers.Any())
                         throw new IOException($"{DeviceName} not found");
-                    PortName = File.ReadAllText(Path.Combine(dumpers.First(), "serial")).Trim();
+                    portName = LinuxDeviceToPort(dumpers.First());
                 }
-                Console.WriteLine($"Autodetected USB device serial number: {PortName}");
+                Console.WriteLine($"Autodetected USB device serial number: {portName}");
             }
 
-            if (PortName.ToUpper().StartsWith("COM") || IsRunningOnMono())
+            if (portName.ToUpper().StartsWith("COM") || IsRunningOnMono())
             {
-                if (IsRunningOnMono() && !PortName.StartsWith("/dev/tty"))
+                if (IsRunningOnMono() && !portName.StartsWith("/dev/tty"))
                 {
                     // Need to convert serial number to port address
-                    var ttyPath = LinuxDeviceToPort(PortName);
+                    var ttyPath = LinuxDeviceSerialToPort(portName);
                     if (string.IsNullOrEmpty(ttyPath))
-                        throw new IOException($"Device with serial number {PortName} not found");
-                    PortName = ttyPath;
-                    Console.WriteLine($"Autodetected USB device path: {PortName}");
+                        throw new IOException($"Device with serial number {portName} not found");
+                    portName = ttyPath;
+                    Console.WriteLine($"Autodetected USB device path: {portName}");
                 }
                 // Port specified 
                 SerialPort sPort;
                 sPort = new SerialPort();
-                sPort.PortName = PortName;
+                sPort.PortName = portName;
                 sPort.WriteTimeout = 5000; sPort.ReadTimeout = -1;
                 sPort.BaudRate = PortBaudRate;
                 sPort.Parity = Parity.None;
@@ -217,7 +236,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 // Create new instance of the FTDI device class
                 FTDI myFtdiDevice = new FTDI();
                 // Open first device in our list by serial number
-                ftStatus = myFtdiDevice.OpenBySerialNumber(PortName);
+                ftStatus = myFtdiDevice.OpenBySerialNumber(portName);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                     throw new IOException("Failed to open device (error " + ftStatus.ToString() + ")");
                 // Set data characteristics - Data bits, Stop bits, Parity
@@ -242,8 +261,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 readingThread.Abort();
             readingThread = new Thread(readThread);
             readingThread.Start();
-
-            dumperInitOk = false;
         }
 
         public void Close()
@@ -391,6 +408,12 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 case Command.COMMAND_PRG_STARTED:
                     dumperInitOk = true;
+                    if (data.Length >= 1)
+                        ProtocolVersion = data[0];
+                    if (data.Length >= 3)
+                        maxReadPacketSize = (ushort)(data[1] | (data[2] << 8));
+                    if (data.Length >= 5)
+                        maxWritePacketSize = (ushort)(data[3] | (data[4] << 8));
                     break;
                 case Command.COMMAND_PRG_READ_RESULT:
                     OnCpuReadResult(data);
@@ -489,9 +512,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new List<byte>();
             while (length > 0)
             {
-                result.AddRange(ReadCpuBlock(address, Math.Min(MaxReadPacketSize, length), flashType));
-                address += MaxReadPacketSize;
-                length -= MaxReadPacketSize;
+                result.AddRange(ReadCpuBlock(address, Math.Min(maxReadPacketSize, length), flashType));
+                address += maxReadPacketSize;
+                length -= maxReadPacketSize;
             }
             if (Verbose && result.Count <= 32)
             {
@@ -576,12 +599,12 @@ namespace com.clusterrr.Famicom.DumperConnection
             int pos = 0;
             while (wlength > 0)
             {
-                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
+                var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 WriteCpuBlock(address, wdata);
-                address += MaxWritePacketSize;
-                pos += MaxWritePacketSize;
-                wlength -= MaxWritePacketSize;
+                address += maxWritePacketSize;
+                pos += maxWritePacketSize;
+                wlength -= maxWritePacketSize;
             }
             if (Verbose)
                 Console.WriteLine(" OK");
@@ -649,7 +672,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             cpuWriteDoneCounter = 0;
             while (wlength > 0)
             {
-                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
+                var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 if (ContainsNotFF(data))
                 {
@@ -658,9 +681,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                     if (accelerated)
                         Thread.Sleep(40);
                 }
-                address += MaxWritePacketSize;
-                pos += MaxWritePacketSize;
-                wlength -= MaxWritePacketSize;
+                address += maxWritePacketSize;
+                pos += maxWritePacketSize;
+                wlength -= maxWritePacketSize;
                 //Console.WriteLine("{0} / {1}", writeCounter, prgWriteDoneCounter);
             }
             if (accelerated)
@@ -722,9 +745,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new List<byte>();
             while (length > 0)
             {
-                result.AddRange(ReadPpuBlock(address, Math.Min(MaxReadPacketSize, length)));
-                address += MaxReadPacketSize;
-                length -= MaxReadPacketSize;
+                result.AddRange(ReadPpuBlock(address, Math.Min(maxReadPacketSize, length)));
+                address += maxReadPacketSize;
+                length -= maxReadPacketSize;
             }
             if (Verbose && result.Count <= 32)
             {
@@ -799,18 +822,18 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ PPU...");
                 }
             }
-            if (data.Length > MaxWritePacketSize) // Split packets
+            if (data.Length > maxWritePacketSize) // Split packets
             {
                 int wlength = data.Length;
                 int pos = 0;
                 while (wlength > 0)
                 {
-                    var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
+                    var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                     Array.Copy(data, pos, wdata, 0, wdata.Length);
                     WritePpu(address, wdata);
-                    address += MaxWritePacketSize;
-                    pos += MaxWritePacketSize;
-                    wlength -= MaxWritePacketSize;
+                    address += maxWritePacketSize;
+                    pos += maxWritePacketSize;
+                    wlength -= maxWritePacketSize;
                 }
                 if (Verbose)
                     Console.WriteLine(" OK");
@@ -836,18 +859,18 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public void WritePpuEprom(ushort address, byte[] data)
         {
-            if (data.Length > MaxWritePacketSize) // Split packets
+            if (data.Length > maxWritePacketSize) // Split packets
             {
                 int wlength = data.Length;
                 int pos = 0;
                 while (wlength > 0)
                 {
-                    var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
+                    var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                     Array.Copy(data, pos, wdata, 0, wdata.Length);
                     WritePpuEprom(address, wdata);
-                    address += MaxWritePacketSize;
-                    pos += MaxWritePacketSize;
-                    wlength -= MaxWritePacketSize;
+                    address += maxWritePacketSize;
+                    pos += maxWritePacketSize;
+                    wlength -= maxWritePacketSize;
                 }
                 return;
             }
