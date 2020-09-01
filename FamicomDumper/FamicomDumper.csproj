@@ -138,7 +138,7 @@
     <Content Include="mappers\VRC6b.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Compile Include="CommonHelper.cs" />
+    <Compile Include="FlashHelper.cs" />
     <Compile Include="CoolboyWriter.cs" />
     <Compile Include="CoolgirlWriter.cs" />
     <Compile Include="IMapper.cs" />

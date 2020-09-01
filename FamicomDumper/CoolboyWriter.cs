@@ -127,7 +127,7 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(CoolboyReg, new byte[] { r0, r1, r2, r3 });
-            CommonHelper.GetFlashSizePrintInfo(dumper);
+            FlashHelper.GetFlashSizePrintInfo(dumper);
         }
 
         public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
@@ -158,7 +158,9 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
             var version = DetectVersion(dumper);
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
-            int flashSize = CommonHelper.GetFlashSizePrintInfo(dumper);
+            FlashHelper.ResetFlash(dumper);
+            int flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
+            FlashHelper.LockBitsCheck(dumper);
             if (PRG.Length > flashSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
@@ -213,7 +215,7 @@ namespace com.clusterrr.Famicom
                     if ((bank % 8 == 7) || (bank == prgBanks - 1)) // After last bank in sector
                     {
                         if (writePBBs)
-                            PPBWrite(dumper, coolboyReg, (uint)bank / 8);
+                            PPBSet(dumper, coolboyReg, (uint)bank / 8);
                         currentErrorCount = 0;
                     }
                 }
@@ -233,11 +235,16 @@ namespace com.clusterrr.Famicom
                             currentErrorCount = 0;
                             Console.WriteLine($"Lets skip sector #{bank / 8}");
                         }
-                    } else Console.WriteLine("Lets try again");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Lets try again");
+                    }
                     bank = (bank & ~7) - 1;                    
                     Console.Write("Reset... ");
                     dumper.Reset();
                     Console.WriteLine("OK");
+                    FlashHelper.ResetFlash(dumper);
                     continue;
                 }
             }
@@ -327,19 +334,11 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
-            // PPB Command Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0xC0);
-            // PPB Status Read
-            var result = dumper.ReadCpu(0x8000, 1)[0];
-            // PPB Command Set Exit
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
-            return result;
+
+            return FlashHelper.PPBRead(dumper);
         }
 
-        public static void PPBWrite(FamicomDumperConnection dumper, ushort coolboyReg, uint sector)
+        public static void PPBSet(FamicomDumperConnection dumper, ushort coolboyReg, uint sector)
         {
             Console.Write($"Writing PPB for sector #{sector}... ");
             // Select sector
@@ -354,55 +353,12 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
-            // PPB Command Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0xC0);
-            // PPB Program
-            dumper.WriteCpu(0x8000, 0xA0);
-            dumper.WriteCpu(0x8000, 0x00);
-            // Check
-            try
-            {
-                while (true)
-                {
-                    var b0 = dumper.ReadCpu(0x8000, 1)[0];
-                    var b1 = dumper.ReadCpu(0x8000, 1)[0];
-                    var tg = b0 ^ b1;
-                    if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                    {
-                        break;
-                    }
-                    else// DQ6 = toggle
-                    {
-                        if ((b0 & (1 << 5)) != 0) // DQ5 = 1
-                        {
-                            b0 = dumper.ReadCpu(0x8000, 1)[0];
-                            b1 = dumper.ReadCpu(0x8000, 1)[0];
-                            tg = b0 ^ b1;
-                            if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                                break;
-                            else
-                                throw new IOException("PPB write failed (DQ5 is set)");
-                        }
-                    }
-                }
-                var r = dumper.ReadCpu(0x8000, 1)[0];
-                if ((r & 1) != 0) // DQ0 = 1
-                    throw new IOException("PPB write failed (DQ0 is not set)");
-            }
-            finally
-            {
-                // PPB Command Set Exit
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
-            }
-            Console.WriteLine("OK");
+
+            FlashHelper.PPBSet(dumper);
         }
 
         public static void PPBErase(FamicomDumperConnection dumper, ushort coolboyReg)
         {
-            Console.Write($"Erasing all PBBs... ");
             // Sector 0
             int bank = 0;
             byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
@@ -415,50 +371,8 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
-            // PPB Command Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0xC0);
-            // All PPB Erase
-            dumper.WriteCpu(0x8000, 0x80);
-            dumper.WriteCpu(0x8000, 0x30);
-            // Check
-            try
-            {
-                while (true)
-                {
-                    var b0 = dumper.ReadCpu(0x8000, 1)[0];
-                    var b1 = dumper.ReadCpu(0x8000, 1)[0];
-                    var tg = b0 ^ b1;
-                    if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                    {
-                        break;
-                    }
-                    else// DQ6 = toggle
-                    {
-                        if ((b0 & (1 << 5)) != 0) // DQ5 = 1
-                        {
-                            b0 = dumper.ReadCpu(0x8000, 1)[0];
-                            b1 = dumper.ReadCpu(0x8000, 1)[0];
-                            tg = b0 ^ b1;
-                            if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                                break;
-                            else
-                                throw new IOException("PPB erase failed (DQ5 is set)");
-                        }
-                    }
-                }
-                var r = dumper.ReadCpu(0x8000, 1)[0];
-                if ((r & 1) != 1) // DQ0 = 0
-                    throw new IOException("PPB erase failed (DQ0 is not set)");
-            }
-            finally
-            {
-                // PPB Command Set Exit
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
-            }
-            Console.WriteLine("OK");
+
+            FlashHelper.PPBErase(dumper);
         }
     }
 }
