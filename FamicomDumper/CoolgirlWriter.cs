@@ -54,7 +54,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5001, 0);
             FlashHelper.ResetFlash(dumper);
             int flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
-            FlashHelper.LockBitsCheck(dumper);
+            FlashHelper.LockBitsCheckPrint(dumper);
             if (PRG.Length > flashSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
@@ -278,7 +278,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5001, 0);
             var flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
             int prgBanks = flashSize / 0x8000;
-            FlashHelper.LockBitsCheck(dumper);
+            FlashHelper.LockBitsCheckPrint(dumper);
 
             Console.Write("Erasing sector #0... ");
             dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);

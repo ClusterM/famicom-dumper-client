@@ -21,7 +21,7 @@ namespace com.clusterrr.Famicom
         public static void ResetFlash(FamicomDumperConnection dumper)
         {
             // Exit command set entry if any
-            dumper.WriteCpu(0x8001, 0x90); 
+            dumper.WriteCpu(0x8001, 0x90);
             dumper.WriteCpu(0x8001, 0x00);
             // Reset
             dumper.WriteCpu(0x8000, 0xF0);
@@ -45,11 +45,81 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("Vpp [Programming] Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1E * 2] >> 4) + 0.1 * (cfi[0x1E * 2] & 0x0F));
             Console.WriteLine("Maximum number of bytes in multi-byte program: {0}", 1 << (cfi[0x2A * 2] | (cfi[0x2B * 2] << 8)));
             Console.WriteLine("Device size: {0} MByte / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
-            Console.WriteLine("Flash device interface: {0}", flashDeviceInterface.ToString().Replace("_"," "));            
+            Console.WriteLine("Flash device interface: {0}", flashDeviceInterface.ToString().Replace("_", " "));
             return size;
         }
 
-        public static void LockBitsCheck(FamicomDumperConnection dumper)
+        public static void PasswordProgramm(FamicomDumperConnection dumper, byte[] password)
+        {
+            if (password.Length != 8)
+                throw new InvalidDataException("Invalid password length");
+            Console.Write("Programming password... ");
+            // Password Protection Set Entry
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0x60);
+            try
+            {
+                for (byte i = 0; i < password.Length; i++)
+                {
+                    dumper.WriteCpu(0x8000, 0xA0);
+                    dumper.WriteCpu((ushort)(0x8000 + i), password[i]);
+                }
+                var verify = dumper.ReadCpu(0x8000, 8);
+                for (byte i = 0; i < password.Length; i++)
+                    if (password[i] != verify[i])
+                        throw new InvalidDataException("Password verification failed");
+            }
+            finally
+            {
+            // Password Protection Set Exit 
+            dumper.WriteCpu(0x8000, 0x90);
+            dumper.WriteCpu(0x8000, 0x00);
+            }
+            Console.WriteLine("OK");
+
+            Console.Write("Programming lock register... ");
+            // Lock Register Set Entry
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0x40);
+            try
+            {
+                // Bits Program
+                dumper.WriteCpu(0x8000, 0xA0);
+                dumper.WriteCpu(0x8000, (byte)(1 << 2) ^ 0xFF); // password protection
+                var r = dumper.ReadCpu(0x8000, 1)[0];
+                if ((r & 7) != 3)
+                    throw new InvalidDataException("Lock bit verification failed");
+            }
+            finally
+            {
+                // PPB Command Set Exit
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
+            Console.WriteLine("OK");
+        }
+
+        public static void PasswordUnlock(FamicomDumperConnection dumper, byte[] password)
+        {
+            if (password.Length != 8)
+                throw new InvalidDataException("Invalid password length");
+            Console.Write("Unlocking password... ");
+            // Password Protection Set Entry
+            dumper.WriteCpu(0x8AAA, 0xAA);
+            dumper.WriteCpu(0x8555, 0x55);
+            dumper.WriteCpu(0x8AAA, 0x60);
+            // Password unlock
+            dumper.WriteCpu(0x8000, 0x25);
+            dumper.WriteCpu(0x8000, 0x03);
+                for (byte i = 0; i < password.Length; i++)
+                    dumper.WriteCpu((ushort)(0x8000 + i), password[i]);
+            dumper.WriteCpu(0x8000, 0x29);
+            Console.WriteLine("OK");
+        }
+
+        public static void LockBitsCheckPrint(FamicomDumperConnection dumper)
         {
             // Lock Register Set Entry
             dumper.WriteCpu(0x8AAA, 0xAA);
@@ -67,7 +137,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x8000, 0x00);
         }
 
-        public static void PPBLockBitCheck(FamicomDumperConnection dumper)
+        public static void PPBLockBitCheckPrint(FamicomDumperConnection dumper)
         {
             // PPB Lock Command Set Entry
             dumper.WriteCpu(0x8AAA, 0xAA);
@@ -145,7 +215,7 @@ namespace com.clusterrr.Famicom
 
         public static void PPBErase(FamicomDumperConnection dumper)
         {
-            PPBLockBitCheck(dumper);
+            PPBLockBitCheckPrint(dumper);
             Console.Write($"Erasing all PBBs... ");
             // PPB Command Set Entry
             dumper.WriteCpu(0x8AAA, 0xAA);

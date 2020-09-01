@@ -160,7 +160,7 @@ namespace com.clusterrr.Famicom
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             FlashHelper.ResetFlash(dumper);
             int flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
-            FlashHelper.LockBitsCheck(dumper);
+            FlashHelper.LockBitsCheckPrint(dumper);
             if (PRG.Length > flashSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
