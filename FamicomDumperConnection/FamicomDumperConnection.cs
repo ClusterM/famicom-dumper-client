@@ -104,6 +104,11 @@ namespace com.clusterrr.Famicom.DumperConnection
             return Directory.GetDirectories("/sys/bus/usb/devices").Where(d => File.Exists(Path.Combine(d, "dev"))).ToArray();
         }
 
+        /// <summary>
+        /// Method to get serial port path for specified USB converter
+        /// </summary>
+        /// <param name="deviceSerial">Serial number of USB to serial converter</param>
+        /// <returns>Path of serial port</returns>
         private static string LinuxDeviceToPort(string deviceSerial)
         {
             var devices = GetLinuxUsbDevices().Where(d =>

@@ -311,7 +311,8 @@ namespace com.clusterrr.Famicom
                     + ex.StackTrace
 #endif
                     );
-                if (!silent) PlayErrorSound();
+                if (!silent) 
+                    PlayErrorSound();
                 return 1;
             }
             return 0;
@@ -345,7 +346,8 @@ namespace com.clusterrr.Famicom
 
         public static void PlayDoneSound()
         {
-            doneSound.PlaySync();
+            if (!IsRunningOnMono())
+                doneSound.PlaySync();
         }
 
         static void PrintHelp()
