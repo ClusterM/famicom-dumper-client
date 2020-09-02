@@ -306,7 +306,7 @@ namespace com.clusterrr.Famicom
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error {ex.GetType()}: " + ex.Message
+                Console.WriteLine($"ERROR {ex.GetType()}: " + ex.Message
 #if DEBUG
                     + ex.StackTrace
 #endif

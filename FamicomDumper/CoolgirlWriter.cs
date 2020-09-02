@@ -91,14 +91,14 @@ namespace com.clusterrr.Famicom
                         timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 4}... ");
-                        dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
+                        dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.Direct);
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                    dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct, false);
+                    dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct);
                     Console.WriteLine("OK");
                     if ((bank % 4 == 3) || (bank == prgBanks - 1)) // After last bank in sector
                     {
@@ -281,12 +281,12 @@ namespace com.clusterrr.Famicom
             FlashHelper.LockBitsCheckPrint(dumper);
 
             Console.Write("Erasing sector #0... ");
-            dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
+            dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.Direct);
             Console.WriteLine("OK");
             var data = new byte[0x8000];
             new Random().NextBytes(data);
             Console.Write("Writing sector #0 for test... ");
-            dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct, false);
+            dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct);
             Console.WriteLine("OK");
             Console.Write("Reading sector #0 for test... ");
             var datar = dumper.ReadCpu(0x8000, 0x8000);
@@ -317,7 +317,7 @@ namespace com.clusterrr.Famicom
                     timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
                 try
                 {
-                    dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
+                    dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.Direct);
                     Console.WriteLine("OK");
                 }
                 catch
@@ -332,7 +332,7 @@ namespace com.clusterrr.Famicom
                     dumper.WriteCpu(0x5001, r1);
                     try
                     {
-                        dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
+                        dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.Direct);
                         Console.WriteLine("OK");
                     }
                     catch

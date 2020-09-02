@@ -19,71 +19,77 @@ namespace com.clusterrr.Famicom.DumperConnection
         const string DeviceName = "Famicom Dumper/Programmer";
 
         public string PortName { get; set; }
-        public bool Verbose { get; set; } = false;
-        public int Timeout { get; set; }
         public byte ProtocolVersion { get; private set; } = 0;
+        public bool Verbose { get; set; } = false;
+        public uint Timeout
+        {
+            get
+            {
+                return timeout;
+            }
+            set
+            {
+                timeout = value;
+                if (serialPort != null)
+                {
+                    serialPort.ReadTimeout = (int)timeout;
+                    serialPort.WriteTimeout = (int)timeout;
+                }
+            }
+        }
 
         private SerialPort serialPort = null;
         private FTDI d2xxPort = null;
-        private Thread readingThread;
-        private int commRecvPos;
-        private byte commRecvCommand;
-        private byte commRecvCrc;
-        private bool commRecvError;
-        private int commRecvLength;
-        private List<byte> recvBuffer = new List<byte>();
-        private bool dumperInitOk = false;
-        private bool cpuReadDone = false;
-        private int cpuWriteDoneCounter = 0;
-        private bool ppuReadDone = false;
-        private bool ppuWriteDone = false;
-        private byte[] prgRecvData, chrRecvData;
-        private byte[] mirroring;
-        private bool resetAck = false;
         private ushort maxReadPacketSize = DefaultmaxReadPacketSize;
         private ushort maxWritePacketSize = DefaultmaxWritePacketSize;
+        private uint timeout;
 
-        enum Command
+        enum DumperCommand
         {
-            COMMAND_PRG_STARTED = 0,
-            COMMAND_CHR_STARTED = 1,
-            COMMAND_ERROR_INVALID = 2,
-            COMMAND_ERROR_CRC = 3,
-            COMMAND_ERROR_OVERFLOW = 4,
-            COMMAND_PRG_INIT = 5,
-            COMMAND_CHR_INIT = 6,
-            COMMAND_PRG_READ_REQUEST = 7,
-            COMMAND_PRG_READ_RESULT = 8,
-            COMMAND_PRG_WRITE_REQUEST = 9,
-            COMMAND_PRG_WRITE_DONE = 10,
-            COMMAND_CHR_READ_REQUEST = 11,
-            COMMAND_CHR_READ_RESULT = 12,
-            COMMAND_CHR_WRITE_REQUEST = 13,
-            COMMAND_CHR_WRITE_DONE = 14,
-            COMMAND_PHI2_INIT = 15,
-            COMMAND_PHI2_INIT_DONE = 16,
-            COMMAND_MIRRORING_REQUEST = 17,
-            COMMAND_MIRRORING_RESULT = 18,
-            COMMAND_RESET = 19,
-            COMMAND_RESET_ACK = 20,
-            COMMAND_PRG_EPROM_WRITE_REQUEST = 21,
-            COMMAND_CHR_EPROM_WRITE_REQUEST = 22,
-            COMMAND_EPROM_PREPARE = 23,
-            COMMAND_PRG_FLASH_ERASE_REQUEST = 24,
-            COMMAND_PRG_FLASH_WRITE_REQUEST = 25,
-            COMMAND_CHR_FLASH_ERASE_REQUEST = 26,
-            COMMAND_CHR_FLASH_WRITE_REQUEST = 27,
-            COMMAND_TEST_SET = 32,
-            COMMAND_TEST_RESULT = 33,
-            COMMAND_COOLBOY_READ_REQUEST = 34,
-            COMMAND_COOLBOY_ERASE_REQUEST = 35,
-            COMMAND_COOLBOY_WRITE_REQUEST = 36,
-            COMMAND_COOLGIRL_ERASE_SECTOR_REQUEST = 37,
-            COMMAND_COOLGIRL_WRITE_REQUEST = 38,
-            COMMAND_PRG_CRC_READ_REQUEST = 39,
-            COMMAND_CHR_CRC_READ_REQUEST = 40,
-            COMMAND_BOOTLOADER = 0xFE,
-            COMMAND_DEBUG = 0xFF
+            STARTED = 0,
+            CHR_STARTED = 1, // deprecated
+            ERROR_INVALID = 2,
+            ERROR_CRC = 3,
+            ERROR_OVERFLOW = 4,
+            PRG_INIT = 5,
+            CHR_INIT = 6,
+            PRG_READ_REQUEST = 7,
+            PRG_READ_RESULT = 8,
+            PRG_WRITE_REQUEST = 9,
+            PRG_WRITE_DONE = 10,
+            CHR_READ_REQUEST = 11,
+            CHR_READ_RESULT = 12,
+            CHR_WRITE_REQUEST = 13,
+            CHR_WRITE_DONE = 14,
+            //PHI2_INIT = 15,
+            //PHI2_INIT_DONE = 16,
+            MIRRORING_REQUEST = 17,
+            MIRRORING_RESULT = 18,
+            RESET = 19,
+            RESET_ACK = 20,
+            //PRG_EPROM_WRITE_REQUEST = 21,
+            //CHR_EPROM_WRITE_REQUEST = 22,
+            //EPROM_PREPARE = 23,
+            //PRG_FLASH_ERASE_REQUEST = 24,
+            //PRG_FLASH_WRITE_REQUEST = 25,
+            //CHR_FLASH_ERASE_REQUEST = 26,
+            //CHR_FLASH_WRITE_REQUEST = 27,
+            //TEST_SET = 32,
+            //TEST_RESULT = 33,
+            COOLBOY_READ_REQUEST = 34,
+            COOLBOY_ERASE_SECTOR_REQUEST = 35,
+            COOLBOY_WRITE_REQUEST = 36,
+            FLASH_ERASE_SECTOR_REQUEST = 37,
+            FLASH_WRITE_REQUEST = 38,
+            PRG_CRC_READ_REQUEST = 39,
+            CHR_CRC_READ_REQUEST = 40,
+            FLASH_WRITE_ERROR = 41,
+            FLASH_WRITE_TIMEOUT = 42,
+            FLASH_ERASE_ERROR = 43,
+            FLASH_ERASE_TIMEOUT = 44,
+
+            BOOTLOADER = 0xFE,
+            DEBUG = 0xFF
         }
 
         public enum MemoryAccessMethod
@@ -95,7 +101,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public FamicomDumperConnection(string portName = null)
         {
             this.PortName = portName;
-            Timeout = 10000;
+            Timeout = 5000;
         }
 
         /// <summary>
@@ -144,7 +150,6 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public void Open()
         {
-            dumperInitOk = false;
             ProtocolVersion = 0;
             maxReadPacketSize = DefaultmaxReadPacketSize;
             maxWritePacketSize = DefaultmaxWritePacketSize;
@@ -181,6 +186,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                         if (!dumpers.Any())
                             throw new IOException($"{DeviceName} not found");
                         portName = dumpers.First().SerialNumber;
+                        Console.WriteLine($"Autodetected USB device serial number: {portName}");
                     }
                     if (ftStatus != FTDI.FT_STATUS.FT_OK)
                         throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
@@ -197,8 +203,8 @@ namespace com.clusterrr.Famicom.DumperConnection
                     if (!dumpers.Any())
                         throw new IOException($"{DeviceName} not found");
                     portName = LinuxDeviceToPort(dumpers.First());
+                    Console.WriteLine($"Autodetected USB device path: {portName}");
                 }
-                Console.WriteLine($"Autodetected USB device serial number: {portName}");
             }
 
             if (portName.ToUpper().StartsWith("COM") || IsRunningOnMono())
@@ -216,7 +222,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 SerialPort sPort;
                 sPort = new SerialPort();
                 sPort.PortName = portName;
-                sPort.WriteTimeout = 5000; sPort.ReadTimeout = -1;
+                sPort.WriteTimeout = (int)Timeout; sPort.ReadTimeout = (int)Timeout;
                 sPort.BaudRate = PortBaudRate;
                 sPort.Parity = Parity.None;
                 sPort.DataBits = 8;
@@ -240,7 +246,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                     throw new IOException("Failed to open device (error " + ftStatus.ToString() + ")");
                 // Set data characteristics - Data bits, Stop bits, Parity
-                ftStatus = myFtdiDevice.SetTimeouts(300000, 5000);
+                ftStatus = myFtdiDevice.SetTimeouts(Timeout, Timeout);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                     throw new IOException("Failed to set timeouts (error " + ftStatus.ToString() + ")");
                 ftStatus = myFtdiDevice.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
@@ -256,11 +262,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                     throw new IOException("Failed to set Baud rate (error " + ftStatus.ToString() + ")");
                 d2xxPort = myFtdiDevice;
             }
-
-            if (readingThread != null)
-                readingThread.Abort();
-            readingThread = new Thread(readThread);
-            readingThread.Start();
         }
 
         public void Close()
@@ -277,175 +278,47 @@ namespace com.clusterrr.Famicom.DumperConnection
                     d2xxPort.Close();
                 d2xxPort = null;
             }
-            if (readingThread != null)
-            {
-                readingThread.Abort();
-                readingThread = null;
-            }
         }
 
-        void readThread()
+        private byte[] ReadPort()
         {
-            try
+            var buffer = new byte[maxReadPacketSize + 8];
+            if (serialPort != null)
             {
-                while (serialPort != null)
+                var l = serialPort.Read(buffer, 0, buffer.Length);
+                var result = new byte[l];
+                Array.Copy(buffer, result, l);
+                return result;
+            }
+            else if (d2xxPort != null)
+            {
+                UInt32 numBytesAvailable = 0;
+                FTDI.FT_STATUS ftStatus;
+                int t = 0;
+                do
                 {
-                    try
-                    {
-                        int c = serialPort.ReadByte();
-                        if (c >= 0)
-                            RecvProceed((byte)c);
-                    }
-                    catch (TimeoutException) { }
-                }
-                while (d2xxPort != null)
-                {
-                    try
-                    {
-                        UInt32 numBytesAvailable = 0;
-                        FTDI.FT_STATUS ftStatus;
-                        do
-                        {
-                            ftStatus = d2xxPort.GetRxBytesAvailable(ref numBytesAvailable);
-                            if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                                throw new IOException("Failed to get number of bytes available to read (error " + ftStatus.ToString() + ")");
-                            Thread.Sleep(10);
-                        } while (numBytesAvailable == 0);
-                        var data = new byte[numBytesAvailable];
-                        UInt32 numBytesRead = 0;
-                        ftStatus = d2xxPort.Read(data, numBytesAvailable, ref numBytesRead);
-                        if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                            throw new IOException("Failed to read data (error " + ftStatus.ToString() + ")");
-                        foreach (var b in data)
-                            RecvProceed(b);
-                    }
-                    catch (TimeoutException) { }
-                }
+                    ftStatus = d2xxPort.GetRxBytesAvailable(ref numBytesAvailable);
+                    if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                        throw new IOException("Failed to get number of bytes available to read (error " + ftStatus.ToString() + ")");
+                    if (numBytesAvailable > 0)
+                        break;
+                    Thread.Sleep(10);
+                    t += 10;
+                    if (t >= Timeout)
+                        throw new TimeoutException("Read timeout");
+                } while (numBytesAvailable == 0);
+                uint numBytesRead = 0;
+                ftStatus = d2xxPort.Read(buffer, Math.Min(numBytesAvailable, (uint)maxReadPacketSize + 8), ref numBytesRead);
+                if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                    throw new IOException("Failed to read data (error " + ftStatus.ToString() + ")");
+                var result = new byte[numBytesRead];
+                Array.Copy(buffer, result, numBytesRead);
+                return result;
             }
-            catch (ThreadAbortException) { }
-            catch (IOException)
-            {
-                Close();
-                //Console.WriteLine("Port closed: " + ex.Message);
-            }
-            finally
-            {
-                readingThread = null;
-            }
+            return null;
         }
 
-        void CalcRecvCRC(byte inbyte)
-        {
-            int j;
-            for (j = 0; j < 8; j++)
-            {
-                byte mix = (byte)((commRecvCrc ^ inbyte) & 0x01);
-                commRecvCrc >>= 1;
-                if (mix != 0)
-                    commRecvCrc ^= 0x8C;
-                inbyte >>= 1;
-            }
-        }
-
-        void RecvProceed(byte data)
-        {
-            if (commRecvError && data != Magic) return;
-            commRecvError = false;
-            if (commRecvPos == 0)
-            {
-                commRecvCrc = 0;
-                recvBuffer.Clear();
-            }
-
-            CalcRecvCRC(data);
-            int l = commRecvPos - 4;
-            switch (commRecvPos)
-            {
-                case 0:
-                    if (data != Magic)
-                    {
-                        OnError();
-                    }
-                    break;
-                case 1:
-                    commRecvCommand = data;
-                    break;
-                case 2:
-                    commRecvLength = data;
-                    break;
-                case 3:
-                    commRecvLength |= data << 8;
-                    break;
-                default:
-                    if (l < commRecvLength)
-                    {
-                        recvBuffer.Add(data);
-                    }
-                    else if (l == commRecvLength)
-                    {
-                        if (commRecvCrc == 0)
-                        {
-                            DataReceived((Command)commRecvCommand, recvBuffer.ToArray());
-                        }
-                        else
-                        {
-                            commRecvError = true;
-                            OnError();
-                            //comm_start(COMMAND_ERROR_CRC, 0);
-                        }
-                        commRecvPos = 0;
-                        return;
-                    }
-                    break;
-            }
-            commRecvPos++;
-        }
-
-        void DataReceived(Command command, byte[] data)
-        {
-            //Console.WriteLine("Received command: " + command);
-            switch (command)
-            {
-                case Command.COMMAND_PRG_STARTED:
-                    dumperInitOk = true;
-                    if (data.Length >= 1)
-                        ProtocolVersion = data[0];
-                    if (data.Length >= 3)
-                        maxReadPacketSize = (ushort)(data[1] | (data[2] << 8));
-                    if (data.Length >= 5)
-                        maxWritePacketSize = (ushort)(data[3] | (data[4] << 8));
-                    break;
-                case Command.COMMAND_PRG_READ_RESULT:
-                    OnCpuReadResult(data);
-                    break;
-                case Command.COMMAND_PRG_WRITE_DONE:
-                    OnCpuWriteDone();
-                    break;
-                case Command.COMMAND_CHR_READ_RESULT:
-                    OnPpuReadResult(data);
-                    break;
-                case Command.COMMAND_CHR_WRITE_DONE:
-                    OnPpuWriteDone();
-                    break;
-                case Command.COMMAND_MIRRORING_RESULT:
-                    OnMirroring(data);
-                    break;
-                case Command.COMMAND_RESET_ACK:
-                    OnResetAck();
-                    break;
-                case Command.COMMAND_DEBUG:
-                    ShowDebugInfo(data);
-                    break;
-            }
-        }
-
-        void ShowDebugInfo(byte[] data)
-        {
-            foreach (var b in data)
-                Console.Write("{0:X2} ", b);
-        }
-
-        void SendData(Command command, byte[] data)
+        void SendCommand(DumperCommand command, byte[] data)
         {
             byte[] buffer = new byte[data.Length + 5];
             buffer[0] = Magic;
@@ -480,23 +353,124 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
         }
 
+        (DumperCommand Command, byte[] Data) RecvCommand()
+        {
+            int commRecvPos = 0;
+            DumperCommand commRecvCommand = 0;
+            int commRecvLength = 0;
+            List<byte> recvBuffer = new List<byte>();
+            while (true)
+            {
+                var data = ReadPort();
+                foreach (var b in data)
+                {
+                    recvBuffer.Add(b);
+                    switch (commRecvPos)
+                    {
+                        case 0:
+                            if (b == Magic)
+                                commRecvPos++;
+                            else
+                            {
+                                recvBuffer.Clear();
+                                continue;
+                                //throw new InvalidDataException("Received invalid magic");
+                            }
+                            break;
+                        case 1:
+                            commRecvCommand = (DumperCommand)b;
+                            commRecvPos++;
+                            break;
+                        case 2:
+                            commRecvLength = b;
+                            commRecvPos++;
+                            break;
+                        case 3:
+                            commRecvLength |= b << 8;
+                            commRecvPos++;
+                            break;
+                        default:
+                            if (recvBuffer.Count == commRecvLength + 5)
+                            {
+                                // CRC
+                                var calculatecCRC = CRC(recvBuffer);
+                                if (calculatecCRC == 0)
+                                {
+                                    // CRC OK
+                                    if (commRecvCommand == DumperCommand.ERROR_CRC)
+                                        throw new InvalidDataException("Dumper reported CRC error");
+                                    else if (commRecvCommand == DumperCommand.ERROR_INVALID)
+                                        throw new InvalidDataException("Dumper reported invalid magic");
+                                    else if (commRecvCommand == DumperCommand.ERROR_OVERFLOW)
+                                        throw new InvalidDataException("Dumper reported overflow error");
+                                    else
+                                        return (commRecvCommand, recvBuffer.Skip(4).Take(commRecvLength).ToArray());
+                                }
+                                else
+                                {
+                                    // CRC NOT OK
+                                    throw new InvalidDataException("Received data CRC error");
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
+        byte CRC(IEnumerable<byte> data)
+        {
+            byte commRecvCrc = 0;
+            foreach (var b in data)
+            {
+                var inbyte = b;
+                int j;
+                for (j = 0; j < 8; j++)
+                {
+                    byte mix = (byte)((commRecvCrc ^ inbyte) & 0x01);
+                    commRecvCrc >>= 1;
+                    if (mix != 0)
+                        commRecvCrc ^= 0x8C;
+                    inbyte >>= 1;
+                }
+            }
+            return commRecvCrc;
+        }
+
         public bool DumperInit()
         {
             if (Verbose)
                 Console.Write("Dumper initialization... ");
 
-            dumperInitOk = false;
-            for (int i = 0; i < 300; i++)
+            var oldTimeout = Timeout;
+            try
             {
-                SendData(Command.COMMAND_PRG_INIT, new byte[0]);
-                Thread.Sleep(50);
-                if (dumperInitOk)
+                Timeout = 100;
+                for (int i = 0; i < 30; i++)
                 {
-                    if (Verbose)
-                        Console.WriteLine("OK");
-                    return true;
+                    try
+                    {
+                        SendCommand(DumperCommand.PRG_INIT, new byte[0]);
+                        var recv = RecvCommand();
+                        if (recv.Command == DumperCommand.STARTED)
+                        {
+                            if (recv.Data.Length >= 1)
+                                ProtocolVersion = recv.Data[0];
+                            if (recv.Data.Length >= 3)
+                                maxReadPacketSize = (ushort)(recv.Data[1] | (recv.Data[2] << 8));
+                            if (recv.Data.Length >= 5)
+                                maxWritePacketSize = (ushort)(recv.Data[3] | (recv.Data[4] << 8));
+                            return true;
+                        }
+                    }
+                    catch { }
                 }
             }
+            finally
+            {
+                Timeout = oldTimeout;
+            }
+
             if (Verbose)
                 Console.WriteLine("failed");
             return false;
@@ -533,22 +507,19 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
-            cpuReadDone = false;
             switch (flashType)
             {
                 case MemoryAccessMethod.Direct:
-                    SendData(Command.COMMAND_PRG_READ_REQUEST, buffer);
+                    SendCommand(DumperCommand.PRG_READ_REQUEST, buffer);
                     break;
                 case MemoryAccessMethod.CoolboyGPIO:
-                    SendData(Command.COMMAND_COOLBOY_READ_REQUEST, buffer);
+                    SendCommand(DumperCommand.COOLBOY_READ_REQUEST, buffer);
                     break;
             }
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (cpuReadDone) return prgRecvData;
-            }
-            throw new IOException("Read timeout");
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.PRG_READ_RESULT)
+                throw new IOException($"Invalid data received: {recv.Command}");
+            return recv.Data;
         }
 
         public ushort ReadCpuCrc(ushort address, int length)
@@ -560,20 +531,11 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
-            cpuReadDone = false;
-            SendData(Command.COMMAND_PRG_CRC_READ_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (cpuReadDone)
-                {
-                    var crc = (ushort)(prgRecvData[0] | (prgRecvData[1] * 0x100));
-                    if (Verbose)
-                        Console.WriteLine($" {crc:X4}");
-                    return crc;
-                }
-            }
-            throw new IOException("Read timeout");
+            SendCommand(DumperCommand.PRG_CRC_READ_REQUEST, buffer);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.PRG_READ_RESULT)
+                throw new IOException($"Invalid data received: {recv.Command}");
+            return (ushort)(recv.Data[0] | (recv.Data[1] << 8));
         }
 
         public void WriteCpu(ushort address, byte data)
@@ -620,37 +582,33 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
-            cpuWriteDoneCounter = 0;
-            SendData(Command.COMMAND_PRG_WRITE_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (cpuWriteDoneCounter != 0) return;
-            }
-            throw new IOException("Write timeout");
+            SendCommand(DumperCommand.PRG_WRITE_REQUEST, buffer);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {recv.Command}");
         }
 
-        public void EraseCpuFlash(MemoryAccessMethod flashType)
+        public void EraseCpuFlashSector(MemoryAccessMethod flashType)
         {
             switch (flashType)
             {
                 case MemoryAccessMethod.CoolboyGPIO:
-                    SendData(Command.COMMAND_COOLBOY_ERASE_REQUEST, new byte[0]);
+                    SendCommand(DumperCommand.COOLBOY_ERASE_SECTOR_REQUEST, new byte[0]);
                     break;
                 case MemoryAccessMethod.Direct:
-                    SendData(Command.COMMAND_COOLGIRL_ERASE_SECTOR_REQUEST, new byte[0]);
+                    SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, new byte[0]);
                     break;
             }
-            cpuWriteDoneCounter = 0;
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (cpuWriteDoneCounter != 0) return;
-            }
-            throw new IOException("Write timeout");
+            var recv = RecvCommand();
+            if (recv.Command == DumperCommand.FLASH_ERASE_ERROR)
+                throw new IOException($"Flash erase error (0x{recv.Data[0]:X2})");
+            else if (recv.Command == DumperCommand.FLASH_ERASE_TIMEOUT)
+                throw new TimeoutException($"Flash erase timeout");
+            else if (recv.Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {recv.Command}");
         }
 
-        public void WriteCpuFlash(ushort address, byte[] data, MemoryAccessMethod flashType = MemoryAccessMethod.Direct, bool accelerated = false)
+        public void WriteCpuFlash(ushort address, byte[] data, MemoryAccessMethod flashType = MemoryAccessMethod.Direct)
         {
             if (Verbose)
             {
@@ -668,46 +626,21 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             int wlength = data.Length;
             int pos = 0;
-            int writeCounter = 0;
-            cpuWriteDoneCounter = 0;
             while (wlength > 0)
             {
                 var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
-                if (ContainsNotFF(data))
-                {
-                    WriteCpuFlashBlock(address, wdata, !accelerated, flashType);
-                    writeCounter++;
-                    if (accelerated)
-                        Thread.Sleep(40);
-                }
+                if (data.Select(b => b != 0xFF).Any()) // if there is any not FF byte
+                    WriteCpuFlashBlock(address, wdata, flashType);
                 address += maxWritePacketSize;
                 pos += maxWritePacketSize;
                 wlength -= maxWritePacketSize;
-                //Console.WriteLine("{0} / {1}", writeCounter, prgWriteDoneCounter);
-            }
-            if (accelerated)
-            {
-                for (int t = 0; t < Timeout; t += 5)
-                {
-                    Thread.Sleep(5);
-                    if (cpuWriteDoneCounter >= writeCounter)
-                        return;
-                }
-                throw new IOException("Write timeout");
             }
             if (Verbose)
                 Console.WriteLine(" OK");
         }
 
-        private static bool ContainsNotFF(byte[] data)
-        {
-            foreach (var b in data)
-                if (b != 0xFF) return true;
-            return false;
-        }
-
-        private void WriteCpuFlashBlock(ushort address, byte[] data, bool wait, MemoryAccessMethod flashType)
+        private void WriteCpuFlashBlock(ushort address, byte[] data, MemoryAccessMethod flashType)
         {
             int length = data.Length;
             var buffer = new byte[4 + length];
@@ -716,26 +649,22 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
-            if (wait)
-                cpuWriteDoneCounter = 0;
             switch (flashType)
             {
                 case MemoryAccessMethod.CoolboyGPIO:
-                    SendData(Command.COMMAND_COOLBOY_WRITE_REQUEST, buffer);
+                    SendCommand(DumperCommand.COOLBOY_WRITE_REQUEST, buffer);
                     break;
                 case MemoryAccessMethod.Direct:
-                    SendData(Command.COMMAND_COOLGIRL_WRITE_REQUEST, buffer);
+                    SendCommand(DumperCommand.FLASH_WRITE_REQUEST, buffer);
                     break;
             }
-            if (wait)
-            {
-                for (int t = 0; t < Timeout; t += 5)
-                {
-                    Thread.Sleep(5);
-                    if (cpuWriteDoneCounter != 0) return;
-                }
-                throw new IOException("Write timeout");
-            }
+            var recv = RecvCommand();
+            if (recv.Command == DumperCommand.FLASH_WRITE_ERROR)
+                throw new IOException($"Flash write error");
+            else if (recv.Command == DumperCommand.FLASH_WRITE_TIMEOUT)
+                throw new TimeoutException($"Flash write timeout");
+            else if (recv.Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {recv.Command}");
         }
 
         public byte[] ReadPpu(ushort address, int length)
@@ -767,15 +696,11 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
-            ppuReadDone = false;
-            SendData(Command.COMMAND_CHR_READ_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (ppuReadDone)
-                    return chrRecvData;
-            }
-            throw new IOException("Read timeout");
+            SendCommand(DumperCommand.CHR_READ_REQUEST, buffer);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.CHR_READ_RESULT)
+                throw new IOException($"Invalid data received: {recv.Command}");
+            return recv.Data;
         }
 
         public ushort ReadPpuCrc(ushort address, int length)
@@ -787,20 +712,11 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
-            ppuReadDone = false;
-            SendData(Command.COMMAND_CHR_CRC_READ_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (ppuReadDone)
-                {
-                    var crc = (ushort)(chrRecvData[0] | (chrRecvData[1] * 0x100));
-                    if (Verbose)
-                        Console.WriteLine($" {crc:X4}");
-                    return crc;
-                }
-            }
-            throw new IOException("Read timeout");
+            SendCommand(DumperCommand.CHR_CRC_READ_REQUEST, buffer);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.CHR_READ_RESULT)
+                throw new IOException($"Invalid data received: {recv.Command}");
+            return (ushort)(recv.Data[0] | (recv.Data[1] << 8));
         }
 
         public void WritePpu(ushort address, byte data)
@@ -847,72 +763,25 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
-            ppuWriteDone = false;
-            SendData(Command.COMMAND_CHR_WRITE_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (ppuWriteDone) return;
-            }
-            throw new IOException("Write timeout");
-        }
-
-        public void WritePpuEprom(ushort address, byte[] data)
-        {
-            if (data.Length > maxWritePacketSize) // Split packets
-            {
-                int wlength = data.Length;
-                int pos = 0;
-                while (wlength > 0)
-                {
-                    var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
-                    Array.Copy(data, pos, wdata, 0, wdata.Length);
-                    WritePpuEprom(address, wdata);
-                    address += maxWritePacketSize;
-                    pos += maxWritePacketSize;
-                    wlength -= maxWritePacketSize;
-                }
-                return;
-            }
-
-            int length = data.Length;
-            var buffer = new byte[4 + length];
-            buffer[0] = (byte)(address & 0xFF);
-            buffer[1] = (byte)((address >> 8) & 0xFF);
-            buffer[2] = (byte)(length & 0xFF);
-            buffer[3] = (byte)((length >> 8) & 0xFF);
-            Array.Copy(data, 0, buffer, 4, length);
-            ppuWriteDone = false;
-            SendData(Command.COMMAND_CHR_EPROM_WRITE_REQUEST, buffer);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (ppuWriteDone) return;
-            }
-            throw new IOException("Write timeout");
+            SendCommand(DumperCommand.CHR_WRITE_REQUEST, buffer);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.CHR_WRITE_DONE)
+                throw new IOException($"Invalid data received: {recv.Command}");
         }
 
         public bool[] GetMirroring()
         {
             if (Verbose)
                 Console.Write("Reading mirroring... ");
-            mirroring = null;
-            SendData(Command.COMMAND_MIRRORING_REQUEST, new byte[0]);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (mirroring != null)
-                {
-                    if (Verbose)
-                    {
-                        foreach (var b in mirroring)
-                            Console.Write($"{b} ");
-                        Console.WriteLine();
-                    }
-                    return mirroring.Select(v => v != 0).ToArray();
-                }
-            }
-            throw new IOException("Read timeout");
+            SendCommand(DumperCommand.MIRRORING_REQUEST, new byte[0]);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.MIRRORING_RESULT)
+                throw new IOException($"Invalid data received: {recv.Command}");
+            var mirroring = recv.Data;
+            foreach (var b in mirroring)
+                Console.Write($"{b} ");
+            Console.WriteLine();
+            return mirroring.Select(v => v != 0).ToArray();
         }
 
         /// <summary>
@@ -920,55 +789,15 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// </summary>
         public void Reset()
         {
-            resetAck = false;
-            SendData(Command.COMMAND_RESET, new byte[0]);
-            for (int t = 0; t < Timeout; t += 5)
-            {
-                Thread.Sleep(5);
-                if (resetAck) return;
-            }
-            throw new IOException("Read timeout");
+            SendCommand(DumperCommand.RESET, new byte[0]);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.RESET_ACK)
+                throw new IOException($"Invalid data received: {recv.Command}");
         }
 
         public void Bootloader()
         {
-            SendData(Command.COMMAND_BOOTLOADER, new byte[0]);
-        }
-
-        private void OnCpuReadResult(byte[] data)
-        {
-            prgRecvData = data;
-            cpuReadDone = true;
-        }
-
-        private void OnCpuWriteDone()
-        {
-            cpuWriteDoneCounter++;
-        }
-
-        private void OnPpuReadResult(byte[] data)
-        {
-            chrRecvData = data;
-            ppuReadDone = true;
-        }
-
-        private void OnPpuWriteDone()
-        {
-            ppuWriteDone = true;
-        }
-
-        private void OnMirroring(byte[] mirroring)
-        {
-            this.mirroring = mirroring;
-        }
-
-        private void OnResetAck()
-        {
-            resetAck = true;
-        }
-
-        private void OnError()
-        {
+            SendCommand(DumperCommand.BOOTLOADER, new byte[0]);
         }
 
         private static bool IsRunningOnMono()

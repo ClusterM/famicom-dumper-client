@@ -97,14 +97,14 @@ namespace com.clusterrr.Famicom
                     timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                     lastSectorTime = DateTime.Now;
                     Console.Write("Erasing sector... ");
-                    dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO);
+                    dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO);
                     Console.WriteLine("OK");
                 }
                 Array.Copy(PRG, pos, data, 0, data.Length);
                 var timePassed = DateTime.Now - writeStartTime;
                 Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank / 2 + 1, prgBanks / 2, (int)(100 * bank / prgBanks),
                     timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO, false);
+                dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO);
                 Console.WriteLine("OK");
             }
         }
@@ -203,14 +203,14 @@ namespace com.clusterrr.Famicom
                         timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 8}... ");
-                        dumper.EraseCpuFlash(FamicomDumperConnection.MemoryAccessMethod.Direct);
+                        dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.Direct);
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                    dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct, false);
+                    dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct);
                     Console.WriteLine("OK");
                     if ((bank % 8 == 7) || (bank == prgBanks - 1)) // After last bank in sector
                     {
