@@ -42,7 +42,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         private FTDI d2xxPort = null;
         private ushort maxReadPacketSize = DefaultmaxReadPacketSize;
         private ushort maxWritePacketSize = DefaultmaxWritePacketSize;
-        private uint timeout;
+        private uint timeout = 5000;
 
         enum DumperCommand
         {
@@ -101,7 +101,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         public FamicomDumperConnection(string portName = null)
         {
             this.PortName = portName;
-            Timeout = 5000;
         }
 
         /// <summary>
@@ -446,7 +445,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             try
             {
                 Timeout = 100;
-                for (int i = 0; i < 30; i++)
+                for (int i = 0; i < 300; i++)
                 {
                     try
                     {
@@ -662,7 +661,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             if (recv.Command == DumperCommand.FLASH_WRITE_ERROR)
                 throw new IOException($"Flash write error");
             else if (recv.Command == DumperCommand.FLASH_WRITE_TIMEOUT)
-                throw new TimeoutException($"Flash write timeout");
+                throw new IOException($"Flash write timeout");
             else if (recv.Command != DumperCommand.PRG_WRITE_DONE)
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
