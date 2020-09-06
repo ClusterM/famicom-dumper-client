@@ -295,7 +295,8 @@ namespace com.clusterrr.Famicom
                             return 2;
 
                     }
-                    Console.WriteLine("Done in {0} seconds", (int)(DateTime.Now - startTime).TotalSeconds);
+                    var timePassed = DateTime.Now - startTime;
+                    Console.WriteLine($"Done in {timePassed.Hours}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
                     if (!silent) PlayDoneSound();
                 }
                 finally
