@@ -208,7 +208,7 @@ namespace com.clusterrr.Famicom.DumperConnection
 
             if (portName.ToUpper().StartsWith("COM") || IsRunningOnMono())
             {
-                if (IsRunningOnMono() && !portName.StartsWith("/dev/tty"))
+                if (IsRunningOnMono() && !File.Exists(portName))
                 {
                     // Need to convert serial number to port address
                     var ttyPath = LinuxDeviceSerialToPort(portName);
