@@ -75,7 +75,7 @@ namespace com.clusterrr.Famicom
             string remoteHost = null;
             try
             {
-                if (args.Length == 0)
+                if (args.Length == 0 || args.Contains("help") || args.Contains("--help"))
                 {
                     PrintHelp();
                     return 0;
