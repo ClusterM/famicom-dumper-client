@@ -243,22 +243,26 @@ namespace com.clusterrr.Famicom.DumperConnection
                 // Open first device in our list by serial number
                 ftStatus = myFtdiDevice.OpenBySerialNumber(portName);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to open device (error " + ftStatus.ToString() + ")");
+                    throw new IOException($"Failed to open device (error {ftStatus})");
                 // Set data characteristics - Data bits, Stop bits, Parity
                 ftStatus = myFtdiDevice.SetTimeouts(Timeout, Timeout);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to set timeouts (error " + ftStatus.ToString() + ")");
+                    throw new IOException($"Failed to set timeouts (error {ftStatus})");
                 ftStatus = myFtdiDevice.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to set data characteristics (error " + ftStatus.ToString() + ")");
+                    throw new IOException($"Failed to set data characteristics (error {ftStatus})");
                 // Set flow control
                 ftStatus = myFtdiDevice.SetFlowControl(FTDI.FT_FLOW_CONTROL.FT_FLOW_NONE, 0x11, 0x13);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to set flow control (error " + ftStatus.ToString() + ")");
+                    throw new IOException($"Failed to set flow control (error {ftStatus})");
                 // Set up device data parameters
                 ftStatus = myFtdiDevice.SetBaudRate(PortBaudRate);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to set Baud rate (error " + ftStatus.ToString() + ")");
+                    throw new IOException($"Failed to set Baud rate (error {ftStatus})");
+                // Set latency
+                ftStatus = myFtdiDevice.SetLatency(0);
+                if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                    throw new IOException($"Failed to set latency (error {ftStatus})");
                 d2xxPort = myFtdiDevice;
             }
         }
