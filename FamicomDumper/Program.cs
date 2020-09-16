@@ -586,7 +586,7 @@ namespace com.clusterrr.Famicom
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
             bool[] mirroringRaw = dumper.GetMirroring();
-            NesFile.MirroringType mirroring = NesFile.MirroringType.Unknown_none;
+            NesFile.MirroringType mirroring = NesFile.MirroringType.Unknown;
             if (mirroringRaw.Length == 1)
             {
                 // Backward compatibility with old firmwares
@@ -610,7 +610,7 @@ namespace com.clusterrr.Famicom
                         mirroring = NesFile.MirroringType.OneScreenB; // One-screen B
                         break;
                     default:
-                        mirroring = NesFile.MirroringType.Unknown_none; // Unknown
+                        mirroring = NesFile.MirroringType.Unknown; // Unknown
                         break;
                 }
                 Console.WriteLine("Mirroring: {0} ({1} {2} {3} {4})", mirroring, mirroringRaw[0] ? 1 : 0, mirroringRaw[1] ? 1 : 0, mirroringRaw[2] ? 1 : 0, mirroringRaw[3] ? 1 : 0);
@@ -619,9 +619,10 @@ namespace com.clusterrr.Famicom
             if (mapper.Number >= 0)
             {
                 var nesFile = new NesFile();
-                nesFile.Mapper = (byte)mapper.Number;
+                // TODO: add some way to specify submapper
+                nesFile.Version = NesFile.iNesVersion.NES20;
+                nesFile.Mapper = (ushort)mapper.Number;
                 nesFile.Mirroring = mirroring;
-                nesFile.TvSystem = NesFile.TvSystemType.Ntsc;
                 nesFile.PRG = prg.ToArray();
                 nesFile.CHR = chr.ToArray();
                 nesFile.Save(fileName);
@@ -632,12 +633,15 @@ namespace com.clusterrr.Famicom
                 unifFile.Version = 4;
                 unifFile.Mapper = mapper.UnifName;
                 if (unifName != null)
-                    unifFile.Fields["NAME"] = UnifFile.StringToUTF8N(unifName);
+                    unifFile.GameName = unifName;
                 unifFile.Fields["PRG0"] = prg.ToArray();
                 if (chr.Count > 0)
                     unifFile.Fields["CHR0"] = chr.ToArray();
-                unifFile.Fields["MIRR"] = new byte[] { 5 }; // mapper controlled
-                unifFile.Save(fileName, unifAuthor);
+                // TODO: make some way to select mirroring in output file
+                unifFile.Mirroring = NesFile.MirroringType.MapperControlled;
+                unifFile.DumperName = unifAuthor;
+                unifFile.DumpingSoftware = "Famicom Dumper by Cluster / https://github.com/ClusterM/famicom-dumper-client";
+                unifFile.Save(fileName);
             }
         }
 
