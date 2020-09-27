@@ -4,6 +4,6 @@
     <StartArguments>write-coolgirl --file F:\coolgirl\multirom_games.sokolov_alexey.unf  --check --sound</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <StartArguments>write-coolgirl --file F:\coolgirl\multirom_games.sokolov_alexey.unf  --check --sound --port COM12</StartArguments>
+    <StartArguments>info-coolgirl</StartArguments>
   </PropertyGroup>
 </Project>

@@ -30,12 +30,13 @@ namespace com.clusterrr.Famicom
         public static int GetFlashSizePrintInfo(FamicomDumperConnection dumper)
         {
             dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
-            var cfi = dumper.ReadCpu(0x8000, 0x200);
+            var cfi = dumper.ReadCpu(0x8000, 0x100);
             dumper.WriteCpu(0x8000, 0xF0); // Reset
             if (cfi[0x20] != 0x51 || cfi[0x22] != 0x52 || cfi[0x24] != 0x59)
             {
                 throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
             }
+            File.WriteAllText(@"E:\cfi.h", string.Join(", ", cfi.Select(r => $"0x{r:X2}")));
             int size = 1 << cfi[0x27 * 2];
             FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));
             Console.WriteLine("Primary Algorithm Command Set and Control Interface ID Code: {0:X2}{1:X2}h", cfi[0x13 * 2], cfi[0x14 * 2]);
