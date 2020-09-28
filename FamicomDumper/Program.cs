@@ -63,7 +63,7 @@ namespace com.clusterrr.Famicom
             string filename = null;
             string csFile = null;
             string unifName = null;
-            string unifAuthor = "Famicom Dumper Client / https://github.com/ClusterM/famicom-dumper-client";
+            string unifAuthor = null;
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
@@ -643,7 +643,8 @@ namespace com.clusterrr.Famicom
                     unifFile.Fields["CHR0"] = chr.ToArray();
                 // TODO: make some way to select mirroring in output file
                 unifFile.Mirroring = NesFile.MirroringType.MapperControlled;
-                unifFile.DumperName = unifAuthor;
+                if (!string.IsNullOrEmpty(unifAuthor))
+                    unifFile.DumperName = unifAuthor;
                 unifFile.DumpingSoftware = "Famicom Dumper by Cluster / https://github.com/ClusterM/famicom-dumper-client";
                 unifFile.Save(fileName);
             }
