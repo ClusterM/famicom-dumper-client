@@ -63,10 +63,11 @@ namespace com.clusterrr.Famicom
             string filename = null;
             string csFile = null;
             string unifName = null;
-            string unifAuthor = null;
+            string unifAuthor = "Famicom Dumper Client / https://github.com/ClusterM/famicom-dumper-client";
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
+            bool needCheckPause = false;
             bool writePBBs = false;
             List<int> badSectors = new List<int>();
             int testCount = -1;
@@ -134,6 +135,9 @@ namespace com.clusterrr.Famicom
                             break;
                         case "check":
                             needCheck = true;
+                            break;
+                        case "checkpause":
+                            needCheckPause = true;
                             break;
                         case "lock":
                             writePBBs = true;
@@ -265,10 +269,10 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
-                            CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
-                            CoolgirlWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            CoolgirlWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
                             break;
                         case "write-eeprom":
                             WriteEeprom(dumper, filename ?? "game.nes");

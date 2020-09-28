@@ -22,7 +22,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.GetFlashSizePrintInfo(dumper);
         }
 
-        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool checkPause = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -138,11 +138,21 @@ namespace com.clusterrr.Famicom
                     continue;
                 }
             }
+            if (totalErrorCount > 0)
+                Console.WriteLine($"Write error count: {totalErrorCount}");
+            if (newBadSectorsList.Any())
+                Console.WriteLine($"Can't write sectors: {string.Join(", ", newBadSectorsList.OrderBy(s => s))}");
 
             var wrongCrcSectorsList = new List<int>();
             if (needCheck)
             {
                 Console.WriteLine("Starting check process");
+                if (checkPause)
+                {
+                    Console.Write("Press any key to continue");
+                    if (!silent) Program.PlayDoneSound();
+                    Console.ReadKey();
+                }
                 Console.Write("Reset... ");
                 dumper.Reset();
                 Console.WriteLine("OK");
@@ -193,14 +203,14 @@ namespace com.clusterrr.Famicom
                     else
                         Console.WriteLine("OK (CRC = {0:X4})", crcr);
                 }
+                if (totalErrorCount > 0)
+                    Console.WriteLine($"Write error count: {totalErrorCount}");
+                if (newBadSectorsList.Any())
+                    Console.WriteLine($"Can't write sectors: {string.Join(", ", newBadSectorsList.OrderBy(s => s))}");
+                if (wrongCrcSectorsList.Any())
+                    Console.WriteLine($"Sectors with wrong CRC: {string.Join(", ", wrongCrcSectorsList.Distinct().OrderBy(s => s))}");
             }
 
-            if (totalErrorCount > 0)
-                Console.WriteLine($"Write error count: {totalErrorCount}");
-            if (newBadSectorsList.Any())
-                Console.WriteLine($"Can't write sectors: {string.Join(", ", newBadSectorsList.OrderBy(s => s))}");
-            if (wrongCrcSectorsList.Any())
-                Console.WriteLine($"Sectors with wrong CRC: {string.Join(", ", wrongCrcSectorsList.Distinct().OrderBy(s => s))}");
             if (newBadSectorsList.Any() || wrongCrcSectorsList.Any())
                 throw new IOException("Cartridge is not writed correctly");
         }
