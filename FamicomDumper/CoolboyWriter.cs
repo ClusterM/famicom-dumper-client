@@ -260,9 +260,9 @@ namespace com.clusterrr.Famicom
                 Console.WriteLine("Starting check process");
                 if (checkPause)
                 {
-                    Console.Write("Press any key to continue");
+                    Console.Write("Press enter to continue");
                     if (!silent) Program.PlayDoneSound();
-                    Console.ReadKey();
+                    Console.ReadLine();
                 }
                 Console.Write("Reset... ");
                 dumper.Reset();

@@ -149,9 +149,9 @@ namespace com.clusterrr.Famicom
                 Console.WriteLine("Starting check process");
                 if (checkPause)
                 {
-                    Console.Write("Press any key to continue");
+                    Console.Write("Press enter to continue");
                     if (!silent) Program.PlayDoneSound();
-                    Console.ReadKey();
+                    Console.ReadLine();
                 }
                 Console.Write("Reset... ");
                 dumper.Reset();
@@ -438,7 +438,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("srambad.bin writed");
                         throw new IOException("Test failed");
                     }
-                    Console.WriteLine("OK!");
+                    Console.WriteLine("OK");
                 }
                 count--;
             }
@@ -483,7 +483,7 @@ namespace com.clusterrr.Famicom
                 Console.WriteLine("chrbad.bin writed");
                 throw new IOException("Test failed");
             }
-            Console.WriteLine("OK!");
+            Console.WriteLine("OK");
 
             Console.WriteLine("Global test.");
             data = new byte[256 * 1024];
@@ -522,7 +522,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("chrbad.bin writed");
                         throw new IOException("Test failed");
                     }
-                    Console.WriteLine("OK!");
+                    Console.WriteLine("OK");
                 }
                 count--;
             }
