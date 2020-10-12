@@ -21,8 +21,8 @@ namespace com.clusterrr.Famicom
         public static void ResetFlash(FamicomDumperConnection dumper)
         {
             // Exit command set entry if any
-            dumper.WriteCpu(0x8001, 0x90);
-            dumper.WriteCpu(0x8001, 0x00);
+            dumper.WriteCpu(0x8000, 0x90);
+            dumper.WriteCpu(0x8000, 0x00);
             // Reset
             dumper.WriteCpu(0x8000, 0xF0);
         }
@@ -36,7 +36,6 @@ namespace com.clusterrr.Famicom
             {
                 throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
             }
-            File.WriteAllText(@"E:\cfi.h", string.Join(", ", cfi.Select(r => $"0x{r:X2}")));
             int size = 1 << cfi[0x27 * 2];
             FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));
             Console.WriteLine("Primary Algorithm Command Set and Control Interface ID Code: {0:X2}{1:X2}h", cfi[0x13 * 2], cfi[0x14 * 2]);

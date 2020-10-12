@@ -20,6 +20,8 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             FlashHelper.GetFlashSizePrintInfo(dumper);
+            FlashHelper.LockBitsCheckPrint(dumper);
+            FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
         public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool checkPause = false, bool writePBBs = false, bool ignoreBadSectors = false)

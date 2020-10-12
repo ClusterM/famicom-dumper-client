@@ -128,6 +128,8 @@ namespace com.clusterrr.Famicom
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(CoolboyReg, new byte[] { r0, r1, r2, r3 });
             FlashHelper.GetFlashSizePrintInfo(dumper);
+            FlashHelper.LockBitsCheckPrint(dumper);
+            FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
         public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool checkPause = false, bool writePBBs = false, bool ignoreBadSectors = false)
