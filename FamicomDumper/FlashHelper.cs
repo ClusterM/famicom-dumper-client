@@ -29,24 +29,30 @@ namespace com.clusterrr.Famicom
 
         public static int GetFlashSizePrintInfo(FamicomDumperConnection dumper)
         {
-            dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
-            var cfi = dumper.ReadCpu(0x8000, 0x100);
-            dumper.WriteCpu(0x8000, 0xF0); // Reset
-            if (cfi[0x20] != 0x51 || cfi[0x22] != 0x52 || cfi[0x24] != 0x59)
+            try
             {
-                throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
+                dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
+                var cfi = dumper.ReadCpu(0x8000, 0x100);
+                if (cfi[0x20] != 0x51 || cfi[0x22] != 0x52 || cfi[0x24] != 0x59)
+                {
+                    throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
+                }
+                int size = 1 << cfi[0x27 * 2];
+                FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));
+                Console.WriteLine("Primary Algorithm Command Set and Control Interface ID Code: {0:X2}{1:X2}h", cfi[0x13 * 2], cfi[0x14 * 2]);
+                Console.WriteLine("Vcc Logic Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1B * 2] >> 4) + 0.1 * (cfi[0x1B * 2] & 0x0F));
+                Console.WriteLine("Vcc Logic Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1C * 2] >> 4) + 0.1 * (cfi[0x1C * 2] & 0x0F));
+                Console.WriteLine("Vpp [Programming] Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1D * 2] >> 4) + 0.1 * (cfi[0x1D * 2] & 0x0F));
+                Console.WriteLine("Vpp [Programming] Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1E * 2] >> 4) + 0.1 * (cfi[0x1E * 2] & 0x0F));
+                Console.WriteLine("Maximum number of bytes in multi-byte program: {0}", 1 << (cfi[0x2A * 2] | (cfi[0x2B * 2] << 8)));
+                Console.WriteLine("Device size: {0} MByte / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
+                Console.WriteLine("Flash device interface: {0}", flashDeviceInterface.ToString().Replace("_", " "));
+                return size;
             }
-            int size = 1 << cfi[0x27 * 2];
-            FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));
-            Console.WriteLine("Primary Algorithm Command Set and Control Interface ID Code: {0:X2}{1:X2}h", cfi[0x13 * 2], cfi[0x14 * 2]);
-            Console.WriteLine("Vcc Logic Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1B * 2] >> 4) + 0.1 * (cfi[0x1B * 2] & 0x0F));
-            Console.WriteLine("Vcc Logic Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1C * 2] >> 4) + 0.1 * (cfi[0x1C * 2] & 0x0F));
-            Console.WriteLine("Vpp [Programming] Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1D * 2] >> 4) + 0.1 * (cfi[0x1D * 2] & 0x0F));
-            Console.WriteLine("Vpp [Programming] Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1E * 2] >> 4) + 0.1 * (cfi[0x1E * 2] & 0x0F));
-            Console.WriteLine("Maximum number of bytes in multi-byte program: {0}", 1 << (cfi[0x2A * 2] | (cfi[0x2B * 2] << 8)));
-            Console.WriteLine("Device size: {0} MByte / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
-            Console.WriteLine("Flash device interface: {0}", flashDeviceInterface.ToString().Replace("_", " "));
-            return size;
+            finally
+            {
+                dumper.WriteCpu(0x8000, 0xF0); // Reset
+            }
         }
 
         public static void PasswordProgramm(FamicomDumperConnection dumper, byte[] password)
@@ -103,66 +109,92 @@ namespace com.clusterrr.Famicom
 
         public static void PasswordUnlock(FamicomDumperConnection dumper, byte[] password)
         {
-            if (password.Length != 8)
-                throw new InvalidDataException("Invalid password length");
-            Console.Write("Unlocking password... ");
-            // Password Protection Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0x60);
-            // Password unlock
-            dumper.WriteCpu(0x8000, 0x25);
-            dumper.WriteCpu(0x8000, 0x03);
+            try
+            {
+                if (password.Length != 8)
+                    throw new InvalidDataException("Invalid password length");
+                Console.Write("Unlocking password... ");
+                // Password Protection Set Entry
+                dumper.WriteCpu(0x8AAA, 0xAA);
+                dumper.WriteCpu(0x8555, 0x55);
+                dumper.WriteCpu(0x8AAA, 0x60);
+                // Password unlock
+                dumper.WriteCpu(0x8000, 0x25);
+                dumper.WriteCpu(0x8000, 0x03);
                 for (byte i = 0; i < password.Length; i++)
                     dumper.WriteCpu((ushort)(0x8000 + i), password[i]);
-            dumper.WriteCpu(0x8000, 0x29);
-            Console.WriteLine("OK");
+                dumper.WriteCpu(0x8000, 0x29);
+                Console.WriteLine("OK");
+            }
+            finally
+            {
+                // Password Protection Set Exit 
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
         }
 
         public static void LockBitsCheckPrint(FamicomDumperConnection dumper)
         {
-            // Lock Register Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0x40);
-            var lockRegister = dumper.ReadCpu(0x8000, 1)[0];
-            if ((lockRegister & 1) == 0)
-                Console.WriteLine("WARNING: Secured Silicon Sector Protection Bit is set!");
-            if ((lockRegister & 2) == 0)
-                Console.WriteLine("WARNING: Persistent Protection Mode Lock Bit is set!");
-            if ((lockRegister & 4) == 0)
-                Console.WriteLine("WARNING: Password Protection Mode Lock Bit is set!");
-            // PPB Lock Command Set Exit 
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
+            try
+            {
+                // Lock Register Set Entry
+                dumper.WriteCpu(0x8AAA, 0xAA);
+                dumper.WriteCpu(0x8555, 0x55);
+                dumper.WriteCpu(0x8AAA, 0x40);
+                var lockRegister = dumper.ReadCpu(0x8000, 1)[0];
+                if ((lockRegister & 1) == 0)
+                    Console.WriteLine("WARNING: Secured Silicon Sector Protection Bit is set!");
+                if ((lockRegister & 2) == 0)
+                    Console.WriteLine("WARNING: Persistent Protection Mode Lock Bit is set!");
+                if ((lockRegister & 4) == 0)
+                    Console.WriteLine("WARNING: Password Protection Mode Lock Bit is set!");
+            }
+            finally
+            {
+                // PPB Lock Command Set Exit 
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
         }
 
         public static void PPBLockBitCheckPrint(FamicomDumperConnection dumper)
         {
-            // PPB Lock Command Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0x50);
-            var ppbLockStatus = dumper.ReadCpu(0x8000, 1)[0];
-            if (ppbLockStatus == 0)
-                Console.WriteLine("WARNING: PPB Lock Bit is set!");
-            // PPB Lock Command Set Exit 
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
+            try
+            {
+                // PPB Lock Command Set Entry
+                dumper.WriteCpu(0x8AAA, 0xAA);
+                dumper.WriteCpu(0x8555, 0x55);
+                dumper.WriteCpu(0x8AAA, 0x50);
+                var ppbLockStatus = dumper.ReadCpu(0x8000, 1)[0];
+                if (ppbLockStatus == 0)
+                    Console.WriteLine("WARNING: PPB Lock Bit is set!");
+            }
+            finally
+            {
+                // PPB Lock Command Set Exit 
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
         }
 
         public static byte PPBRead(FamicomDumperConnection dumper)
         {
-            // PPB Command Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0xC0);
-            // PPB Status Read
-            var result = dumper.ReadCpu(0x8000, 1)[0];
-            // PPB Command Set Exit
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
-            return result;
+            try
+            {
+                // PPB Command Set Entry
+                dumper.WriteCpu(0x8AAA, 0xAA);
+                dumper.WriteCpu(0x8555, 0x55);
+                dumper.WriteCpu(0x8AAA, 0xC0);
+                // PPB Status Read
+                return dumper.ReadCpu(0x8000, 1)[0];
+            }
+            finally
+            {
+                // PPB Command Set Exit
+                dumper.WriteCpu(0x8000, 0x90);
+                dumper.WriteCpu(0x8000, 0x00);
+            }
         }
 
         public static void PPBSet(FamicomDumperConnection dumper)
