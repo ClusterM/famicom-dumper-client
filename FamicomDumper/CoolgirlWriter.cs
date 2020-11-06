@@ -115,7 +115,7 @@ namespace com.clusterrr.Famicom
                     currentErrorCount++;
                     Console.WriteLine($"ERROR {ex.GetType()}: {ex.Message}");
                     if (!silent) Program.PlayErrorSound();
-                    if (currentErrorCount >= 3)
+                    if (currentErrorCount >= 5)
                     {
                         if (!ignoreBadSectors)
                             throw ex;
@@ -180,16 +180,16 @@ namespace com.clusterrr.Famicom
                         lastSectorTime = DateTime.Now;
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
-                    UInt16 crc = 0;
+                    ushort crc = 0;
                     foreach (var a in data)
                     {
                         crc ^= a;
                         for (int i = 0; i < 8; ++i)
                         {
                             if ((crc & 1) != 0)
-                                crc = (UInt16)((crc >> 1) ^ 0xA001);
+                                crc = (ushort)((crc >> 1) ^ 0xA001);
                             else
-                                crc = (UInt16)(crc >> 1);
+                                crc = (ushort)(crc >> 1);
                         }
                     }
                     var timePassed = DateTime.Now - readStartTime;

@@ -521,7 +521,18 @@ namespace com.clusterrr.Famicom
             if (instanceMethod == null)
                 throw new InvalidProgramException($"There is no {ScriptStartMethod} method");
             Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
-            instanceMethod.Invoke(obj, new object[] { dumper });
+            try
+            {
+                instanceMethod.Invoke(obj, new object[] { dumper });
+            }
+            catch  (TargetInvocationException ex)
+            {
+                if (ex.InnerException != null)
+                    throw ex.InnerException;
+                else
+                    throw;
+            }
+
         }
 
         static void ListMappers()
