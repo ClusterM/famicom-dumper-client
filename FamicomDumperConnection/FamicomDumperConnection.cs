@@ -96,12 +96,6 @@ namespace com.clusterrr.Famicom.DumperConnection
             DEBUG = 0xFF
         }
 
-        public enum MemoryAccessMethod
-        {
-            CoolboyGPIO,
-            Direct
-        }
-
         public FamicomDumperConnection(string portName = null)
         {
             this.PortName = portName;
@@ -484,16 +478,13 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         public byte[] ReadCpu(ushort address, int length)
-            => ReadCpu(address, length, MemoryAccessMethod.Direct);
-
-        public byte[] ReadCpu(ushort address, int length, MemoryAccessMethod flashType)
         {
             if (Verbose)
                 Console.Write($"Reading 0x{length:X4}B <= 0x{address:X4} @ CPU...");
             var result = new List<byte>();
             while (length > 0)
             {
-                result.AddRange(ReadCpuBlock(address, Math.Min(maxReadPacketSize, length), flashType));
+                result.AddRange(ReadCpuBlock(address, Math.Min(maxReadPacketSize, length)));
                 address += maxReadPacketSize;
                 length -= maxReadPacketSize;
             }
@@ -507,22 +498,14 @@ namespace com.clusterrr.Famicom.DumperConnection
             return result.ToArray();
         }
 
-        private byte[] ReadCpuBlock(ushort address, int length, MemoryAccessMethod flashType = MemoryAccessMethod.Direct)
+        private byte[] ReadCpuBlock(ushort address, int length)
         {
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
-            switch (flashType)
-            {
-                case MemoryAccessMethod.Direct:
-                    SendCommand(DumperCommand.PRG_READ_REQUEST, buffer);
-                    break;
-                case MemoryAccessMethod.CoolboyGPIO:
-                    SendCommand(DumperCommand.COOLBOY_READ_REQUEST, buffer);
-                    break;
-            }
+            SendCommand(DumperCommand.PRG_READ_REQUEST, buffer);
             var recv = RecvCommand();
             if (recv.Command != DumperCommand.PRG_READ_RESULT)
                 throw new IOException($"Invalid data received: {recv.Command}");
@@ -595,17 +578,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
-        public void EraseCpuFlashSector(MemoryAccessMethod flashType)
+        public void EraseCpuFlashSector()
         {
-            switch (flashType)
-            {
-                case MemoryAccessMethod.CoolboyGPIO:
-                    SendCommand(DumperCommand.COOLBOY_ERASE_SECTOR_REQUEST, new byte[0]);
-                    break;
-                case MemoryAccessMethod.Direct:
-                    SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, new byte[0]);
-                    break;
-            }
+            SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, new byte[0]);
             var recv = RecvCommand();
             if (recv.Command == DumperCommand.FLASH_ERASE_ERROR)
                 throw new IOException($"Flash erase error (0x{recv.Data[0]:X2})");
@@ -615,7 +590,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
-        public void WriteCpuFlash(ushort address, byte[] data, MemoryAccessMethod flashType = MemoryAccessMethod.Direct)
+        public void WriteCpuFlash(ushort address, byte[] data)
         {
             if (Verbose)
             {
@@ -624,11 +599,11 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing ");
                     foreach (var b in data)
                         Console.Write($"0x{b:X2} ");
-                    Console.Write($"=> 0x{address:X4} @ CPU flash ({flashType})...");
+                    Console.Write($"=> 0x{address:X4} @ CPU flash...");
                 }
                 else
                 {
-                    Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ CPU flash ({flashType})...");
+                    Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ CPU flash...");
                 }
             }
             int wlength = data.Length;
@@ -638,7 +613,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 if (data.Select(b => b != 0xFF).Any()) // if there is any not FF byte
-                    WriteCpuFlashBlock(address, wdata, flashType);
+                    WriteCpuFlashBlock(address, wdata);
                 address += (ushort)wdata.Length;
                 pos += wdata.Length;
                 wlength -= wdata.Length;
@@ -647,7 +622,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 Console.WriteLine(" OK");
         }
 
-        private void WriteCpuFlashBlock(ushort address, byte[] data, MemoryAccessMethod flashType)
+        private void WriteCpuFlashBlock(ushort address, byte[] data)
         {
             int length = data.Length;
             var buffer = new byte[4 + length];
@@ -656,15 +631,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
-            switch (flashType)
-            {
-                case MemoryAccessMethod.CoolboyGPIO:
-                    SendCommand(DumperCommand.COOLBOY_WRITE_REQUEST, buffer);
-                    break;
-                case MemoryAccessMethod.Direct:
-                    SendCommand(DumperCommand.FLASH_WRITE_REQUEST, buffer);
-                    break;
-            }
+            SendCommand(DumperCommand.FLASH_WRITE_REQUEST, buffer);
             var recv = RecvCommand();
             if (recv.Command == DumperCommand.FLASH_WRITE_ERROR)
                 throw new IOException($"Flash write error");

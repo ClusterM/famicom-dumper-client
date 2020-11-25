@@ -27,31 +27,49 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x8000, 0xF0);
         }
 
-        public static int GetFlashSizePrintInfo(FamicomDumperConnection dumper)
+        public static CFIInfo GetCFI(FamicomDumperConnection dumper)
         {
             try
             {
                 dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
-                var cfi = dumper.ReadCpu(0x8000, 0x100);
-                if (cfi[0x20] != 0x51 || cfi[0x22] != 0x52 || cfi[0x24] != 0x59)
+                var cfiRaw = dumper.ReadCpu(0x8000, 0x100);
+                if (cfiRaw[0x20] != 0x51 || cfiRaw[0x22] != 0x52 || cfiRaw[0x24] != 0x59)
                 {
                     throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
                 }
-                int size = 1 << cfi[0x27 * 2];
-                FlashDeviceInterface flashDeviceInterface = (FlashDeviceInterface)(cfi[0x28 * 2] | (cfi[0x29 * 2] << 8));
-                Console.WriteLine("Primary Algorithm Command Set and Control Interface ID Code: {0:X2}{1:X2}h", cfi[0x13 * 2], cfi[0x14 * 2]);
-                Console.WriteLine("Vcc Logic Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1B * 2] >> 4) + 0.1 * (cfi[0x1B * 2] & 0x0F));
-                Console.WriteLine("Vcc Logic Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1C * 2] >> 4) + 0.1 * (cfi[0x1C * 2] & 0x0F));
-                Console.WriteLine("Vpp [Programming] Supply Minimum Program / Erase voltage: {0}v", (cfi[0x1D * 2] >> 4) + 0.1 * (cfi[0x1D * 2] & 0x0F));
-                Console.WriteLine("Vpp [Programming] Supply Maximum Program / Erase voltage: {0}v", (cfi[0x1E * 2] >> 4) + 0.1 * (cfi[0x1E * 2] & 0x0F));
-                Console.WriteLine("Maximum number of bytes in multi-byte program: {0}", 1 << (cfi[0x2A * 2] | (cfi[0x2B * 2] << 8)));
-                Console.WriteLine("Device size: {0} MByte / {1} Mbit", size / 1024 / 1024, size / 1024 / 1024 * 8);
-                Console.WriteLine("Flash device interface: {0}", flashDeviceInterface.ToString().Replace("_", " "));
-                return size;
+                var cfi = new CFIInfo(cfiRaw, CFIInfo.ParseMode.Every2Bytes);
+                return cfi;
             }
             finally
             {
                 dumper.WriteCpu(0x8000, 0xF0);
+            }
+        }
+
+        public static void PrintCFIInfo(CFIInfo cfi)
+        {
+            Console.WriteLine($"Primary Algorithm Command Set and Control Interface ID Code: {cfi.PrimaryAlgorithmCommandSet:X4}h");
+            Console.WriteLine($"Alternative Algorithm Command Set and Control Interface ID Code: {cfi.AlternativeAlgorithmCommandSet:X4}h");
+            Console.WriteLine($"Vcc Logic Supply Minimum Program / Erase voltage: {cfi.VccLogicSupplyMinimumProgramErase:F1}v");
+            Console.WriteLine($"Vcc Logic Supply Maximum Program / Erase voltage: {cfi.VccLogicSupplyMaximumProgramErase:F1}v");
+            Console.WriteLine($"Vpp [Programming] Supply Minimum Program / Erase voltage: {cfi.VppSupplyMinimumProgramErasevoltage:F1}v");
+            Console.WriteLine($"Vpp [Programming] Supply Maximum Program / Erase voltage: {cfi.VppSupplyMaximumProgramErasevoltage:F1}v");
+            Console.WriteLine($"Typical timeout per single byte/word/D-word program: {cfi.TypicalTimeoutPerSingleProgram}us");
+            Console.WriteLine($"Typical timeout for maximum-size multi-byte program: {cfi.TypicalTimeoutForMaximumSizeMultiByteProgram}us");
+            Console.WriteLine($"Typical timeout per individual block erase: {cfi.TypicalTimeoutPerIndividualBlockErase}ms");
+            Console.WriteLine($"Typical timeout for full chip erase: {cfi.TypicalTimeoutForFullChipErase}ms");
+            Console.WriteLine($"Maximum timeout per single byte/word/D-word program: {cfi.MaximumTimeoutPerSingleProgram}us");
+            Console.WriteLine($"Maximum timeout for maximum-size multi-byte program: {cfi.MaximumTimeoutForMaximumSizeMultiByteProgram}us");
+            Console.WriteLine($"Maximum timeout per individual block erase: {cfi.MaximumTimeoutPerIndividualBlockErase}ms");
+            Console.WriteLine($"Maximum timeout for full chip erase: {cfi.MaximumTimeoutForFullChipErase}ms");
+            Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
+            Console.WriteLine($"Flash device interface: {cfi.FlashDeviceInterfaceCodeDescription.ToString().Replace("_", " ")}");
+            Console.WriteLine($"Maximum number of bytes in multi-byte program: {cfi.MaximumNumberOfBytesInMultiProgram}");
+            for (int eraseBlockRegion = 0; eraseBlockRegion < cfi.EraseBlockRegionsInfo.Count; eraseBlockRegion++)
+            {
+                Console.WriteLine($"Erase block region #{eraseBlockRegion + 1}:");
+                Console.WriteLine($" - Sectors size: {cfi.EraseBlockRegionsInfo[eraseBlockRegion].SizeOfBlocks} Bytes");
+                Console.WriteLine($" - Sectors count: {cfi.EraseBlockRegionsInfo[eraseBlockRegion].NumberOfBlocks}");
             }
         }
 

@@ -62,7 +62,8 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(CoolboyReg, new byte[] { r0, r1, r2, r3 });
-            FlashHelper.GetFlashSizePrintInfo(dumper);
+            var cfi = FlashHelper.GetCFI(dumper);
+            FlashHelper.PrintCFIInfo(cfi);
             FlashHelper.LockBitsCheckPrint(dumper);
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
@@ -96,9 +97,10 @@ namespace com.clusterrr.Famicom
             var version = DetectVersion(dumper);
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             FlashHelper.ResetFlash(dumper);
-            int flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
+            var cfi = FlashHelper.GetCFI(dumper);
+            Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
             FlashHelper.LockBitsCheckPrint(dumper);
-            if (PRG.Length > flashSize)
+            if (PRG.Length > cfi.DeviceSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
             {

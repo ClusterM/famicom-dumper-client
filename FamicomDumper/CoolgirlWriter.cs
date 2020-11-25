@@ -19,7 +19,8 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            FlashHelper.GetFlashSizePrintInfo(dumper);
+            var cfi = FlashHelper.GetCFI(dumper);
+            FlashHelper.PrintCFIInfo(cfi);
             FlashHelper.LockBitsCheckPrint(dumper);
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
@@ -55,9 +56,10 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
             FlashHelper.ResetFlash(dumper);
-            int flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
+            var cfi = FlashHelper.GetCFI(dumper);
+            Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
             FlashHelper.LockBitsCheckPrint(dumper);
-            if (PRG.Length > flashSize)
+            if (PRG.Length > cfi.DeviceSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
             {
@@ -273,8 +275,9 @@ namespace com.clusterrr.Famicom
             }
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
-            var flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
-            int prgBanks = flashSize / 0x8000;
+            var cfi = FlashHelper.GetCFI(dumper);
+            Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
+            uint prgBanks = cfi.DeviceSize / 0x8000;
             FlashHelper.LockBitsCheckPrint(dumper);
 
             Console.Write("Erasing sector #0... ");
@@ -356,8 +359,9 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            var flashSize = FlashHelper.GetFlashSizePrintInfo(dumper);
-            int prgBanks = flashSize / 0x8000;
+            var cfi = FlashHelper.GetCFI(dumper);
+            Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
+            uint prgBanks = cfi.DeviceSize / 0x8000;
 
             var readStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
