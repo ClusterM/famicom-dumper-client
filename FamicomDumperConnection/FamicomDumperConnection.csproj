@@ -52,5 +52,11 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NesContainers\NesContainers.csproj">
+      <Project>{dbde5f39-ff67-496f-999f-65f86dcec1d5}</Project>
+      <Name>NesContainers</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

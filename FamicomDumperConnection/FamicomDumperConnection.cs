@@ -7,6 +7,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Management;
+using com.clusterrr.Famicom.Containers;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
@@ -87,6 +88,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             FLASH_WRITE_TIMEOUT = 42,
             FLASH_ERASE_ERROR = 43,
             FLASH_ERASE_TIMEOUT = 44,
+            FDS_READ_REQUEST = 45,
+            FDS_READ_RESULT_BLOCK = 46,
+            FDS_READ_RESULT_END = 47,
 
             BOOTLOADER = 0xFE,
             DEBUG = 0xFF
@@ -295,7 +299,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             else if (d2xxPort != null)
             {
-                UInt32 numBytesAvailable = 0;
+                uint numBytesAvailable = 0;
                 FTDI.FT_STATUS ftStatus;
                 int t = 0;
                 do
@@ -567,9 +571,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                 var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 WriteCpuBlock(address, wdata);
-                address += maxWritePacketSize;
-                pos += maxWritePacketSize;
-                wlength -= maxWritePacketSize;
+                address += (ushort)wdata.Length;
+                pos += wdata.Length;
+                wlength -= wdata.Length;
             }
             if (Verbose)
                 Console.WriteLine(" OK");
@@ -635,9 +639,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 if (data.Select(b => b != 0xFF).Any()) // if there is any not FF byte
                     WriteCpuFlashBlock(address, wdata, flashType);
-                address += maxWritePacketSize;
-                pos += maxWritePacketSize;
-                wlength -= maxWritePacketSize;
+                address += (ushort)wdata.Length;
+                pos += wdata.Length;
+                wlength -= wdata.Length;
             }
             if (Verbose)
                 Console.WriteLine(" OK");
@@ -692,7 +696,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             return result.ToArray();
         }
 
-        public byte[] ReadPpuBlock(ushort address, int length)
+        private byte[] ReadPpuBlock(ushort address, int length)
         {
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
@@ -750,9 +754,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                     var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
                     Array.Copy(data, pos, wdata, 0, wdata.Length);
                     WritePpu(address, wdata);
-                    address += maxWritePacketSize;
-                    pos += maxWritePacketSize;
-                    wlength -= maxWritePacketSize;
+                    address += (ushort)wdata.Length;
+                    pos += wdata.Length;
+                    wlength -= wdata.Length;
                 }
                 if (Verbose)
                     Console.WriteLine(" OK");
@@ -770,6 +774,67 @@ namespace com.clusterrr.Famicom.DumperConnection
             var recv = RecvCommand();
             if (recv.Command != DumperCommand.CHR_WRITE_DONE)
                 throw new IOException($"Invalid data received: {recv.Command}");
+        }
+
+        public IFdsBlock[] ReadFdsBlocks(byte startBlock, byte blockCount = 0)
+        {
+            if (ProtocolVersion < 3)
+                throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
+
+            if (Verbose)
+                Console.Write($"Reading FDS block(s) {startBlock}-{startBlock + blockCount - 1}... ");
+
+            var blocks = new List<IFdsBlock>();
+            var buffer = new byte[2];
+            buffer[0] = startBlock;
+            buffer[1] = blockCount;
+            SendCommand(DumperCommand.FDS_READ_REQUEST, buffer);
+            bool receiving = true;
+            bool parseError = false;
+            int currentBlock = startBlock;
+            while (receiving && !parseError)
+            {
+                var recv = RecvCommand();
+                switch (recv.Command)
+                {
+                    case DumperCommand.FDS_READ_RESULT_BLOCK:
+                        {
+                            // ignore any data after invalid data
+                            if (parseError)
+                                break;
+                            var data = recv.Data.Take(recv.Data.Length - 2).ToArray();
+                            IFdsBlock newBlock;
+                            try
+                            {
+                                if (currentBlock == 0)
+                                    newBlock = FdsDiskInfoBlock.FromBytes(data);
+                                else if (currentBlock == 1)
+                                    newBlock = FdsFileAmountBlock.FromBytes(data);
+                                else if ((currentBlock % 2) == 0)
+                                    newBlock = FdsFileHeaderBlock.FromBytes(data);
+                                else
+                                    newBlock = FdsFileDataBlock.FromBytes(data);
+                                newBlock.CrcOk = recv.Data[recv.Data.Length - 2] != 0;
+                                newBlock.EndOfHeadMeet = recv.Data[recv.Data.Length - 1] != 0;
+                                blocks.Add(newBlock);
+                            }
+                            catch (InvalidDataException)
+                            {
+                                parseError = true;
+                            }
+                            currentBlock++;
+                        }
+                        break;
+                    case DumperCommand.FDS_READ_RESULT_END:
+                        receiving = false;
+                        break;
+                    default:
+                        throw new IOException($"Invalid data received: {recv.Command}");
+                }
+            }
+            if (Verbose)
+                Console.WriteLine(" OK");
+            return blocks.ToArray();
         }
 
         public bool[] GetMirroring()

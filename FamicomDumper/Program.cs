@@ -36,6 +36,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Security;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -264,9 +265,6 @@ namespace com.clusterrr.Famicom
                         case "dump-tiles":
                             DumpTiles(dumper, filename ?? "output.png", mapper, ParseSize(csize));
                             break;
-                        case "write-coolboy-gpio":
-                            CoolboyWriter.WriteWithGPIO(dumper, filename ?? "game.nes");
-                            break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
                             CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
@@ -316,7 +314,7 @@ namespace com.clusterrr.Famicom
                     + ex.StackTrace
 #endif
                     );
-                if (!silent) 
+                if (!silent)
                     PlayErrorSound();
                 return 1;
             }
@@ -368,8 +366,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "dump-tiles", "dump CHR data to PNG file");
             Console.WriteLine(" {0,-25}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-25}{1}", "write-prg-ram", "write PRG RAM");
-            Console.WriteLine(" {0,-25}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using GPIO");
-            Console.WriteLine(" {0,-25}{1}", "write-coolboy-direct", "write COOLBOY cartridge directly");
+            Console.WriteLine(" {0,-25}{1}", "write-coolboy", "write COOLBOY cartridge directly");
             Console.WriteLine(" {0,-25}{1}", "write-coolgirl", "write COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "write-eeprom", "write EEPROM-based cartridge");
             Console.WriteLine(" {0,-25}{1}", "test-prg-ram", "run PRG RAM test");
@@ -525,7 +522,7 @@ namespace com.clusterrr.Famicom
             {
                 instanceMethod.Invoke(obj, new object[] { dumper });
             }
-            catch  (TargetInvocationException ex)
+            catch (TargetInvocationException ex)
             {
                 if (ex.InnerException != null)
                     throw ex.InnerException;
@@ -578,6 +575,49 @@ namespace com.clusterrr.Famicom
 
         static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor)
         {
+            /*
+            dumper.Timeout = 30000;
+            var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+            if ((driveStatus & 1) != 0)
+            {
+                Console.Write("Please set disk card... ");
+                while ((driveStatus & 1) != 0)
+                {
+                    Thread.Sleep(500);
+                    driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                }
+                Console.WriteLine("OK!");
+            }
+            var blocks = new List<IFdsBlock>();
+            for (var i = 0; i < 16; i++)
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var fdsData = dumper.ReadFdsBlocks((byte)i, 1);
+                        if (fdsData.Length != 1)
+                            throw new InvalidDataException($"Only {fdsData.Length} received");
+                        if (!fdsData[0].CrcOk)
+                            throw new Exception($"Invalid CRC on block #{i}");
+                        blocks.AddRange(fdsData);
+                        Console.WriteLine($"Block #{i} - OK!");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error {ex.GetType()}: {ex.Message}");
+                        Thread.Sleep(5000);
+                    }
+                }
+            }
+            var fds = blocks.Select(d => d.ToBytes()).SelectMany(d => d).ToArray();
+            fds = Enumerable.Concat(fds, new byte[65500 - fds.Length]).ToArray();
+            File.WriteAllBytes(@"E:\dump.fds", fds);
+            Console.WriteLine("Done!");
+            return;
+            */
+
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
                 Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
@@ -590,13 +630,13 @@ namespace com.clusterrr.Famicom
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
             if (prgSize > 0)
             {
-                Console.WriteLine("PRG memory size: {0}K", prgSize / 1024);
+                Console.WriteLine("PRG memory size: {0}KB", prgSize / 1024);
                 mapper.DumpPrg(dumper, prg, prgSize);
                 while (prg.Count % 0x4000 != 0) prg.Add(0);
             }
             if (chrSize > 0)
             {
-                Console.WriteLine("CHR memory size: {0}K", chrSize / 1024);
+                Console.WriteLine("CHR memory size: {0}KB", chrSize / 1024);
                 mapper.DumpChr(dumper, chr, chrSize);
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
@@ -610,7 +650,8 @@ namespace com.clusterrr.Famicom
             }
             else if (mirroringRaw.Length == 4)
             {
-                switch (string.Format("{0}{1}{2}{3}", mirroringRaw[0] ? 1 : 0, mirroringRaw[1] ? 1 : 0, mirroringRaw[2] ? 1 : 0, mirroringRaw[3] ? 1 : 0))
+                var mirrstr = $"{(mirroringRaw[0] ? 1 : 0)}{(mirroringRaw[1] ? 1 : 0)}{(mirroringRaw[2] ? 1 : 0)}{(mirroringRaw[3] ? 1 : 0)}";
+                switch (mirrstr)
                 {
                     case "0011":
                         mirroring = NesFile.MirroringType.Horizontal; // Horizontal
@@ -803,16 +844,16 @@ namespace com.clusterrr.Famicom
             int s = 0;
             while (s < prg.Length)
             {
-                var n = Math.Min(nesFile.PRG.Length, prg.Length - s);
-                Array.Copy(nesFile.PRG, s % nesFile.PRG.Length, prg, s, n);
+                var n = Math.Min(nesFile.PRG.Count(), prg.Length - s);
+                Array.Copy(nesFile.PRG.ToArray(), s % nesFile.PRG.Count(), prg, s, n);
                 s += n;
             }
             var chr = new byte[0x2000];
             s = 0;
             while (s < chr.Length)
             {
-                var n = Math.Min(nesFile.CHR.Length, chr.Length - s);
-                Array.Copy(nesFile.CHR, s % nesFile.CHR.Length, chr, s, n);
+                var n = Math.Min(nesFile.CHR.Count(), chr.Length - s);
+                Array.Copy(nesFile.CHR.ToArray(), s % nesFile.CHR.Count(), chr, s, n);
                 s += n;
             }
 

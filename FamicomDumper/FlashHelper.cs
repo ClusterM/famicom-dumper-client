@@ -51,7 +51,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-                dumper.WriteCpu(0x8000, 0xF0); // Reset
+                dumper.WriteCpu(0x8000, 0xF0);
             }
         }
 
@@ -78,9 +78,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-            // Password Protection Set Exit 
-            dumper.WriteCpu(0x8000, 0x90);
-            dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
             Console.WriteLine("OK");
 
@@ -100,9 +98,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-                // PPB Command Set Exit
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
             Console.WriteLine("OK");
         }
@@ -128,9 +124,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-                // Password Protection Set Exit 
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
         }
 
@@ -152,9 +146,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-                // PPB Lock Command Set Exit 
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
         }
 
@@ -172,9 +164,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-                // PPB Lock Command Set Exit 
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
         }
 
@@ -191,9 +181,7 @@ namespace com.clusterrr.Famicom
             }
             finally
             {
-                // PPB Command Set Exit
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
         }
 
@@ -209,43 +197,24 @@ namespace com.clusterrr.Famicom
             // Check
             try
             {
+                DateTime startTime = DateTime.Now;
                 while (true)
                 {
-                    var b0 = dumper.ReadCpu(0x8000, 1)[0];
-                    var b1 = dumper.ReadCpu(0x8000, 1)[0];
-                    var tg = b0 ^ b1;
-                    if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                    {
+                    byte b = dumper.ReadCpu(0x8000, 1)[0];
+                    if (b == 0x00)
                         break;
-                    }
-                    else// DQ6 = toggle
-                    {
-                        if ((b0 & (1 << 5)) != 0) // DQ5 = 1
-                        {
-                            b0 = dumper.ReadCpu(0x8000, 1)[0];
-                            b1 = dumper.ReadCpu(0x8000, 1)[0];
-                            tg = b0 ^ b1;
-                            if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                                break;
-                            else
-                                throw new IOException("PPB write failed (DQ5 is set)");
-                        }
-                    }
+                    if ((DateTime.Now - startTime).TotalMilliseconds >= 1500)
+                        throw new IOException("PPB write failed");
                 }
-                var r = dumper.ReadCpu(0x8000, 1)[0];
-                if ((r & 1) != 0) // DQ0 = 1
-                    throw new IOException("PPB write failed (DQ0 is not set)");
             }
             finally
             {
-                // PPB Command Set Exit
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
             Console.WriteLine("OK");
         }
 
-        public static void PPBErase(FamicomDumperConnection dumper)
+        public static void PPBClear(FamicomDumperConnection dumper)
         {
             PPBLockBitCheckPrint(dumper);
             Console.Write($"Erasing all PBBs... ");
@@ -259,38 +228,19 @@ namespace com.clusterrr.Famicom
             // Check
             try
             {
+                DateTime startTime = DateTime.Now;
                 while (true)
                 {
-                    var b0 = dumper.ReadCpu(0x8000, 1)[0];
-                    var b1 = dumper.ReadCpu(0x8000, 1)[0];
-                    var tg = b0 ^ b1;
-                    if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                    {
+                    byte b = dumper.ReadCpu(0x8000, 1)[0];
+                    if (b == 0x01)
                         break;
-                    }
-                    else// DQ6 = toggle
-                    {
-                        if ((b0 & (1 << 5)) != 0) // DQ5 = 1
-                        {
-                            b0 = dumper.ReadCpu(0x8000, 1)[0];
-                            b1 = dumper.ReadCpu(0x8000, 1)[0];
-                            tg = b0 ^ b1;
-                            if ((tg & (1 << 6)) == 0) // DQ6 = not toggle
-                                break;
-                            else
-                                throw new IOException("PPB erase failed (DQ5 is set)");
-                        }
-                    }
+                    if ((DateTime.Now - startTime).TotalMilliseconds >= 1500)
+                        throw new IOException("PPB clear failed");
                 }
-                var r = dumper.ReadCpu(0x8000, 1)[0];
-                if ((r & 1) != 1) // DQ0 = 0
-                    throw new IOException("PPB erase failed (DQ0 is not set)");
             }
             finally
             {
-                // PPB Command Set Exit
-                dumper.WriteCpu(0x8000, 0x90);
-                dumper.WriteCpu(0x8000, 0x00);
+                ResetFlash(dumper);
             }
             Console.WriteLine("OK");
         }

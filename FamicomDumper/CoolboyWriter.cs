@@ -44,71 +44,6 @@ namespace com.clusterrr.Famicom
             return version;
         }
 
-        public static void WriteWithGPIO(FamicomDumperConnection dumper, string fileName)
-        {
-            byte[] PRG;
-            try
-            {
-                var nesFile = new NesFile(fileName);
-                PRG = nesFile.PRG;
-            }
-            catch
-            {
-                var nesFile = new UnifFile(fileName);
-                PRG = nesFile.Fields["PRG0"];
-            }
-            while (PRG.Length < 512 * 1024)
-            {
-                var PRGbig = new byte[PRG.Length * 2];
-                Array.Copy(PRG, 0, PRGbig, 0, PRG.Length);
-                Array.Copy(PRG, 0, PRGbig, PRG.Length, PRG.Length);
-                PRG = PRGbig;
-            }
-
-            int prgBanks = PRG.Length / 0x2000;
-
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
-            var version = DetectVersion(dumper);
-            var CoolboyReg = (UInt16)(version == 2 ? 0x5000 : 0x6000);
-            dumper.WriteCpu(0xA001, 0x00); // RAM protect
-            var writeStartTime = DateTime.Now;
-            var lastSectorTime = DateTime.Now;
-            var timeTotal = new TimeSpan();
-            for (int bank = 0; bank < prgBanks; bank += 2)
-            {
-                int outbank = bank / 16;
-                byte r0 = (byte)((outbank & 0x07) | ((outbank & 0xc0) >> 2));
-                byte r1 = (byte)(((outbank & 0x30) >> 2) | ((outbank << 1) & 0x10));
-                byte r2 = 0;
-                byte r3 = 0;
-                dumper.WriteCpu(CoolboyReg, new byte[] { r0, r1, r2, r3 });
-
-                int inbank = bank % 64;
-                dumper.WriteCpu(0x8000, new byte[] { 6, (byte)(inbank) });
-                dumper.WriteCpu(0x8000, new byte[] { 7, (byte)(inbank | 1) });
-
-                var data = new byte[0x4000];
-                int pos = bank * 0x2000;
-                if (pos % (128 * 1024) == 0)
-                {
-                    timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 16);
-                    timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
-                    lastSectorTime = DateTime.Now;
-                    Console.Write("Erasing sector... ");
-                    dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO);
-                    Console.WriteLine("OK");
-                }
-                Array.Copy(PRG, pos, data, 0, data.Length);
-                var timePassed = DateTime.Now - writeStartTime;
-                Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank / 2 + 1, prgBanks / 2, (int)(100 * bank / prgBanks),
-                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.CoolboyGPIO);
-                Console.WriteLine("OK");
-            }
-        }
-
         public static void GetInfo(FamicomDumperConnection dumper)
         {
             Console.Write("Reset... ");
@@ -144,7 +79,7 @@ namespace com.clusterrr.Famicom
                 try
                 {
                     var nesFile = new NesFile(fileName);
-                    PRG = nesFile.PRG;
+                    PRG = nesFile.PRG.ToArray();
                 }
                 catch
                 {
@@ -167,12 +102,12 @@ namespace com.clusterrr.Famicom
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
             {
-                PPBErase(dumper, coolboyReg);
+                PPBClear(dumper, coolboyReg);
             }
             catch (Exception ex)
             {
                 if (!silent) Program.PlayErrorSound();
-                Console.WriteLine($"ERROR! {ex.Message}. Lets try anyway.");
+                Console.WriteLine($"ERROR! {ex.Message}. Lets continue anyway.");
             }
 
             var writeStartTime = DateTime.Now;
@@ -205,19 +140,19 @@ namespace com.clusterrr.Famicom
                         timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 8}... ");
-                        dumper.EraseCpuFlashSector(FamicomDumperConnection.MemoryAccessMethod.Direct);
+                        dumper.EraseCpuFlashSector();
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
                         timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                    dumper.WriteCpuFlash(0x0000, data, FamicomDumperConnection.MemoryAccessMethod.Direct);
+                    dumper.WriteCpuFlash(0x0000, data);
                     Console.WriteLine("OK");
                     if ((bank % 8 == 7) || (bank == prgBanks - 1)) // After last bank in sector
                     {
                         if (writePBBs)
-                            PPBSet(dumper, coolboyReg, (uint)bank / 8);
+                            FlashHelper.PPBSet(dumper);
                         currentErrorCount = 0;
                     }
                 }
@@ -333,24 +268,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        public static byte PPBRead(FamicomDumperConnection dumper, ushort coolboyReg, uint sector)
-        {
-            // Select sector
-            int bank = (int)(sector * 8);
-            byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
-                | (((bank >> 9) & 0x03) << 4) // 10, 9 bits
-                | (1 << 6)); // resets 4th mask bit
-            byte r1 = (byte)((((bank >> 7) & 0x03) << 2) // 8, 7
-                | (((bank >> 6) & 1) << 4) // 6
-                | (1 << 7)); // resets 5th mask bit
-            byte r2 = 0;
-            byte r3 = (byte)((1 << 4) // NROM mode
-                | ((bank & 7) << 1)); // 2, 1, 0 bits
-            dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
-
-            return FlashHelper.PPBRead(dumper);
-        }
-
+        /*
         public static void PPBSet(FamicomDumperConnection dumper, ushort coolboyReg, uint sector)
         {
             Console.Write($"Writing PPB for sector #{sector}... ");
@@ -369,8 +287,9 @@ namespace com.clusterrr.Famicom
 
             FlashHelper.PPBSet(dumper);
         }
+        */
 
-        public static void PPBErase(FamicomDumperConnection dumper, ushort coolboyReg)
+        public static void PPBClear(FamicomDumperConnection dumper, ushort coolboyReg)
         {
             // Sector 0
             int bank = 0;
@@ -385,7 +304,7 @@ namespace com.clusterrr.Famicom
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
 
-            FlashHelper.PPBErase(dumper);
+            FlashHelper.PPBClear(dumper);
         }
     }
 }
