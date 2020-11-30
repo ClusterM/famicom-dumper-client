@@ -9,7 +9,7 @@ namespace com.clusterrr.Famicom
     public class TilesExtractor
     {
         private readonly byte[] data;
-        public Color[] Colors = new Color[4];
+        private Color[] colors = new Color[4];
         public int TilesCount
         {
             get { return data.Length / 16; }
@@ -18,10 +18,10 @@ namespace com.clusterrr.Famicom
         public TilesExtractor(byte[] data)
         {
             this.data = data;
-            Colors[0] = Color.Black;
-            Colors[1] = Color.Blue;
-            Colors[2] = Color.Red;
-            Colors[3] = Color.White;
+            colors[0] = Color.Black;
+            colors[1] = Color.Blue;
+            colors[2] = Color.Red;
+            colors[3] = Color.White;
         }
 
         public Image GetTile(int id)
@@ -34,7 +34,7 @@ namespace com.clusterrr.Famicom
                 {
                     int colorNum = (tileData[y] >> (7 - x)) & 1;
                     colorNum += ((tileData[y + 8] >> (7 - x)) & 1) * 2;
-                    var color = Colors[colorNum];
+                    var color = colors[colorNum];
                     result.SetPixel(x, y, color);
                 }
             return result;

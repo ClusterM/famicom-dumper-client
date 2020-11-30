@@ -111,5 +111,10 @@ namespace com.clusterrr.Famicom.Mappers
             dumper.WriteCpu(0x6003, 0x80);
             dumper.WriteCpu(0xA001, 0x80);
         }
+
+        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+        {
+            return NesFile.MirroringType.MapperControlled;
+        }
     }
 }

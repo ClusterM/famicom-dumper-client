@@ -207,7 +207,7 @@ namespace com.clusterrr.Famicom
                     dict["secure"] = false;
                     var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
                     ChannelServices.RegisterChannel(channel, false);
-                    dumper = (FamicomDumperConnection)Activator.GetObject(typeof(FamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
+                    dumper = (FamicomDumperConnection)Activator.GetObject(typeof(IFamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
                     var lifetime = dumper.GetLifetimeService();
                 }
                 try
@@ -605,6 +605,22 @@ namespace com.clusterrr.Famicom
             return mapper.Value;
         }
 
+        static NesFile.MirroringType GetMirroring(FamicomDumperConnection dumper, IMapper mapper)
+        {
+            try
+            {
+                var method = mapper.GetType().GetMethod(
+                    "GetMirroring", BindingFlags.Instance | BindingFlags.Public,
+                    null, CallingConventions.Any, new Type[] { typeof(IFamicomDumperConnection) },
+                    new ParameterModifier[0]);
+                return (NesFile.MirroringType)method.Invoke(mapper, new object[] { dumper });
+            }
+            catch
+            {
+                return dumper.GetMirroring();
+            }
+        }
+
         static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor)
         {
             var mapper = GetMapper(mapperName);
@@ -629,37 +645,10 @@ namespace com.clusterrr.Famicom
                 mapper.DumpChr(dumper, chr, chrSize);
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
-            bool[] mirroringRaw = dumper.GetMirroring();
             NesFile.MirroringType mirroring = NesFile.MirroringType.Unknown;
-            if (mirroringRaw.Length == 1)
-            {
-                // Backward compatibility with old firmwares
-                mirroring = mirroringRaw[0] ? NesFile.MirroringType.Vertical : NesFile.MirroringType.Horizontal;
-                Console.WriteLine("Mirroring: " + mirroring);
-            }
-            else if (mirroringRaw.Length == 4)
-            {
-                var mirrstr = $"{(mirroringRaw[0] ? 1 : 0)}{(mirroringRaw[1] ? 1 : 0)}{(mirroringRaw[2] ? 1 : 0)}{(mirroringRaw[3] ? 1 : 0)}";
-                switch (mirrstr)
-                {
-                    case "0011":
-                        mirroring = NesFile.MirroringType.Horizontal; // Horizontal
-                        break;
-                    case "0101":
-                        mirroring = NesFile.MirroringType.Vertical; // Vertical
-                        break;
-                    case "0000":
-                        mirroring = NesFile.MirroringType.OneScreenA; // One-screen A
-                        break;
-                    case "1111":
-                        mirroring = NesFile.MirroringType.OneScreenB; // One-screen B
-                        break;
-                    default:
-                        mirroring = NesFile.MirroringType.Unknown; // Unknown
-                        break;
-                }
-                Console.WriteLine("Mirroring: {0} ({1} {2} {3} {4})", mirroring, mirroringRaw[0] ? 1 : 0, mirroringRaw[1] ? 1 : 0, mirroringRaw[2] ? 1 : 0, mirroringRaw[3] ? 1 : 0);
-            }
+            // TODO: move GetMapper to IMapper, so it will not be optional
+            //mirroring = mapper.GetMirroring(dumper);
+            mirroring = GetMirroring(dumper, mapper);
             Console.WriteLine("Saving to {0}...", fileName);
             if (mapper.Number >= 0)
             {
@@ -682,15 +671,14 @@ namespace com.clusterrr.Famicom
                 unifFile.Fields["PRG0"] = prg.ToArray();
                 if (chr.Count > 0)
                     unifFile.Fields["CHR0"] = chr.ToArray();
-                // TODO: make some way to select mirroring in output file
-                unifFile.Mirroring = NesFile.MirroringType.MapperControlled;
+                unifFile.Mirroring = mirroring;
                 if (!string.IsNullOrEmpty(unifAuthor))
                     unifFile.DumperName = unifAuthor;
                 unifFile.DumpingSoftware = "Famicom Dumper by Cluster / https://github.com/ClusterM/famicom-dumper-client";
                 unifFile.Save(fileName);
             }
         }
-        
+
         static void ReadPrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);

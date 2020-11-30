@@ -30,7 +30,7 @@
         public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
         {
             Console.Write("Reading PRG... ");
-            data.AddRange(dumper.ReadCpu(0x8000, size));
+            data.AddRange(dumper.ReadCpu((ushort)(0x10000 - size), size));
             Console.WriteLine("OK");
         }
 
@@ -44,6 +44,11 @@
         public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
             throw new NotSupportedException("SRAM is not supported by this mapper");
+        }
+
+        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+        {
+            return dumper.GetMirroring();
         }
     }
 }

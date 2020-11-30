@@ -51,5 +51,10 @@
         {
             throw new NotSupportedException("SRAM is not supported by this mapper");
         }
+
+        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+        {
+            return dumper.GetMirroring();
+        }
     }
 }

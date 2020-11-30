@@ -944,7 +944,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void WriteFdsBlocks(byte[] blockNumbers, IFdsBlock block)
             => WriteFdsBlocks(blockNumbers, new byte[][] { block.ToBytes() });
 
-        public bool[] GetMirroring()
+        public bool[] GetMirroringRaw()
         {
             if (Verbose)
                 Console.Write("Reading mirroring... ");
@@ -952,11 +952,37 @@ namespace com.clusterrr.Famicom.DumperConnection
             var recv = RecvCommand();
             if (recv.Command != DumperCommand.MIRRORING_RESULT)
                 throw new IOException($"Invalid data received: {recv.Command}");
-            var mirroring = recv.Data;
-            foreach (var b in mirroring)
+            var mirroringRaw = recv.Data;
+            foreach (var b in mirroringRaw)
                 Console.Write($"{b} ");
             Console.WriteLine();
-            return mirroring.Select(v => v != 0).ToArray();
+            return mirroringRaw.Select(v => v != 0 ? true : false).ToArray();
+        }
+
+        public NesFile.MirroringType GetMirroring()
+        {
+            var mirroringRaw = GetMirroringRaw();
+            if (mirroringRaw.Length == 1)
+            {
+                // Backward compatibility with old firmwares
+                return mirroringRaw[0] ? NesFile.MirroringType.Vertical : NesFile.MirroringType.Horizontal;
+            }
+            else if (mirroringRaw.Length == 4)
+            {
+                var mirrstr = $"{(mirroringRaw[0] ? 1 : 0)}{(mirroringRaw[1] ? 1 : 0)}{(mirroringRaw[2] ? 1 : 0)}{(mirroringRaw[3] ? 1 : 0)}";
+                switch (mirrstr)
+                {
+                    case "0011":
+                        return NesFile.MirroringType.Horizontal; // Horizontal
+                    case "0101":
+                        return NesFile.MirroringType.Vertical; // Vertical
+                    case "0000":
+                        return NesFile.MirroringType.OneScreenA; // One-screen A
+                    case "1111":
+                        return NesFile.MirroringType.OneScreenB; // One-screen B
+                }                
+            }
+            return NesFile.MirroringType.Unknown; // Unknown
         }
 
         public void SetMaximumNumberOfBytesInMultiProgram(uint pageSize)

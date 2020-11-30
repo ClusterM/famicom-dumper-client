@@ -58,5 +58,10 @@
             dumper.WriteCpu(0x5007, 0x01); // enable SRAM
             dumper.WriteCpu(0x5005, 0x02); // select bank
         }
+
+        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+        {
+            return NesFile.MirroringType.MapperControlled;
+        }
     }
 }

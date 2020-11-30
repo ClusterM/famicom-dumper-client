@@ -1,4 +1,6 @@
-﻿namespace com.clusterrr.Famicom.DumperConnection
+﻿using com.clusterrr.Famicom.Containers;
+
+namespace com.clusterrr.Famicom.DumperConnection
 {
     public interface IFamicomDumperConnection
     {
@@ -56,6 +58,12 @@
         /// Get current mirroring
         /// </summary>
         /// <returns>bool[4] array with CIRAM A10 values for each region: $0000-$07FF, $0800-$0FFF, $1000-$17FF and $1800-$1FFF</returns>
-        bool[] GetMirroring();
+        bool[] GetMirroringRaw();
+
+        /// <summary>
+        /// Get current mirroring
+        /// </summary>
+        /// <returns>Detected mirroring as NesFile.MirroringType</returns>
+        NesFile.MirroringType GetMirroring();
     }
 }

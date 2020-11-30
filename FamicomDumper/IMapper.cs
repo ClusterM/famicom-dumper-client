@@ -1,4 +1,5 @@
-﻿using com.clusterrr.Famicom.DumperConnection;
+﻿using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.DumperConnection;
 using System.Collections.Generic;
 
 namespace com.clusterrr.Famicom
@@ -51,5 +52,7 @@ namespace com.clusterrr.Famicom
         /// </summary>
         /// <param name="dumper"></param>
         void EnablePrgRam(IFamicomDumperConnection dumper);
+
+        //NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
     }
 }

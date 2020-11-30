@@ -61,5 +61,10 @@
             dumper.WriteCpu(0x5100, 3); // bank mode #3, four 8KB banks
             dumper.WriteCpu(0x5113, 7); // PRG-RAM bank #7
         }
+
+        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+        {
+            return NesFile.MirroringType.MapperControlled;
+        }
     }
 }

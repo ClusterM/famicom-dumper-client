@@ -58,5 +58,10 @@
             dumper.WriteCpu(0x8000, 8);    // Bank $8 - CPU $6000-$7FFF
             dumper.WriteCpu(0x5103, 0xC0); // PRG RAM Enabled (0x80) + PRG RAM (0x40), bank #0 (should i select #0?)
         }
+
+        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+        {
+            return NesFile.MirroringType.MapperControlled;
+        }
     }
 }
