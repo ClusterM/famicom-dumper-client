@@ -607,18 +607,22 @@ namespace com.clusterrr.Famicom
 
         static NesFile.MirroringType GetMirroring(FamicomDumperConnection dumper, IMapper mapper)
         {
-            try
-            {
-                var method = mapper.GetType().GetMethod(
-                    "GetMirroring", BindingFlags.Instance | BindingFlags.Public,
-                    null, CallingConventions.Any, new Type[] { typeof(IFamicomDumperConnection) },
+            var method = mapper.GetType().GetMethod(
+                "GetMirroring", BindingFlags.Instance | BindingFlags.Public,
+                null, CallingConventions.Any, new Type[] { typeof(IFamicomDumperConnection) },
+                new ParameterModifier[0]);
+            if (method == null) return dumper.GetMirroring();
+            return (NesFile.MirroringType)method.Invoke(mapper, new object[] { dumper });
+        }
+
+        static byte GetSubmapper(IMapper mapper)
+        {
+            var method = mapper.GetType().GetMethod(
+                    "get_Submapper", BindingFlags.Instance | BindingFlags.Public,
+                    null, CallingConventions.Any, new Type[] { },
                     new ParameterModifier[0]);
-                return (NesFile.MirroringType)method.Invoke(mapper, new object[] { dumper });
-            }
-            catch
-            {
-                return dumper.GetMirroring();
-            }
+            if (method == null) return 0;
+            return (byte)method.Invoke(mapper, new object[] { });
         }
 
         static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor)
@@ -652,10 +656,14 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("Saving to {0}...", fileName);
             if (mapper.Number >= 0)
             {
+                // TODO: add RAM and NV-RAM settings for NES 2.0
                 var nesFile = new NesFile();
-                // TODO: add some way to specify submapper
-                nesFile.Version = NesFile.iNesVersion.NES20;
+                var submapper = GetSubmapper(mapper);
+                nesFile.Version = (mapper.Number > 255 || submapper != 0) 
+                    ? NesFile.iNesVersion.NES20 
+                    : NesFile.iNesVersion.iNES;
                 nesFile.Mapper = (ushort)mapper.Number;
+                nesFile.Submapper = submapper;
                 nesFile.Mirroring = mirroring;
                 nesFile.PRG = prg.ToArray();
                 nesFile.CHR = chr.ToArray();

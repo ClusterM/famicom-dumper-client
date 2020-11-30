@@ -12,6 +12,11 @@
             get { return 4; }
         }
 
+        public byte Submapper
+        {
+            get { return 0; }
+        }
+
         public string UnifName
         {
             get { return null; }

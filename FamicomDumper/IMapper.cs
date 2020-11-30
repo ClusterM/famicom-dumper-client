@@ -15,7 +15,12 @@ namespace com.clusterrr.Famicom
         /// Number of the mapper to spore in the iNES header (-1 if none)
         /// </summary>
         int Number { get; }
-
+        
+        /// <summary>
+        /// Number of submapper (0 if none)
+        /// </summary>
+        //byte Submapper { get; }
+        
         /// <summary>
         /// Name of the mapper to store in UNIF container (null if none)
         /// </summary>
@@ -53,6 +58,11 @@ namespace com.clusterrr.Famicom
         /// <param name="dumper"></param>
         void EnablePrgRam(IFamicomDumperConnection dumper);
 
+        /// <summary>
+        /// This method must return mirroring type, it can call dumper.GetMirroring() if it's not fixed
+        /// </summary>
+        /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
+        /// <returns></returns>
         //NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
     }
 }

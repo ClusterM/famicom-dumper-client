@@ -16,6 +16,11 @@ namespace com.clusterrr.Famicom.Mappers
             get { return -1; }
         }
 
+        public byte Submapper
+        {
+            get { return 0; }
+        }
+
         public string UnifName
         {
             get
