@@ -44,7 +44,7 @@ namespace com.clusterrr.Famicom
             return version;
         }
 
-        public static void GetInfo(FamicomDumperConnection dumper)
+        public static void PrintFlashInfo(FamicomDumperConnection dumper)
         {
             Console.Write("Reset... ");
             dumper.Reset();
@@ -62,7 +62,7 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(CoolboyReg, new byte[] { r0, r1, r2, r3 });
-            var cfi = FlashHelper.GetCFI(dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             FlashHelper.PrintCFIInfo(cfi);
             FlashHelper.LockBitsCheckPrint(dumper);
             FlashHelper.PPBLockBitCheckPrint(dumper);
@@ -97,8 +97,11 @@ namespace com.clusterrr.Famicom
             var version = DetectVersion(dumper);
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             FlashHelper.ResetFlash(dumper);
-            var cfi = FlashHelper.GetCFI(dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
+            Console.WriteLine($"Maximum number of bytes in multi-byte program: {cfi.MaximumNumberOfBytesInMultiProgram}");
+            if (dumper.ProtocolVersion >= 3)
+                dumper.SetMaximumNumberOfBytesInMultiProgram(cfi.MaximumNumberOfBytesInMultiProgram);
             FlashHelper.LockBitsCheckPrint(dumper);
             if (PRG.Length > cfi.DeviceSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
@@ -269,27 +272,6 @@ namespace com.clusterrr.Famicom
             if (newBadSectorsList.Any() || wrongCrcSectorsList.Any())
                 throw new IOException("Cartridge is not writed correctly");
         }
-
-        /*
-        public static void PPBSet(FamicomDumperConnection dumper, ushort coolboyReg, uint sector)
-        {
-            Console.Write($"Writing PPB for sector #{sector}... ");
-            // Select sector
-            int bank = (int)(sector * 8);
-            byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
-                | (((bank >> 9) & 0x03) << 4) // 10, 9 bits
-                | (1 << 6)); // resets 4th mask bit
-            byte r1 = (byte)((((bank >> 7) & 0x03) << 2) // 8, 7
-                | (((bank >> 6) & 1) << 4) // 6
-                | (1 << 7)); // resets 5th mask bit
-            byte r2 = 0;
-            byte r3 = (byte)((1 << 4) // NROM mode
-                | ((bank & 7) << 1)); // 2, 1, 0 bits
-            dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
-
-            FlashHelper.PPBSet(dumper);
-        }
-        */
 
         public static void PPBClear(FamicomDumperConnection dumper, ushort coolboyReg)
         {

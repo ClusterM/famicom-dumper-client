@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -42,10 +43,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CFIInfo.cs" />
     <Compile Include="FamicomDumperConnection.cs" />
     <Compile Include="FTD2XX_NET.cs" />
     <Compile Include="IFamicomDumperConnection.cs" />
+    <Compile Include="Win32DeviceMgmt.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

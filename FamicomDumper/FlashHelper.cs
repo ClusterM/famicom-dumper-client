@@ -27,7 +27,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x8000, 0xF0);
         }
 
-        public static CFIInfo GetCFI(FamicomDumperConnection dumper)
+        public static CFIInfo GetCFIInfo(FamicomDumperConnection dumper)
         {
             try
             {
@@ -234,6 +234,7 @@ namespace com.clusterrr.Famicom
 
         public static void PPBClear(FamicomDumperConnection dumper)
         {
+            LockBitsCheckPrint(dumper);
             PPBLockBitCheckPrint(dumper);
             Console.Write($"Erasing all PBBs... ");
             // PPB Command Set Entry

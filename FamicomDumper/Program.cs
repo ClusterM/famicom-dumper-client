@@ -36,7 +36,6 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Security;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -47,13 +46,13 @@ namespace com.clusterrr.Famicom
         private static DateTime startTime;
         private static string MappersSearchDirectory = "mappers";
         private const string ScriptStartMethod = "Run";
-        private static SoundPlayer doneSound = new SoundPlayer(FamicomDumper.Properties.Resources.DoneSound);
-        private static SoundPlayer errorSound = new SoundPlayer(FamicomDumper.Properties.Resources.ErrorSound);
+        private static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
+        private static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
             Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}");
-            Console.WriteLine($"  Commit {FamicomDumper.Properties.Resources.gitCommit} @ https://github.com/ClusterM/famicom-dumper-client");
+            Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ https://github.com/ClusterM/famicom-dumper-client");
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine();
             startTime = DateTime.Now;
@@ -75,6 +74,9 @@ namespace com.clusterrr.Famicom
             uint tcpPort = 26672;
             bool ignoreBadSectors = false;
             string remoteHost = null;
+            byte fdsSides = 1;
+            bool fdsUseHeader = true;
+            bool fdsDumpHiddenFiles = false;
             try
             {
                 if (args.Length == 0 || args.Contains("help") || args.Contains("--help"))
@@ -106,6 +108,16 @@ namespace com.clusterrr.Famicom
                         case "file":
                             filename = value;
                             i++;
+                            break;
+                        case "fds-sides":
+                            fdsSides = byte.Parse(value);
+                            i++;
+                            break;
+                        case "fds-no-header":
+                            fdsUseHeader = false;
+                            break;
+                        case "fds-dump-hidden":
+                            fdsDumpHiddenFiles = false;
                             break;
                         case "csfile":
                         case "scriptfile":
@@ -225,14 +237,24 @@ namespace com.clusterrr.Famicom
                         case "dump":
                             Dump(dumper, filename ?? "output.nes", mapper, ParseSize(psize), ParseSize(csize), unifName, unifAuthor);
                             break;
+                        case "dump-fds":
+                            FDS.DumpFDS(dumper, filename ?? "output.fds", fdsSides, fdsDumpHiddenFiles, fdsUseHeader);
+                            break;
                         case "read-prg-ram":
                         case "dump-prg-ram":
                         case "dump-sram":
                             ReadPrgRam(dumper, filename ?? "savegame.sav", mapper);
                             break;
+                        case "write-fds":
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                            FDS.WriteFDS(dumper, filename);
+                            break;
                         case "write-prg-ram":
                         case "write-sram":
-                            WritePrgRam(dumper, filename ?? "savegame.sav", mapper);
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                            WritePrgRam(dumper, filename, mapper);
                             break;
                         case "test-prg-ram":
                         case "test-sram":
@@ -267,19 +289,25 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
-                            CoolboyWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
-                            CoolgirlWriter.Write(dumper, filename ?? "game.nes", badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                            CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
                             break;
                         case "write-eeprom":
-                            WriteEeprom(dumper, filename ?? "game.nes");
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                            WriteEeprom(dumper, filename);
                             break;
                         case "info-coolboy":
-                            CoolboyWriter.GetInfo(dumper);
+                            CoolboyWriter.PrintFlashInfo(dumper);
                             break;
                         case "info-coolgirl":
-                            CoolgirlWriter.GetInfo(dumper);
+                            CoolgirlWriter.PringFlashInfo(dumper);
                             break;
                         case "bootloader":
                             Bootloader(dumper);
@@ -363,10 +391,12 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "server", "start server for remote dumping");
             Console.WriteLine(" {0,-25}{1}", "script", "execute C# script specified by --csfile option");
             Console.WriteLine(" {0,-25}{1}", "reset", "simulate reset (M2 goes to Z-state for a second)");
+            Console.WriteLine(" {0,-25}{1}", "dump-fds", "dump FDS card using RAM adapter and FDS drive");
+            Console.WriteLine(" {0,-25}{1}", "write-fds", "write FDS card using RAM adapter and FDS drive");
             Console.WriteLine(" {0,-25}{1}", "dump-tiles", "dump CHR data to PNG file");
             Console.WriteLine(" {0,-25}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-25}{1}", "write-prg-ram", "write PRG RAM");
-            Console.WriteLine(" {0,-25}{1}", "write-coolboy", "write COOLBOY cartridge directly");
+            Console.WriteLine(" {0,-25}{1}", "write-coolboy", "write COOLBOY cartridge");
             Console.WriteLine(" {0,-25}{1}", "write-coolgirl", "write COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "write-eeprom", "write EEPROM-based cartridge");
             Console.WriteLine(" {0,-25}{1}", "test-prg-ram", "run PRG RAM test");
@@ -385,13 +415,15 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--tcpport <port>", "TCP port for client/server communication, default - 26672");
             Console.WriteLine(" {0,-25}{1}", "--host <host>", "enable network client and connect to specified host");
             Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
-            Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output filename (.nes, .png or .sav)");
+            Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
             Console.WriteLine(" {0,-25}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-25}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-25}{1}", "--csfile <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-25}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
+            Console.WriteLine(" {0,-25}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
+            Console.WriteLine(" {0,-25}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
             Console.WriteLine(" {0,-25}{1}", "--ignorebadsectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
@@ -575,49 +607,6 @@ namespace com.clusterrr.Famicom
 
         static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor)
         {
-            /*
-            dumper.Timeout = 30000;
-            var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
-            if ((driveStatus & 1) != 0)
-            {
-                Console.Write("Please set disk card... ");
-                while ((driveStatus & 1) != 0)
-                {
-                    Thread.Sleep(500);
-                    driveStatus = dumper.ReadCpu(0x4032, 1)[0];
-                }
-                Console.WriteLine("OK!");
-            }
-            var blocks = new List<IFdsBlock>();
-            for (var i = 0; i < 16; i++)
-            {
-                while (true)
-                {
-                    try
-                    {
-                        var fdsData = dumper.ReadFdsBlocks((byte)i, 1);
-                        if (fdsData.Length != 1)
-                            throw new InvalidDataException($"Only {fdsData.Length} received");
-                        if (!fdsData[0].CrcOk)
-                            throw new Exception($"Invalid CRC on block #{i}");
-                        blocks.AddRange(fdsData);
-                        Console.WriteLine($"Block #{i} - OK!");
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error {ex.GetType()}: {ex.Message}");
-                        Thread.Sleep(5000);
-                    }
-                }
-            }
-            var fds = blocks.Select(d => d.ToBytes()).SelectMany(d => d).ToArray();
-            fds = Enumerable.Concat(fds, new byte[65500 - fds.Length]).ToArray();
-            File.WriteAllBytes(@"E:\dump.fds", fds);
-            Console.WriteLine("Done!");
-            return;
-            */
-
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
                 Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
@@ -701,7 +690,7 @@ namespace com.clusterrr.Famicom
                 unifFile.Save(fileName);
             }
         }
-
+        
         static void ReadPrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);

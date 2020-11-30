@@ -14,10 +14,10 @@ namespace com.clusterrr.Famicom.DumperConnection
     public class FamicomDumperConnection : MarshalByRefObject, IDisposable, IFamicomDumperConnection
     {
         const int PortBaudRate = 250000;
-        const ushort DefaultmaxReadPacketSize = 1024;
-        const ushort DefaultmaxWritePacketSize = 1024;
+        const ushort DefaultMaxReadPacketSize = 1024;
+        const ushort DefaultMaxWritePacketSize = 1024;
         const byte Magic = 0x46;
-        const string DeviceName = "Famicom Dumper/Programmer";
+        string[] DeviceNames = new string[] { "Famicom Dumper/Programmer", "Famicom Dumper/Writer" };
 
         public string PortName { get; set; }
         public byte ProtocolVersion { get; private set; } = 0;
@@ -41,8 +41,9 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         private SerialPort serialPort = null;
         private FTDI d2xxPort = null;
-        private ushort maxReadPacketSize = DefaultmaxReadPacketSize;
-        private ushort maxWritePacketSize = DefaultmaxWritePacketSize;
+        public ushort MaxReadPacketSize { get; private set; }
+        public ushort MaxWritePacketSize { get; private set; }
+
         private uint timeout = 5000;
 
         enum DumperCommand
@@ -91,6 +92,15 @@ namespace com.clusterrr.Famicom.DumperConnection
             FDS_READ_REQUEST = 45,
             FDS_READ_RESULT_BLOCK = 46,
             FDS_READ_RESULT_END = 47,
+            FDS_TIMEOUT = 48,
+            FDS_NOT_CONNECTED = 49,
+            FDS_BATTERY_LOW = 50,
+            FDS_DISK_NOT_INSERTED = 51,
+            FDS_END_OF_HEAD = 52,
+            FDS_WRITE_REQUEST = 53,
+            FDS_WRITE_DONE = 54,
+            SET_FLASH_BUFFER_SIZE = 55,
+            SET_VALUE_DONE = 56,
 
             BOOTLOADER = 0xFE,
             DEBUG = 0xFF
@@ -120,10 +130,28 @@ namespace com.clusterrr.Famicom.DumperConnection
             var subdirectories = Directory.GetDirectories(device);
             foreach (var subdir in subdirectories)
             {
+                // Searching for /sys/bus/usb/devices/{device}/xxx/ttyZZZ/
                 var subsubdirectories = Directory.GetDirectories(subdir);
-                var ports = subsubdirectories.Where(d => Path.GetFileName(d).StartsWith("tty"));
+                var ports = subsubdirectories.Where(d =>
+                {
+                    var directory = Path.GetFileName(d);
+                    return directory.Length > 3 && directory.StartsWith("tty");
+                });
                 if (ports.Any())
                     return $"/dev/{Path.GetFileName(ports.First())}";
+
+                // Searching for /sys/bus/usb/devices/{device}/xxx/tty/ttyZZZ/
+                var ttyDirectory = Path.Combine(subdir, "tty");
+                if (Directory.Exists(ttyDirectory))
+                {
+                    ports = Directory.GetDirectories(ttyDirectory).Where(d =>
+                    {
+                        var directory = Path.GetFileName(d);
+                        return directory.Length > 3 && directory.StartsWith("tty");
+                    });
+                    if (ports.Any())
+                        return $"/dev/{Path.GetFileName(ports.First())}";
+                }
             }
             return null;
         }
@@ -145,48 +173,103 @@ namespace com.clusterrr.Famicom.DumperConnection
             return LinuxDeviceToPort(device);
         }
 
+        private static SerialPort OpenPort(string name, int timeout)
+        {
+            var sPort = new SerialPort();
+            sPort.PortName = name;
+            sPort.WriteTimeout = timeout;
+            sPort.ReadTimeout = timeout;
+            if (!name.Contains("ttyACM"))
+            {
+                // Not supported by ACM devices
+                sPort.BaudRate = PortBaudRate;
+                sPort.Parity = Parity.None;
+                sPort.DataBits = 8;
+                sPort.StopBits = StopBits.One;
+                sPort.Handshake = Handshake.None;
+                sPort.DtrEnable = false;
+                sPort.RtsEnable = false;
+            }
+            sPort.NewLine = Environment.NewLine;
+            sPort.Open();
+            return sPort;
+        }
+
         public void Open()
         {
             ProtocolVersion = 0;
-            maxReadPacketSize = DefaultmaxReadPacketSize;
-            maxWritePacketSize = DefaultmaxWritePacketSize;
+            MaxReadPacketSize = DefaultMaxReadPacketSize;
+            MaxWritePacketSize = DefaultMaxWritePacketSize;
 
+            SerialPort sPort = null;
             string portName = PortName;
+            // Is port specified?
             if (string.IsNullOrEmpty(portName) || portName.ToLower() == "auto")
             {
+                portName = null;
+                // Need to autodetect port
                 if (!IsRunningOnMono()) // Is it running on Windows?
                 {
-                    // Using Windows FTDI driver to determine serial number
-                    FTDI myFtdiDevice = new FTDI();
-                    uint ftdiDeviceCount = 0;
-                    FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
-                    // FTDI serial number autodetect
-                    ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
-                    // Check status
-                    if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                        throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                    // If no devices available, return
-                    if (ftdiDeviceCount == 0)
-                        throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                    // Allocate storage for device info list
-                    FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
-
-                    // Populate our device list
-                    ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
-
-                    portName = null;
-                    if (ftStatus == FTDI.FT_STATUS.FT_OK)
+                    // First of all lets check bus reported device description
+                    var allComPorts = Win32DeviceMgmt.GetAllCOMPorts();
+                    foreach (var port in allComPorts)
                     {
-                        var dumpers = ftdiDeviceList.Where(d => d.Description == DeviceName);
-                        if (!dumpers.Any())
-                            throw new IOException($"{DeviceName} not found");
-                        portName = dumpers.First().SerialNumber;
-                        Console.WriteLine($"Autodetected USB device serial number: {portName}");
+                        if (!DeviceNames.Contains(port.bus_description))
+                            continue;
+                        // Seems like it's dumper port but it can me already busy
+                        try
+                        {
+                            sPort = OpenPort(port.name, (int)Timeout);
+                            // It's not busy
+                            portName = port.name;
+                            Console.WriteLine($"Autodetected virtual serial port: {portName}");
+                            break;
+                        }
+                        catch
+                        {
+                            continue;
+                        }
                     }
-                    if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                        throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
+
+                    if (portName == null)
+                    {
+                        try
+                        {
+                            // Port still not detected, ising Windows FTDI driver to determine serial number
+                            FTDI myFtdiDevice = new FTDI();
+                            uint ftdiDeviceCount = 0;
+                            FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
+                            // FTDI serial number autodetect
+                            ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
+                            // Check status
+                            if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                                throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
+
+                            // If no devices available, return
+                            if (ftdiDeviceCount == 0)
+                                throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
+
+                            // Allocate storage for device info list
+                            FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
+
+                            // Populate our device list
+                            ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
+
+                            portName = null;
+                            if (ftStatus == FTDI.FT_STATUS.FT_OK)
+                            {
+                                var dumpers = ftdiDeviceList.Where(d => DeviceNames.Contains(d.Description));
+                                portName = dumpers.First().SerialNumber;
+                                Console.WriteLine($"Autodetected USB device serial number: {portName}");
+                            }
+                            if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                                throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
+                        }
+                        catch
+                        {
+                            throw new IOException($"{DeviceNames[0]} not found");
+                        }
+                    }
                 }
                 else
                 {
@@ -195,17 +278,20 @@ namespace com.clusterrr.Famicom.DumperConnection
                     var dumpers = devices.Where(d =>
                     {
                         var productFile = Path.Combine(d, "product");
-                        return File.Exists(productFile) && File.ReadAllText(productFile).Trim() == DeviceName;
+                        return File.Exists(productFile) && DeviceNames.Contains(File.ReadAllText(productFile).Trim());
                     });
                     if (!dumpers.Any())
-                        throw new IOException($"{DeviceName} not found");
+                        throw new IOException($"{DeviceNames[0]} not found");
                     portName = LinuxDeviceToPort(dumpers.First());
+                    if (string.IsNullOrEmpty(portName))
+                        throw new IOException($"Can't detect device path");
                     Console.WriteLine($"Autodetected USB device path: {portName}");
                 }
             }
 
             if (portName.ToUpper().StartsWith("COM") || IsRunningOnMono())
             {
+                // Using VCP
                 if (IsRunningOnMono() && !File.Exists(portName))
                 {
                     // Need to convert serial number to port address
@@ -216,24 +302,15 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.WriteLine($"Autodetected USB device path: {portName}");
                 }
                 // Port specified 
-                SerialPort sPort;
-                sPort = new SerialPort();
-                sPort.PortName = portName;
-                sPort.WriteTimeout = (int)Timeout; sPort.ReadTimeout = (int)Timeout;
-                sPort.BaudRate = PortBaudRate;
-                sPort.Parity = Parity.None;
-                sPort.DataBits = 8;
-                sPort.StopBits = StopBits.One;
-                sPort.Handshake = Handshake.None;
-                sPort.DtrEnable = false;
-                sPort.RtsEnable = false;
-                sPort.NewLine = Environment.NewLine;
-                sPort.Open();
+                if (sPort == null)
+                {
+                    // If not already opened
+                    sPort = OpenPort(portName, (int)Timeout);
+                }
                 serialPort = sPort;
             }
             else
             {
-                // It's Windows and serial number specified
                 // Using Windows FTDI driver
                 FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
                 // Create new instance of the FTDI device class
@@ -283,7 +360,7 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         private byte[] ReadPort()
         {
-            var buffer = new byte[maxReadPacketSize + 8];
+            var buffer = new byte[MaxReadPacketSize + 8];
             if (serialPort != null)
             {
                 var l = serialPort.Read(buffer, 0, buffer.Length);
@@ -309,7 +386,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                         throw new TimeoutException("Read timeout");
                 } while (numBytesAvailable == 0);
                 uint numBytesRead = 0;
-                ftStatus = d2xxPort.Read(buffer, Math.Min(numBytesAvailable, (uint)maxReadPacketSize + 8), ref numBytesRead);
+                ftStatus = d2xxPort.Read(buffer, Math.Min(numBytesAvailable, (uint)MaxReadPacketSize + 8), ref numBytesRead);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                     throw new IOException("Failed to read data (error " + ftStatus.ToString() + ")");
                 var result = new byte[numBytesRead];
@@ -446,7 +523,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             var oldTimeout = Timeout;
             try
             {
-                Timeout = 100;
+                Timeout = 250;
                 for (int i = 0; i < 300; i++)
                 {
                     try
@@ -458,13 +535,25 @@ namespace com.clusterrr.Famicom.DumperConnection
                             if (recv.Data.Length >= 1)
                                 ProtocolVersion = recv.Data[0];
                             if (recv.Data.Length >= 3)
-                                maxReadPacketSize = (ushort)(recv.Data[1] | (recv.Data[2] << 8));
+                                MaxReadPacketSize = (ushort)(recv.Data[1] | (recv.Data[2] << 8));
                             if (recv.Data.Length >= 5)
-                                maxWritePacketSize = (ushort)(recv.Data[3] | (recv.Data[4] << 8));
+                                MaxWritePacketSize = (ushort)(recv.Data[3] | (recv.Data[4] << 8));
                             return true;
                         }
                     }
                     catch { }
+                }
+                // Flush all queud data
+                while (true)
+                {
+                    try
+                    {
+                        RecvCommand();
+                    }
+                    catch
+                    {
+                        break;
+                    }
                 }
             }
             finally
@@ -484,9 +573,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new List<byte>();
             while (length > 0)
             {
-                result.AddRange(ReadCpuBlock(address, Math.Min(maxReadPacketSize, length)));
-                address += maxReadPacketSize;
-                length -= maxReadPacketSize;
+                result.AddRange(ReadCpuBlock(address, Math.Min(MaxReadPacketSize, length)));
+                address += MaxReadPacketSize;
+                length -= MaxReadPacketSize;
             }
             if (Verbose && result.Count <= 32)
             {
@@ -551,7 +640,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             int pos = 0;
             while (wlength > 0)
             {
-                var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
+                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 WriteCpuBlock(address, wdata);
                 address += (ushort)wdata.Length;
@@ -610,7 +699,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             int pos = 0;
             while (wlength > 0)
             {
-                var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
+                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
                 if (data.Select(b => b != 0xFF).Any()) // if there is any not FF byte
                     WriteCpuFlashBlock(address, wdata);
@@ -648,9 +737,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new List<byte>();
             while (length > 0)
             {
-                result.AddRange(ReadPpuBlock(address, Math.Min(maxReadPacketSize, length)));
-                address += maxReadPacketSize;
-                length -= maxReadPacketSize;
+                result.AddRange(ReadPpuBlock(address, Math.Min(MaxReadPacketSize, length)));
+                address += MaxReadPacketSize;
+                length -= MaxReadPacketSize;
             }
             if (Verbose && result.Count <= 32)
             {
@@ -712,13 +801,13 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ PPU...");
                 }
             }
-            if (data.Length > maxWritePacketSize) // Split packets
+            if (data.Length > MaxWritePacketSize) // Split packets
             {
                 int wlength = data.Length;
                 int pos = 0;
                 while (wlength > 0)
                 {
-                    var wdata = new byte[Math.Min(maxWritePacketSize, wlength)];
+                    var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
                     Array.Copy(data, pos, wdata, 0, wdata.Length);
                     WritePpu(address, wdata);
                     address += (ushort)wdata.Length;
@@ -743,7 +832,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
-        public IFdsBlock[] ReadFdsBlocks(byte startBlock, byte blockCount = 0)
+        public IFdsBlock[] ReadFdsBlocks(byte startBlock = 0, byte blockCount = byte.MaxValue)
         {
             if (ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -757,9 +846,8 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[1] = blockCount;
             SendCommand(DumperCommand.FDS_READ_REQUEST, buffer);
             bool receiving = true;
-            bool parseError = false;
             int currentBlock = startBlock;
-            while (receiving && !parseError)
+            while (receiving)
             {
                 var recv = RecvCommand();
                 switch (recv.Command)
@@ -767,34 +855,35 @@ namespace com.clusterrr.Famicom.DumperConnection
                     case DumperCommand.FDS_READ_RESULT_BLOCK:
                         {
                             // ignore any data after invalid data
-                            if (parseError)
-                                break;
                             var data = recv.Data.Take(recv.Data.Length - 2).ToArray();
                             IFdsBlock newBlock;
-                            try
-                            {
-                                if (currentBlock == 0)
-                                    newBlock = FdsDiskInfoBlock.FromBytes(data);
-                                else if (currentBlock == 1)
-                                    newBlock = FdsFileAmountBlock.FromBytes(data);
-                                else if ((currentBlock % 2) == 0)
-                                    newBlock = FdsFileHeaderBlock.FromBytes(data);
-                                else
-                                    newBlock = FdsFileDataBlock.FromBytes(data);
-                                newBlock.CrcOk = recv.Data[recv.Data.Length - 2] != 0;
-                                newBlock.EndOfHeadMeet = recv.Data[recv.Data.Length - 1] != 0;
-                                blocks.Add(newBlock);
-                            }
-                            catch (InvalidDataException)
-                            {
-                                parseError = true;
-                            }
+                            if (currentBlock == 0)
+                                newBlock = FdsBlockDiskInfo.FromBytes(data);
+                            else if (currentBlock == 1)
+                                newBlock = FdsBlockFileAmount.FromBytes(data);
+                            else if ((currentBlock % 2) == 0)
+                                newBlock = FdsBlockFileHeader.FromBytes(data);
+                            else
+                                newBlock = FdsBlockFileData.FromBytes(data);
+                            newBlock.CrcOk = recv.Data[recv.Data.Length - 2] != 0;
+                            newBlock.EndOfHeadMeet = recv.Data[recv.Data.Length - 1] != 0;
+                            blocks.Add(newBlock);
                             currentBlock++;
                         }
                         break;
                     case DumperCommand.FDS_READ_RESULT_END:
                         receiving = false;
                         break;
+                    case DumperCommand.FDS_NOT_CONNECTED:
+                        throw new IOException("RAM adapter IO error, is it connected?");
+                    case DumperCommand.FDS_DISK_NOT_INSERTED:
+                        throw new IOException("Disk card is not set");
+                    case DumperCommand.FDS_BATTERY_LOW:
+                        throw new IOException("Battery low");
+                    case DumperCommand.FDS_TIMEOUT:
+                        throw new IOException("FDS read timeout");
+                    case DumperCommand.FDS_END_OF_HEAD:
+                        throw new IOException("End of head");
                     default:
                         throw new IOException($"Invalid data received: {recv.Command}");
                 }
@@ -803,6 +892,57 @@ namespace com.clusterrr.Famicom.DumperConnection
                 Console.WriteLine(" OK");
             return blocks.ToArray();
         }
+
+        public void WriteFdsBlocks(byte[] blockNumbers, byte[][] blocks)
+        {
+            if (blockNumbers.Length != blocks.Length)
+                throw new ArgumentException("blockNumbers.Length != blocks.Length");
+            var buffer = new byte[1 + blocks.Length + blocks.Length * 2 + blocks.Sum(e => e.Length)];
+            buffer[0] = (byte)(blocks.Length);
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                buffer[1 + i] = blockNumbers[i];
+            }
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                buffer[1 + blocks.Length + i * 2] = (byte)(blocks[i].Length & 0xFF);
+                buffer[1 + blocks.Length + i * 2 + 1] = (byte)((blocks[i].Length >> 8) & 0xFF);
+            }
+            int pos = 1 + blocks.Length + blocks.Length * 2;
+            foreach (var block in blocks)
+            {
+                Array.Copy(block, 0, buffer, pos, block.Length);
+                pos += block.Length;
+            }
+            SendCommand(DumperCommand.FDS_WRITE_REQUEST, buffer);
+            var recv = RecvCommand();
+            switch (recv.Command)
+            {
+                case DumperCommand.FDS_WRITE_DONE:
+                    return;
+                case DumperCommand.FDS_NOT_CONNECTED:
+                    throw new IOException("RAM adapter IO error, is it connected?");
+                case DumperCommand.FDS_DISK_NOT_INSERTED:
+                    throw new IOException("Disk card is not set");
+                case DumperCommand.FDS_BATTERY_LOW:
+                    throw new IOException("Battery low");
+                case DumperCommand.FDS_TIMEOUT:
+                    throw new IOException("FDS read timeout");
+                case DumperCommand.FDS_END_OF_HEAD:
+                    throw new IOException("End of head");
+                case DumperCommand.FDS_READ_RESULT_END:
+                    throw new IOException("Unexpected end of data");
+                default:
+                    throw new IOException($"Invalid data received: {recv.Command}");
+            }
+        }
+
+        public void WriteFdsBlocks(byte[] blockNumbers, IEnumerable<IFdsBlock> blocks)
+            => WriteFdsBlocks(blockNumbers, blocks.Select(b => b.ToBytes()).ToArray());
+        public void WriteFdsBlocks(byte[] blockNumbers, byte[] block)
+            => WriteFdsBlocks(blockNumbers, new byte[][] { block });
+        public void WriteFdsBlocks(byte[] blockNumbers, IFdsBlock block)
+            => WriteFdsBlocks(blockNumbers, new byte[][] { block.ToBytes() });
 
         public bool[] GetMirroring()
         {
@@ -817,6 +957,19 @@ namespace com.clusterrr.Famicom.DumperConnection
                 Console.Write($"{b} ");
             Console.WriteLine();
             return mirroring.Select(v => v != 0).ToArray();
+        }
+
+        public void SetMaximumNumberOfBytesInMultiProgram(uint pageSize)
+        {
+            if (ProtocolVersion < 3)
+                throw new NotSupportedException("Dumper firmware version is too old");
+            var buffer = new byte[2];
+            buffer[0] = (byte)(pageSize & 0xFF);
+            buffer[1] = (byte)((pageSize >> 8) & 0xFF);
+            SendCommand(DumperCommand.SET_FLASH_BUFFER_SIZE, buffer);
+            var recv = RecvCommand();
+            if (recv.Command != DumperCommand.SET_VALUE_DONE)
+                throw new IOException($"Invalid data received: {recv.Command}");
         }
 
         /// <summary>

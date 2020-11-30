@@ -12,14 +12,14 @@ namespace com.clusterrr.Famicom
 {
     public static class CoolgirlWriter
     {
-        public static void GetInfo(FamicomDumperConnection dumper)
+        public static void PringFlashInfo(FamicomDumperConnection dumper)
         {
             Console.Write("Reset... ");
             dumper.Reset();
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            var cfi = FlashHelper.GetCFI(dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             FlashHelper.PrintCFIInfo(cfi);
             FlashHelper.LockBitsCheckPrint(dumper);
             FlashHelper.PPBLockBitCheckPrint(dumper);
@@ -56,8 +56,11 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
             FlashHelper.ResetFlash(dumper);
-            var cfi = FlashHelper.GetCFI(dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
+            Console.WriteLine($"Maximum number of bytes in multi-byte program: {cfi.MaximumNumberOfBytesInMultiProgram}");
+            if (dumper.ProtocolVersion >= 3)
+                dumper.SetMaximumNumberOfBytesInMultiProgram(cfi.MaximumNumberOfBytesInMultiProgram);
             FlashHelper.LockBitsCheckPrint(dumper);
             if (PRG.Length > cfi.DeviceSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
@@ -219,32 +222,6 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        /*
-        public static void PPBSet(FamicomDumperConnection dumper, uint sector)
-        {
-            Console.Write($"Writing PPB for sector #{sector}... ");
-            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
-            dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            // Select sector
-            byte r0 = (byte)((sector * 4) >> 7);
-            byte r1 = (byte)((sector * 4) << 1);
-            dumper.WriteCpu(0x5000, r0);
-            dumper.WriteCpu(0x5001, r1);
-            // PPB Command Set Entry
-            dumper.WriteCpu(0x8AAA, 0xAA);
-            dumper.WriteCpu(0x8555, 0x55);
-            dumper.WriteCpu(0x8AAA, 0xC0);
-            // PPB Program
-            dumper.WriteCpu(0x8000, 0xA0);
-            dumper.WriteCpu(0x8000, 0x00);
-            // Sector 0
-            dumper.WriteCpu(0x5000, 0);
-            dumper.WriteCpu(0x5001, 0);
-
-            FlashHelper.PPBSet(dumper);
-        }
-        */
-
         public static void PPBClear(FamicomDumperConnection dumper)
         {
             // enable PRG write
@@ -275,7 +252,7 @@ namespace com.clusterrr.Famicom
             }
             dumper.WriteCpu(0x5000, 0);
             dumper.WriteCpu(0x5001, 0);
-            var cfi = FlashHelper.GetCFI(dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
             uint prgBanks = cfi.DeviceSize / 0x8000;
             FlashHelper.LockBitsCheckPrint(dumper);
@@ -359,7 +336,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-            var cfi = FlashHelper.GetCFI(dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
             uint prgBanks = cfi.DeviceSize / 0x8000;
 
