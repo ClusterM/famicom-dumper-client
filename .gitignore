@@ -1,4 +1,5 @@
-bin
-obj
+bin/
+obj/
 commit.txt
-/.vs
+.vs/
+packages/
