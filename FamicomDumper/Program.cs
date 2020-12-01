@@ -422,6 +422,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
+            Console.WriteLine(" {0,-25}{1}", "--fds-sides", "number of FDS sides to dump (default 1)");
             Console.WriteLine(" {0,-25}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");

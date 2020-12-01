@@ -113,8 +113,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("OK");
                     }
                     IEnumerable<IFdsBlock> blocks;
-                    bool slowMethod = dumper.MaxReadPacketSize != ushort.MaxValue;
-                    if (slowMethod)
+                    if (dumper.MaxReadPacketSize != ushort.MaxValue)
                         // Reading block by block
                         blocks = DumpSlow(dumper, dumpHiddenFiles);
                     else
@@ -181,20 +180,20 @@ namespace com.clusterrr.Famicom
                         break;
                     default:
                         if ((blockNumber % 2) == 0)
-                            Console.Write($"Reading file #{(blockNumber - 2) / 2 + 1}/{(blocks[1] as FdsBlockFileAmount).FileAmount}  header block... ");
+                            Console.Write($"Reading file #{(blockNumber - 2) / 2 + 1}/{(blocks[1] as FdsBlockFileAmount).FileAmount} header block... ");
                         else
-                            Console.Write($"Reading file #{(blockNumber - 2) / 2 + 1}/{(blocks[1] as FdsBlockFileAmount).FileAmount}  data block... ");
+                            Console.Write($"Reading file #{(blockNumber - 2) / 2 + 1}/{(blocks[1] as FdsBlockFileAmount).FileAmount} data block... ");
                         break;
                 }
                 var fdsData = dumper.ReadFdsBlocks(blockNumber, 1);
-                if (fdsData.Length != 1)
+                if (fdsData.Length == 0)
                 {
                     if (blocks.Count > 2 && blocks.Count >= 2 + (blocks[1] as FdsBlockFileAmount).FileAmount * 2)
                     {
                         Console.WriteLine("Invalid block, it's not hidden file, aboritng");
                         break;
                     }
-                    throw new IOException($"Invalid block");
+                    throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
                 }
                 var block = fdsData[0];
                 if (!block.IsValid)
@@ -214,7 +213,7 @@ namespace com.clusterrr.Famicom
                     else
                     {
                         // Fatal error if bad block ID on non-hidden file
-                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
+                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1}) type");
                     }
                 }
                 if (!block.CrcOk)
@@ -282,14 +281,14 @@ namespace com.clusterrr.Famicom
             if (blocks.Length == 0)
                 Console.WriteLine("Invalid disk info block");
             if (!blocks[0].IsValid)
-                throw new IOException($"Invalid disk info block");
+                throw new IOException($"Invalid disk info block type");
             if (!blocks[0].CrcOk)
                 throw new IOException($"Invalid CRC on disk info block");
             PrintDiskHeaderInfo(blocks[0] as FdsBlockDiskInfo);
             if (blocks.Length == 1)
                 throw new IOException("Invalid file amount block");
             if (!blocks[1].IsValid)
-                throw new IOException($"Invalid file amount block");
+                throw new IOException($"Invalid file amount block type");
             if (!blocks[1].CrcOk)
                 throw new IOException($"Invalid CRC on file amount block");
             var fileAmount = (blocks[1] as FdsBlockFileAmount).FileAmount;
@@ -303,7 +302,7 @@ namespace com.clusterrr.Famicom
                 if (!block.IsValid)
                 {
                     if (blocks.Length < 2 + fileAmount * 2)
-                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
+                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1}) type");
                     else
                     {
                         Console.WriteLine($"Invalid block #{blockNumber}, it's not hidden file, aboritng");
