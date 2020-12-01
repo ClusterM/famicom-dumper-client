@@ -1,29 +1,32 @@
 # Client (PC-software) for Famicom Dumper/Programmer
 
 This is the client for the Famicom Dumper/Programmer hardware:
-- [https://github.com/ClusterM/famicom-dumper](https://github.com/ClusterM/famicom-dumper) - my own dumper project, based on AVR
+- [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project, based on AVR
 - [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) alternative dumper project by HardWrMan, based on STM32)
 - [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - 
 Arduino MEGA2560 Shield
 
 This application developed to run on Windows with .NET Framework 4.8 and Linux with Mono 6.6.0 or greater.
 
+
 ## Features
 
 It can be used to:
 - Dump Famicom/NES cartridges using C# scripts to describe any mapper, also it's bundled with scripts for some popular mappers
 - Reverse engineer unknown mappers using C# scripts
-- Dump/write battery backed PRG RAM to transfer game saves
+- Read/write battery backed PRG RAM to transfer game saves
+- Read/write Famicom Disk System cards
 - (Re)write ultra cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both COOLBOY (with $600x registers) and COOLBOY2 aka MINDKIDS (with $500x registers)
 - (Re)write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges
 - Test hardware in cartridges
 - Do everything described above over the network
 
+
 ## Usage
 
 It's a command-line application.
 
-Usage: **famicom-dumper.exe \<command\> [options]**
+Usage: **FamicomDumper.exe \<command\> [options]**
 
 Available commands:
 - **list-mappers** - list available mappers to dump
@@ -31,11 +34,12 @@ Available commands:
 - **server** - start server for remote dumping
 - **script** - execute C# script specified by --csfile option
 - **reset** - simulate reset (M2 goes to Z-state for a second)
+- **dump-fds** - dump FDS card using RAM adapter and FDS drive
+- **write-fds** - write FDS card using RAM adapter and FDS drive
 - **dump-tiles** - dump CHR data to PNG file
 - **read-prg-ram** - read PRG RAM (battery backed save if exists)
 - **write-prg-ram** - write PRG RAM
-- **write-coolboy-gpio** - write COOLBOY cartridge using GPIO
-- **write-coolboy-direct** - write COOLBOY cartridge directly
+- **write-coolboy** - write COOLBOY cartridge
 - **write-coolgirl** - write COOLGIRL cartridge
 - **write-eeprom** - write EEPROM-based cartridge
 - **test-prg-ram** - run PRG RAM test
@@ -49,7 +53,7 @@ Available commands:
 - **info-coolboy** - show information about COOLBOY's flash memory
 - **info-coolgirl** - show information about COOLGIRL's flash memory
 
-Available options:  
+Available options:
 - **--port** <*com*> - serial port of dumper or serial number of FTDI device, default - auto
 - **--tcpport** <*port*> - TCP port for client/server communication, default - 26672
 - **--host** <*host*> - enable network client and connect to specified host
@@ -61,10 +65,14 @@ Available options:
 - **--csfile** <*C#_file*> - execute C# script from file
 - **--unifname** <*name*> - internal ROM name for UNIF dumps
 - **--unifauthor** <*name*> - author of dump for UNIF dumps
+- **--fds-sides** <*number*> - number of FDS sides to dump (default 1)
+- **--fds-no-header** - do not add header to output file during FDS dumping
+- **--fds-dump-hidden** - try to dump hidden files during FDS dumping
 - **--badsectors** - comma separated list of bad sectors for COOLBOY/COOLGIRL writing
 - **--sound** - play sound when done or error occured
 - **--check** - verify COOLBOY/COOLGIRL checksum after writing
 - **--lock** - write-protect COOLBOY/COOLGIRL sectors after writing
+
 
 ## Mapper script files
 Mapper files are stored in "mappers" subdirectory. When you specify a mapper number or name, the application compiles the scripts in that directory to find a matching one.
@@ -82,6 +90,11 @@ Mapper scripts are written in C# language. Each script must contain namespace (a
         /// Number of the mapper to spore in the iNES header (-1 if none)
         /// </summary>
         int Number { get; }
+
+        /// <summary>
+        /// Number of submapper (0 if none)
+        /// </summary>
+        byte Submapper { get; }
 
         /// <summary>
         /// Name of the mapper to store in UNIF container (null if none)
@@ -119,6 +132,13 @@ Mapper scripts are written in C# language. Each script must contain namespace (a
         /// </summary>
         /// <param name="dumper"></param>
         void EnablePrgRam(IFamicomDumperConnection dumper);
+
+        /// <summary>
+        /// This method must return mirroring type, it can call dumper.GetMirroring() if it's not fixed
+        /// </summary>
+        /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
+        /// <returns></returns>
+        NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
     }
 ```
 
@@ -180,7 +200,13 @@ FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com
         /// Get current mirroring
         /// </summary>
         /// <returns>bool[4] array with CIRAM A10 values for each region: $0000-$07FF, $0800-$0FFF, $1000-$17FF and $1800-$1FFF</returns>
-        bool[] GetMirroring();
+        bool[] GetMirroringRaw();
+
+        /// <summary>
+        /// Get current mirroring
+        /// </summary>
+        /// <returns>Detected mirroring as NesFile.MirroringType</returns>
+        NesFile.MirroringType GetMirroring();
     }
 ```
 
@@ -222,7 +248,7 @@ It's useful if you want to reverse engineer cartridge of your remote friend. You
 
 Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR sizes are default.
 ~~~~
-  > famicom-dumper.exe dump --port COM14 --mapper nrom --file game.nes
+  > FamicomDumper.exe dump --port COM14 --mapper nrom --file game.nes
   Dumper initialization... OK
   Using mapper: #0 (NROM)
   Dumping...
@@ -237,7 +263,7 @@ Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR
 
 Dump MMC1-cartridge (iNES mapper #1) using dumper with serial number (Windows only) "A9Z1A0WD". PRG size is 128 kilobytes, CHR size is 128 kilobytes too.
 ~~~~
->famicom-dumper.exe dump --port A9Z1A0WD --mapper 1 --psize 128K --csize 128K --file game.nes
+>FamicomDumper.exe dump --port A9Z1A0WD --mapper 1 --psize 128K --csize 128K --file game.nes
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Dumping...
@@ -251,7 +277,7 @@ Reading PRG bank #3... OK
 
 Dump 32K of PRG and 8K of CHR as simple NROM cartridge but execute C# script first:
 ~~~~
->famicom-dumper.exe dump --port COM14 --mapper 0 --psize 32K --csize 8K --file game.nes --csfile init.cs"
+>FamicomDumper.exe dump --port COM14 --mapper 0 --psize 32K --csize 8K --file game.nes --csfile init.cs"
 Dumper initialization... OK
 Compiling init.cs...
 Running init.Run()...
@@ -267,7 +293,7 @@ Done in 5 seconds
 
 Dump 32MBytes of COOLBOY cartridge using C# script and save it as UNIF file with some extra info:
 ~~~~
->famicom-dumper.exe dump --port COM14 --mapper mappers\coolboy.cs --psize 32M --file coolboy.unf --unifname "COOLBOY 400-IN-1" --unifauthor "John Smith"
+>FamicomDumper.exe dump --port COM14 --mapper mappers\coolboy.cs --psize 32M --file coolboy.unf --unifname "COOLBOY 400-IN-1" --unifauthor "John Smith"
 Dumper initialization... OK
 Using mapper: COOLBOY
 Dumping...
@@ -279,7 +305,7 @@ Reading PRG banks #0/4 and #0/5...
 
 Read battery-backed save from MMC1 cartridge:
 ~~~~
->famicom-dumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
+>FamicomDumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Reading PRG-RAM...
@@ -288,25 +314,15 @@ Done in 2 seconds
 
 Write battery-backed save back to MMC1 cartridge:
 ~~~~
->famicom-dumper.exe write-prg-ram --port COM14 --mapper mmc1 --file "zelda_hacked.sav"
+>FamicomDumper.exe write-prg-ram --port COM14 --mapper mmc1 --file "zelda_hacked.sav"
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Writing PRG-RAM... Done in 1 seconds
 ~~~~
 
-Rewrite ultracheap chinese COOLBOY cartridge using GPIO pins on /OE-/WE and play sound when it's done:
+Rewrite ultracheap chinese COOLBOY cartridge and play sound when it's done:
 ~~~~
->famicom-dumper.exe write-coolboy-gpio --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
-Dumper initialization... OK
-Reset... OK
-Erasing sector... OK
-Writing 1/2048 (0%, 00:00:02/00:40:53)...
-~~~~
-You need to unsolder pins /OE and /WE and connect them to TCK and TDO pins on JTAG connector.
-
-Same for new COOLBOY where /OE and /WE are connected to mapper, soldering not required:
-~~~~
->famicom-dumper.exe write-coolboy-direct --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
+>FamicomDumper.exe write-coolboy --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
 Dumper initialization... OK
 Reset... OK
 Erasing sector... OK
@@ -315,7 +331,7 @@ Writing 1/2048 (0%, 00:00:02/00:40:53)...
 
 Also you can rewrite [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges:
 ~~~~
->famicom-dumper.exe write-coolgirl --file multirom.unf --port COM14
+>FamicomDumper.exe write-coolgirl --file multirom.unf --port COM14
 Dumper initialization... OK
 Reset... OK
 Erasing sector... OK
@@ -327,5 +343,51 @@ Erasing sector... OK
 Writing 5/114 (3%, 00:00:03/00:00:29)... OK
 ~~~~
 
-## Donation
-PayPal: clusterrr@clusterrr.com
+Dump two-sided Famicom Disk System card:
+~~~~
+>FamicomDumper.exe dump-fds --fds-sides 2
+Autodetected virtual serial port: COM13
+Dumper initialization... OK
+Reading disk... Done.
+Disk info block:
+ Game name: MET
+ Manufacturer code: Nintendo
+ Game type: normal disk
+ Game version: 2
+ Disk number: 0
+ Disk side: A
+ Actual disk side: $FF
+ Disk type: FMS
+ Manufacturing date: 1986.09.09
+ Country code: Japan
+ Disk writer serial number: $0961
+ Disk rewrite count: 0
+ Price code: $FF
+Number of non-hidden files: 15
+...
+Please remove disk card... OK
+Please set disk card, side #2...
+...
+Done in 0:00:25
+~~~~
+
+Start server on port 9999 and let other person to dump cartridge over network:
+~~~~
+>FamicomDumper.exe server --tcpport 9999
+Autodetected virtual serial port: COM13
+Dumper initialization... OK
+Listening port 9999, press any key to stop
+~~~~
+
+Connect to remote dumper and execute C# script:
+~~~~
+FamicomDumper.exe script --csfile DemoScript.cs --host clusterrr.com --tcpport 9999
+Dumper initialization... OK
+Compiling DemoScript.cs...
+Running DemoScript.Run()...
+~~~~
+
+
+## Donation and contact
+
+E-mail and PayPal: clusterrr@clusterrr.com
