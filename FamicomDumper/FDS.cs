@@ -159,9 +159,9 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x4026, 0xFF);
             dumper.WriteCpu(0x0000, 0x00); // to prevent open bus read
             ext = dumper.ReadCpu(0x4033, 1)[0];
-            if ((ext & 0x7B) != 0x7B) ramAdapterPresent = false;
+            if ((ext & 0x7F) != 0x7F) ramAdapterPresent = false;
             if (!ramAdapterPresent) throw new IOException("RAM adapter IO error, is it connected?");
-            if ((ext & 0x80) != 0) throw new IOException("Battery voltage is low");
+            if ((ext & 0x80) == 0) throw new IOException("Battery voltage is low or power supply is not connected");
         }
 
         private static IEnumerable<IFdsBlock> DumpSlow(FamicomDumperConnection dumper, bool dumpHiddenFiles = false)
