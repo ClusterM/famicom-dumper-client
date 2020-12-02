@@ -1,8 +1,8 @@
 # Client (PC-software) for Famicom Dumper/Programmer
 
 This is the client for the Famicom Dumper/Programmer hardware:
-- [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project, based on AVR
-- [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) alternative dumper project by HardWrMan, based on STM32)
+- [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project
+- [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) - alternative dumper project by HardWrMan
 - [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - 
 Arduino MEGA2560 Shield
 
