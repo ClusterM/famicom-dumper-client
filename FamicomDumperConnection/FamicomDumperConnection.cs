@@ -941,8 +941,8 @@ namespace com.clusterrr.Famicom.DumperConnection
             => WriteFdsBlocks(blockNumbers, blocks.Select(b => b.ToBytes()).ToArray());
         public void WriteFdsBlocks(byte[] blockNumbers, byte[] block)
             => WriteFdsBlocks(blockNumbers, new byte[][] { block });
-        public void WriteFdsBlocks(byte[] blockNumbers, IFdsBlock block)
-            => WriteFdsBlocks(blockNumbers, new byte[][] { block.ToBytes() });
+        public void WriteFdsBlocks(byte blockNumber, IFdsBlock block)
+            => WriteFdsBlocks(new byte[] { blockNumber }, new byte[][] { block.ToBytes() });
 
         public bool[] GetMirroringRaw()
         {
