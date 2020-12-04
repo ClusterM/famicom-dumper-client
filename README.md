@@ -26,7 +26,9 @@ It can be used to:
 
 It's a command-line application.
 
-Usage: **FamicomDumper.exe \<command\> [options]**
+Usage on Windows: **FamicomDumper.exe \<command\> [options]**
+
+On *nix you can run it using [Mono](https://www.mono-project.com/): **mono FamicomDumper.exe \<command\> [options]**
 
 Available commands:
 - **list-mappers** - list available mappers to dump
