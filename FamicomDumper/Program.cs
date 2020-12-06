@@ -383,7 +383,7 @@ namespace com.clusterrr.Famicom
 
         static void PrintHelp()
         {
-            Console.WriteLine("Usage: famicom-dumper.exe <command> [options]");
+            Console.WriteLine($"Usage: {Path.GetFileName(Assembly.GetExecutingAssembly().Location)} <command> [options]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-25}{1}", "list-mappers", "list available mappers to dump");
