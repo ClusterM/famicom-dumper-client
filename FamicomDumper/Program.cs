@@ -432,7 +432,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
-        static void Reset(FamicomDumperConnection dumper)
+        static public void Reset(FamicomDumperConnection dumper)
         {
             Console.Write("Reset... ");
             dumper.Reset();
@@ -700,7 +700,7 @@ namespace com.clusterrr.Famicom
             var sram = dumper.ReadCpu(0x6000, 0x2000);
             File.WriteAllBytes(fileName, sram);
             dumper.ReadCpu(0x0, 1); // to avoid corruption
-            dumper.Reset();
+            Reset(dumper);
         }
 
         static void WritePrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
@@ -715,7 +715,7 @@ namespace com.clusterrr.Famicom
             var sram = File.ReadAllBytes(fileName);
             dumper.WriteCpu(0x6000, sram);
             dumper.ReadCpu(0x0, 1); // to avoid corruption
-            dumper.Reset();
+            Reset(dumper);
         }
 
         static void TestPrgRam(FamicomDumperConnection dumper, string mapperName, int count = -1)
@@ -770,7 +770,7 @@ namespace com.clusterrr.Famicom
             rnd.NextBytes(data);
             Console.Write("Writing SRAM... ");
             dumper.WriteCpu(0x6000, data);
-            dumper.Reset();
+            Reset(dumper);
             Console.WriteLine("Replug cartridge and press any key");
             Console.ReadKey();
             mapper.EnablePrgRam(dumper);

@@ -46,9 +46,7 @@ namespace com.clusterrr.Famicom
 
         public static void PrintFlashInfo(FamicomDumperConnection dumper)
         {
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
+            Program.Reset(dumper);
             var version = DetectVersion(dumper);
             var CoolboyReg = (UInt16)(version == 2 ? 0x5000 : 0x6000);
             int bank = 0;
@@ -91,9 +89,7 @@ namespace com.clusterrr.Famicom
 
             int prgBanks = PRG.Length / 0x4000;
 
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
+            Program.Reset(dumper);
             var version = DetectVersion(dumper);
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             FlashHelper.ResetFlash(dumper);
@@ -182,10 +178,8 @@ namespace com.clusterrr.Famicom
                     {
                         Console.WriteLine("Lets try again");
                     }
-                    bank = (bank & ~7) - 1;                    
-                    Console.Write("Reset... ");
-                    dumper.Reset();
-                    Console.WriteLine("OK");
+                    bank = (bank & ~7) - 1;
+                    Program.Reset(dumper);
                     FlashHelper.ResetFlash(dumper);
                     continue;
                 }
@@ -206,9 +200,7 @@ namespace com.clusterrr.Famicom
                     if (!silent) Program.PlayDoneSound();
                     Console.ReadLine();
                 }
-                Console.Write("Reset... ");
-                dumper.Reset();
-                Console.WriteLine("OK");
+                Program.Reset(dumper);
 
                 var readStartTime = DateTime.Now;
                 lastSectorTime = DateTime.Now;

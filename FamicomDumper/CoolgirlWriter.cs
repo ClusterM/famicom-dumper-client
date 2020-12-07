@@ -14,9 +14,7 @@ namespace com.clusterrr.Famicom
     {
         public static void PringFlashInfo(FamicomDumperConnection dumper)
         {
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
+            Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             var cfi = FlashHelper.GetCFIInfo(dumper);
@@ -48,9 +46,7 @@ namespace com.clusterrr.Famicom
 
             int prgBanks = PRG.Length / 0x8000;
 
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
+            Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             dumper.WriteCpu(0x5000, 0);
@@ -136,9 +132,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("Lets try again");
                     }
                     bank = (bank & ~3) - 1;
-                    Console.Write("Reset... ");
-                    dumper.Reset();
-                    Console.WriteLine("OK");
+                    Program.Reset(dumper);
                     dumper.WriteCpu(0x5007, 0x04); // enable PRG write
                     dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
                     FlashHelper.ResetFlash(dumper);
@@ -160,9 +154,7 @@ namespace com.clusterrr.Famicom
                     if (!silent) Program.PlayDoneSound();
                     Console.ReadLine();
                 }
-                Console.Write("Reset... ");
-                dumper.Reset();
-                Console.WriteLine("OK");
+                Program.Reset(dumper);
 
                 var readStartTime = DateTime.Now;
                 lastSectorTime = DateTime.Now;
@@ -237,9 +229,7 @@ namespace com.clusterrr.Famicom
 
         public static void FindBads(FamicomDumperConnection dumper, bool silent)
         {
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
+            Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             try
@@ -302,7 +292,7 @@ namespace com.clusterrr.Famicom
                     Console.WriteLine("ERROR!");
                     if (!silent) Program.PlayErrorSound();
                     Console.Write("Trying again... ");
-                    dumper.Reset();
+                    Program.Reset(dumper);
                     dumper.WriteCpu(0x5007, 0x04); // enable PRG write
                     dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
                     dumper.WriteCpu(0x5000, r0);
@@ -331,9 +321,7 @@ namespace com.clusterrr.Famicom
 
         public static void ReadCrc(FamicomDumperConnection dumper)
         {
-            Console.Write("Reset... ");
-            dumper.Reset();
-            Console.WriteLine("OK");
+            Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             var cfi = FlashHelper.GetCFIInfo(dumper);
@@ -371,7 +359,7 @@ namespace com.clusterrr.Famicom
 
         public static void TestPrgRam(FamicomDumperConnection dumper, int count = -1)
         {
-            dumper.Reset();
+            Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x01); // enable SRAM
             var rnd = new Random();
             while (count != 0)
@@ -424,7 +412,7 @@ namespace com.clusterrr.Famicom
 
         public static void TestChrRam(FamicomDumperConnection dumper, int count = -1)
         {
-            dumper.Reset();
+            Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
             var rnd = new Random();
             var data = new byte[0x2000];
@@ -457,7 +445,7 @@ namespace com.clusterrr.Famicom
             data = new byte[256 * 1024];
             while (count != 0)
             {
-                dumper.Reset();
+                Program.Reset(dumper);
                 dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
                 rnd.NextBytes(data);
                 for (byte bank = 0; bank < 32; bank++)
