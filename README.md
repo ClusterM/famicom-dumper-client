@@ -2,9 +2,7 @@
 
 This is the client for the Famicom Dumper/Programmer hardware:
 - [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project
-- [https://github.com/HardWrMan/SuperDumperFW](https://github.com/HardWrMan/SuperDumperFW) - alternative dumper project by HardWrMan
-- [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - 
-Arduino MEGA2560 Shield
+- [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - Arduino MEGA2560 Shield
 
 This application developed to run on Windows with .NET Framework 4.8 and Linux with Mono 6.6.0 or greater.
 
