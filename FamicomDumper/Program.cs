@@ -773,6 +773,7 @@ namespace com.clusterrr.Famicom
             Reset(dumper);
             Console.WriteLine("Replug cartridge and press any key");
             Console.ReadKey();
+            Console.WriteLine();
             mapper.EnablePrgRam(dumper);
             Console.Write("Reading SRAM... ");
             var rdata = dumper.ReadCpu(0x6000, 0x2000);

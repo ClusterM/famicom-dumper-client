@@ -44,7 +44,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public ushort MaxReadPacketSize { get; private set; }
         public ushort MaxWritePacketSize { get; private set; }
 
-        private uint timeout = 5000;
+        private uint timeout = 10000;
 
         enum DumperCommand
         {
@@ -520,11 +520,12 @@ namespace com.clusterrr.Famicom.DumperConnection
             if (Verbose)
                 Console.Write("Dumper initialization... ");
 
+            bool result = false;
             var oldTimeout = Timeout;
             try
             {
                 Timeout = 250;
-                for (int i = 0; i < 300; i++)
+                for (int i = 0; i < 300 && !result; i++)
                 {
                     try
                     {
@@ -538,7 +539,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                                 MaxReadPacketSize = (ushort)(recv.Data[1] | (recv.Data[2] << 8));
                             if (recv.Data.Length >= 5)
                                 MaxWritePacketSize = (ushort)(recv.Data[3] | (recv.Data[4] << 8));
-                            return true;
+                            result = true;
                         }
                     }
                     catch { }
@@ -563,7 +564,7 @@ namespace com.clusterrr.Famicom.DumperConnection
 
             if (Verbose)
                 Console.WriteLine("failed");
-            return false;
+            return result;
         }
 
         public byte[] ReadCpu(ushort address, int length)
