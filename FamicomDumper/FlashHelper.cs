@@ -205,6 +205,7 @@ namespace com.clusterrr.Famicom
 
         public static void PPBSet(FamicomDumperConnection dumper)
         {
+            Console.Write("Writing PPB for sector... ");
             // PPB Command Set Entry
             dumper.WriteCpu(0x8AAA, 0xAA);
             dumper.WriteCpu(0x8555, 0x55);

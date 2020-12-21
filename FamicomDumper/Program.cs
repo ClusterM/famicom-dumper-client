@@ -247,13 +247,13 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-fds":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             FDS.WriteFDS(dumper, filename);
                             break;
                         case "write-prg-ram":
                         case "write-sram":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             WritePrgRam(dumper, filename, mapper);
                             break;
                         case "test-prg-ram":
@@ -290,17 +290,17 @@ namespace com.clusterrr.Famicom
                         case "write-coolboy":
                         case "write-coolboy-direct":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
                             break;
                         case "write-eeprom":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename script using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             WriteEeprom(dumper, filename);
                             break;
                         case "info-coolboy":
