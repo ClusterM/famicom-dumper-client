@@ -289,6 +289,7 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
+                        case "write-coolboy-gpio": // for backward compatibility
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
