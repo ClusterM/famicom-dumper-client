@@ -697,9 +697,9 @@ namespace com.clusterrr.Famicom
             else
                 Console.WriteLine("Using mapper: {0}", mapper.Name);
             mapper.EnablePrgRam(dumper);
-            Console.Write("Reading PRG-RAM... ");
-            var sram = dumper.ReadCpu(0x6000, 0x2000);
-            File.WriteAllBytes(fileName, sram);
+            Console.Write("Reading PRG RAM... ");
+            var prgram = dumper.ReadCpu(0x6000, 0x2000);
+            File.WriteAllBytes(fileName, prgram);
             dumper.ReadCpu(0x0, 1); // to avoid corruption
             Reset(dumper);
         }
@@ -712,9 +712,9 @@ namespace com.clusterrr.Famicom
             else
                 Console.WriteLine("Using mapper: {0}", mapper.Name);
             mapper.EnablePrgRam(dumper);
-            Console.Write("Writing PRG-RAM... ");
-            var sram = File.ReadAllBytes(fileName);
-            dumper.WriteCpu(0x6000, sram);
+            Console.Write("Writing PRG RAM... ");
+            var prgram = File.ReadAllBytes(fileName);
+            dumper.WriteCpu(0x6000, prgram);
             dumper.ReadCpu(0x0, 1); // to avoid corruption
             Reset(dumper);
         }
@@ -732,9 +732,9 @@ namespace com.clusterrr.Famicom
             {
                 var data = new byte[0x2000];
                 rnd.NextBytes(data);
-                Console.Write("Writing SRAM... ");
+                Console.Write("Writing PRG RAM... ");
                 dumper.WriteCpu(0x6000, data);
-                Console.Write("Reading SRAM... ");
+                Console.Write("Reading PRG RAM... ");
                 var rdata = dumper.ReadCpu(0x6000, 0x2000);
                 bool ok = true;
                 for (int b = 0; b < 0x2000; b++)
@@ -747,10 +747,10 @@ namespace com.clusterrr.Famicom
                 }
                 if (!ok)
                 {
-                    File.WriteAllBytes("sramgood.bin", data);
-                    Console.WriteLine("sramgood.bin writed");
-                    File.WriteAllBytes("srambad.bin", rdata);
-                    Console.WriteLine("srambad.bin writed");
+                    File.WriteAllBytes("prgramgood.bin", data);
+                    Console.WriteLine("prgramgood.bin writed");
+                    File.WriteAllBytes("prgrambad.bin", rdata);
+                    Console.WriteLine("prgrambad.bin writed");
                     throw new VerificationException("Failed!");
                 }
                 Console.WriteLine("OK!");
@@ -769,14 +769,14 @@ namespace com.clusterrr.Famicom
             var rnd = new Random();
             var data = new byte[0x2000];
             rnd.NextBytes(data);
-            Console.Write("Writing SRAM... ");
+            Console.Write("Writing PRG RAM... ");
             dumper.WriteCpu(0x6000, data);
             Reset(dumper);
             Console.WriteLine("Replug cartridge and press any key");
             Console.ReadKey();
             Console.WriteLine();
             mapper.EnablePrgRam(dumper);
-            Console.Write("Reading SRAM... ");
+            Console.Write("Reading PRG RAM... ");
             var rdata = dumper.ReadCpu(0x6000, 0x2000);
             bool ok = true;
             for (int b = 0; b < 0x2000; b++)

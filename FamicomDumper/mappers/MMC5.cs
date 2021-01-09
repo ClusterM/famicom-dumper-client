@@ -61,10 +61,10 @@
 
         public void EnablePrgRam(IFamicomDumperConnection dumper)
         {
-            dumper.WriteCpu(0x5102, 0x02); // PRG-RAM protection
-            dumper.WriteCpu(0x5103, 0x01); // PRG-RAM protection
+            dumper.WriteCpu(0x5102, 0x02); // PRG RAM protection
+            dumper.WriteCpu(0x5103, 0x01); // PRG RAM protection
             dumper.WriteCpu(0x5100, 3); // bank mode #3, four 8KB banks
-            dumper.WriteCpu(0x5113, 7); // PRG-RAM bank #7
+            dumper.WriteCpu(0x5113, 7); // PRG RAM bank #7
         }
 
         public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)

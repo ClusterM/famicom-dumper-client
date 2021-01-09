@@ -360,21 +360,21 @@ namespace com.clusterrr.Famicom
         public static void TestPrgRam(FamicomDumperConnection dumper, int count = -1)
         {
             Program.Reset(dumper);
-            dumper.WriteCpu(0x5007, 0x01); // enable SRAM
+            dumper.WriteCpu(0x5007, 0x01); // enable PRG RAM
             var rnd = new Random();
             while (count != 0)
             {
                 var data = new byte[][] { new byte[0x2000], new byte[0x2000], new byte[0x2000], new byte[0x2000] };
                 for (byte bank = 0; bank < 4; bank++)
                 {
-                    Console.WriteLine("Writing SRAM, bank #{0}... ", bank);
+                    Console.WriteLine("Writing PRG RAM, bank #{0}... ", bank);
                     rnd.NextBytes(data[bank]);
                     dumper.WriteCpu(0x5005, bank);
                     dumper.WriteCpu(0x6000, data[bank]);
                 }
                 for (byte bank = 0; bank < 4; bank++)
                 {
-                    Console.Write("Reading SRAM, bank #{0}... ", bank);
+                    Console.Write("Reading PRG RAM, bank #{0}... ", bank);
                     dumper.WriteCpu(0x5005, bank);
                     var rdata = dumper.ReadCpu(0x6000, 0x2000);
                     bool ok = true;
@@ -388,10 +388,10 @@ namespace com.clusterrr.Famicom
                     }
                     if (!ok)
                     {
-                        File.WriteAllBytes("sramgood.bin", data[bank]);
-                        Console.WriteLine("sramgood.bin writed");
-                        File.WriteAllBytes("srambad.bin", rdata);
-                        Console.WriteLine("srambad.bin writed");
+                        File.WriteAllBytes("prgramgood.bin", data[bank]);
+                        Console.WriteLine("prgramgood.bin writed");
+                        File.WriteAllBytes("prgrambad.bin", rdata);
+                        Console.WriteLine("prgrambad.bin writed");
                         throw new IOException("Test failed");
                     }
                     Console.WriteLine("OK");
