@@ -433,10 +433,10 @@ namespace com.clusterrr.Famicom
             }
             if (!ok)
             {
-                File.WriteAllBytes("chrgood.bin", data);
-                Console.WriteLine("chrgood.bin writed");
-                File.WriteAllBytes("chrbad.bin", rdata);
-                Console.WriteLine("chrbad.bin writed");
+                File.WriteAllBytes("chrramgood.bin", data);
+                Console.WriteLine("chrramgood.bin writed");
+                File.WriteAllBytes("chrrambad.bin", rdata);
+                Console.WriteLine("chrrambad.bin writed");
                 throw new IOException("Test failed");
             }
             Console.WriteLine("OK");
@@ -472,10 +472,10 @@ namespace com.clusterrr.Famicom
                     }
                     if (!ok)
                     {
-                        File.WriteAllBytes("chrgoodf.bin", data);
-                        Console.WriteLine("chrgoodf.bin writed");
-                        File.WriteAllBytes("chrbad.bin", rdata);
-                        Console.WriteLine("chrbad.bin writed");
+                        File.WriteAllBytes("chrramgoodf.bin", data);
+                        Console.WriteLine("chrramgoodf.bin writed");
+                        File.WriteAllBytes("chrrambad.bin", rdata);
+                        Console.WriteLine("chrrambad.bin writed");
                         throw new IOException("Test failed");
                     }
                     Console.WriteLine("OK");
