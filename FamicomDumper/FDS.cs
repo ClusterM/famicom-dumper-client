@@ -12,7 +12,7 @@ namespace com.clusterrr.Famicom
 {
     public class FDS
     {
-        public static void WriteFDS(FamicomDumperConnection dumper, string fileName)
+        public static void WriteFDS(FamicomDumperConnection dumper, string fileName, bool needCheck = false)
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -26,7 +26,6 @@ namespace com.clusterrr.Famicom
 
                 for (int sideNumber = 0; sideNumber < rom.Sides.Count; sideNumber++)
                 {
-                    PrintDiskHeaderInfo(rom.Sides[sideNumber].DiskInfoBlock);
                     var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
                     if ((driveStatus & 1) != 0)
                     {
@@ -39,6 +38,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("OK");
                     }
 
+                    PrintDiskHeaderInfo(rom.Sides[sideNumber].DiskInfoBlock);
                     var blocks = rom.Sides[sideNumber].GetBlocks().ToArray();
                     Console.WriteLine($"Total blocks to write: {blocks.Length}");
                     byte blocksWrited = 0;
@@ -64,6 +64,27 @@ namespace com.clusterrr.Famicom
                         dumper.WriteFdsBlocks(blockIDs.ToArray(), blocksToWrite.ToArray());
                         Console.WriteLine("OK");
                         blocksWrited += (byte)blocksToWrite.Count;
+                    }
+
+                    if (needCheck)
+                    {
+                        Console.WriteLine("Starting verification process");
+                        var hiddenFiles = rom.Sides[sideNumber].Files.Count > rom.Sides[sideNumber].FileAmount;
+                        var sideImage = DumpFDSSide(dumper, hiddenFiles);
+                        if (!sideImage.DiskInfoBlock.Equals(rom.Sides[sideNumber].DiskInfoBlock))
+                            throw new IOException("Disk info block verification failed");
+                        if (!sideImage.FileAmount.Equals(rom.Sides[sideNumber].FileAmount))
+                            throw new IOException("File amount block verification failed");
+                        if (sideImage.Files.Count < rom.Sides[sideNumber].Files.Count)
+                            throw new IOException($"Invalid files count: {sideImage.Files.Count} < {rom.Sides[sideNumber].Files.Count}");
+                        for (int f = 0; f < rom.Sides[sideNumber].Files.Count; f++)
+                        {
+                            if (!sideImage.Files[f].HeaderBlock.Equals(rom.Sides[sideNumber].Files[f].HeaderBlock))
+                                throw new IOException($"File #{f+1} header block verification failed");
+                            if (!sideImage.Files[f].DataBlock.Equals(rom.Sides[sideNumber].Files[f].DataBlock))
+                                throw new IOException($"File #{f + 1} data block verification failed");
+                        }
+                        Console.WriteLine("Verification successful.");
                     }
 
                     if (sideNumber + 1 < rom.Sides.Count)
@@ -92,53 +113,62 @@ namespace com.clusterrr.Famicom
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
-            var oldTimeout = dumper.Timeout;
-            try
-            {
-                dumper.Timeout = 30000;
-                CheckRAMAdapter(dumper);
+            CheckRAMAdapter(dumper);
 
-                var sideImages = new List<FdsDiskSide>();
-                for (int side = 1; side <= sides; side++)
+            var sideImages = new List<FdsDiskSide>();
+            for (int side = 1; side <= sides; side++)
+            {
+                var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                if ((driveStatus & 1) != 0)
                 {
-                    var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
-                    if ((driveStatus & 1) != 0)
+                    Console.Write($"Please set disk card, side #{side}... ");
+                    while ((driveStatus & 1) != 0)
                     {
-                        Console.Write($"Please set disk card, side #{side}... ");
-                        while ((driveStatus & 1) != 0)
+                        Thread.Sleep(100);
+                        driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                    }
+                    Console.WriteLine("OK");
+                }
+                var sideImage = DumpFDSSide(dumper, dumpHiddenFiles);
+                sideImages.Add(sideImage);
+
+                if (side < sides)
+                {
+                    driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                    if ((driveStatus & 1) == 0)
+                    {
+                        Console.Write($"Please remove disk card... ");
+                        while ((driveStatus & 1) == 0)
                         {
                             Thread.Sleep(100);
                             driveStatus = dumper.ReadCpu(0x4032, 1)[0];
                         }
                         Console.WriteLine("OK");
                     }
-                    IEnumerable<IFdsBlock> blocks;
-                    if (dumper.MaxReadPacketSize != ushort.MaxValue)
-                        // Reading block by block
-                        blocks = DumpSlow(dumper, dumpHiddenFiles);
-                    else
-                        // Reading the whole disk at once
-                        blocks = DumpFast(dumper, dumpHiddenFiles);
-                    var sideImage = new FdsDiskSide(blocks);
-                    sideImages.Add(sideImage);
-
-                    if (side < sides)
-                    {
-                        driveStatus = dumper.ReadCpu(0x4032, 1)[0];
-                        if ((driveStatus & 1) == 0)
-                        {
-                            Console.Write($"Please remove disk card... ");
-                            while ((driveStatus & 1) == 0)
-                            {
-                                Thread.Sleep(100);
-                                driveStatus = dumper.ReadCpu(0x4032, 1)[0];
-                            }
-                            Console.WriteLine("OK");
-                        }
-                    }
                 }
-                var fdsImage = new FdsFile(sideImages);
-                fdsImage.Save(fileName, useHeader);
+            }
+            var fdsImage = new FdsFile(sideImages);
+            fdsImage.Save(fileName, useHeader);
+        }
+
+        private static FdsDiskSide DumpFDSSide(FamicomDumperConnection dumper, bool dumpHiddenFiles = true)
+        {
+            if (dumper.ProtocolVersion < 3)
+                throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
+            var oldTimeout = dumper.Timeout;
+            try
+            {
+                dumper.Timeout = 30000;
+                CheckRAMAdapter(dumper);
+
+                IEnumerable<IFdsBlock> blocks;
+                if (dumper.MaxReadPacketSize != ushort.MaxValue)
+                    // Reading block by block
+                    blocks = DumpSlow(dumper, dumpHiddenFiles);
+                else
+                    // Reading the whole disk at once
+                    blocks = DumpFast(dumper, dumpHiddenFiles);
+                return new FdsDiskSide(blocks);
             }
             finally
             {
@@ -365,7 +395,7 @@ namespace com.clusterrr.Famicom
                 Console.WriteLine($" Actual disk side: ${(byte)header.ActualDiskSide:X2}");
             Console.WriteLine($" Disk type: {header.DiskType}");
             Console.WriteLine($" Manufacturing date: {header.ManufacturingDate:yyyy.MM.dd}");
-            Console.WriteLine($" Country code: {header.CountryCode.ToString().Replace("_"," ")}");
+            Console.WriteLine($" Country code: {header.CountryCode.ToString().Replace("_", " ")}");
             if (header.RewrittenDate.Year > 1925 && header.RewrittenDate != header.ManufacturingDate)
                 Console.WriteLine($" Rewritten date: {header.RewrittenDate:yyyy.MM.dd}");
             Console.WriteLine($" Disk writer serial number: ${header.DiskWriterSerialNumber:X4}");

@@ -193,7 +193,7 @@ namespace com.clusterrr.Famicom
             var wrongCrcSectorsList = new List<int>();
             if (needCheck)
             {
-                Console.WriteLine("Starting check process");
+                Console.WriteLine("Starting verification process");
                 if (checkPause)
                 {
                     Console.Write("Press enter to continue");
@@ -246,7 +246,7 @@ namespace com.clusterrr.Famicom
                     var crcr = dumper.ReadCpuCrc(0x8000, 0x4000);
                     if (crcr != crc)
                     {
-                        Console.WriteLine($"ERROR: {crcr:X4} != {crc:X4}");
+                        Console.WriteLine($"Verification failed: {crcr:X4} != {crc:X4}");
                         if (!silent) Program.PlayErrorSound();
                         wrongCrcSectorsList.Add(bank / 8);
                     }

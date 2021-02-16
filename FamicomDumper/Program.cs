@@ -147,6 +147,7 @@ namespace com.clusterrr.Famicom
                             silent = false;
                             break;
                         case "check":
+                        case "verify":
                             needCheck = true;
                             break;
                         case "checkpause":
@@ -248,7 +249,7 @@ namespace com.clusterrr.Famicom
                         case "write-fds":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("Please specify ROM filename using --file argument");
-                            FDS.WriteFDS(dumper, filename);
+                            FDS.WriteFDS(dumper, filename, needCheck);
                             break;
                         case "write-prg-ram":
                         case "write-sram":
@@ -429,7 +430,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
             Console.WriteLine(" {0,-25}{1}", "--ignorebadsectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
-            Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL checksum after writing");
+            Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL/FDS after writing");
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
@@ -661,8 +662,8 @@ namespace com.clusterrr.Famicom
                 // TODO: add RAM and NV-RAM settings for NES 2.0
                 var nesFile = new NesFile();
                 var submapper = GetSubmapper(mapper);
-                nesFile.Version = (mapper.Number > 255 || submapper != 0) 
-                    ? NesFile.iNesVersion.NES20 
+                nesFile.Version = (mapper.Number > 255 || submapper != 0)
+                    ? NesFile.iNesVersion.NES20
                     : NesFile.iNesVersion.iNES;
                 nesFile.Mapper = (ushort)mapper.Number;
                 nesFile.Submapper = submapper;
