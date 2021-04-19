@@ -39,6 +39,8 @@ namespace com.clusterrr.Famicom
                     }
 
                     PrintDiskHeaderInfo(rom.Sides[sideNumber].DiskInfoBlock);
+                    Console.WriteLine($"Number of non-hidden files: {rom.Sides[sideNumber].FileAmount}");
+                    Console.WriteLine($"Number of hidden files: {rom.Sides[sideNumber].Files.Count - rom.Sides[sideNumber].FileAmount}");
                     var blocks = rom.Sides[sideNumber].GetBlocks().ToArray();
                     Console.WriteLine($"Total blocks to write: {blocks.Length}");
                     byte blocksWrited = 0;
@@ -80,7 +82,7 @@ namespace com.clusterrr.Famicom
                         for (int f = 0; f < rom.Sides[sideNumber].Files.Count; f++)
                         {
                             if (!sideImage.Files[f].HeaderBlock.Equals(rom.Sides[sideNumber].Files[f].HeaderBlock))
-                                throw new IOException($"File #{f+1} header block verification failed");
+                                throw new IOException($"File #{f + 1} header block verification failed");
                             if (!sideImage.Files[f].DataBlock.Equals(rom.Sides[sideNumber].Files[f].DataBlock))
                                 throw new IOException($"File #{f + 1} data block verification failed");
                         }
