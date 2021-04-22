@@ -78,7 +78,7 @@ namespace com.clusterrr.Famicom
                         if (!sideImage.FileAmount.Equals(rom.Sides[sideNumber].FileAmount))
                             throw new IOException("File amount block verification failed");
                         if (sideImage.Files.Count < rom.Sides[sideNumber].Files.Count)
-                            throw new IOException($"Invalid files count: {sideImage.Files.Count} < {rom.Sides[sideNumber].Files.Count}");
+                            throw new IOException($"Invalid file count: {sideImage.Files.Count} < {rom.Sides[sideNumber].Files.Count}");
                         for (int f = 0; f < rom.Sides[sideNumber].Files.Count; f++)
                         {
                             if (!sideImage.Files[f].HeaderBlock.Equals(rom.Sides[sideNumber].Files[f].HeaderBlock))
@@ -170,7 +170,10 @@ namespace com.clusterrr.Famicom
                 else
                     // Reading the whole disk at once
                     blocks = DumpFast(dumper, dumpHiddenFiles);
-                return new FdsDiskSide(blocks);
+                var sideImage = new FdsDiskSide(blocks);
+                if (sideImage.Files.Count < sideImage.FileAmount)
+                    throw new IOException($"Invalid file count: {sideImage.Files.Count} < {sideImage.FileAmount}");
+                return sideImage;
             }
             finally
             {
