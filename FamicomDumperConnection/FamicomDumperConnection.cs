@@ -101,6 +101,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             FDS_WRITE_DONE = 54,
             SET_FLASH_BUFFER_SIZE = 55,
             SET_VALUE_DONE = 56,
+            FDS_DISK_WRITE_PROTECTED = 57,
 
             BOOTLOADER = 0xFE,
             DEBUG = 0xFF
@@ -879,6 +880,8 @@ namespace com.clusterrr.Famicom.DumperConnection
                         throw new IOException("RAM adapter IO error, is it connected?");
                     case DumperCommand.FDS_DISK_NOT_INSERTED:
                         throw new IOException("Disk card is not set");
+                    case DumperCommand.FDS_DISK_WRITE_PROTECTED:
+                        throw new IOException("Disk card is write protected");
                     case DumperCommand.FDS_BATTERY_LOW:
                         throw new IOException("Battery voltage is low or power supply is not connected");
                     case DumperCommand.FDS_TIMEOUT:
