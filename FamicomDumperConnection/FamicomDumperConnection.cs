@@ -102,6 +102,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             SET_FLASH_BUFFER_SIZE = 55,
             SET_VALUE_DONE = 56,
             FDS_DISK_WRITE_PROTECTED = 57,
+            FDS_BLOCK_CRC_ERROR = 58,
 
             BOOTLOADER = 0xFE,
             DEBUG = 0xFF
@@ -880,14 +881,14 @@ namespace com.clusterrr.Famicom.DumperConnection
                         throw new IOException("RAM adapter IO error, is it connected?");
                     case DumperCommand.FDS_DISK_NOT_INSERTED:
                         throw new IOException("Disk card is not set");
-                    case DumperCommand.FDS_DISK_WRITE_PROTECTED:
-                        throw new IOException("Disk card is write protected");
                     case DumperCommand.FDS_BATTERY_LOW:
                         throw new IOException("Battery voltage is low or power supply is not connected");
                     case DumperCommand.FDS_TIMEOUT:
                         throw new IOException("FDS read timeout");
                     case DumperCommand.FDS_END_OF_HEAD:
                         throw new IOException("End of head");
+                    case DumperCommand.FDS_BLOCK_CRC_ERROR:
+                        throw new IOException("Block CRC error");
                     default:
                         throw new IOException($"Invalid data received: {recv.Command}");
                 }
@@ -928,12 +929,16 @@ namespace com.clusterrr.Famicom.DumperConnection
                     throw new IOException("RAM adapter IO error, is it connected?");
                 case DumperCommand.FDS_DISK_NOT_INSERTED:
                     throw new IOException("Disk card is not set");
+                case DumperCommand.FDS_DISK_WRITE_PROTECTED:
+                    throw new IOException("Disk card is write protected");
                 case DumperCommand.FDS_BATTERY_LOW:
                     throw new IOException("Battery low");
                 case DumperCommand.FDS_TIMEOUT:
                     throw new IOException("FDS read timeout");
                 case DumperCommand.FDS_END_OF_HEAD:
                     throw new IOException("End of head");
+                case DumperCommand.FDS_BLOCK_CRC_ERROR:
+                    throw new IOException("Block CRC error");
                 case DumperCommand.FDS_READ_RESULT_END:
                     throw new IOException("Unexpected end of data");
                 default:
