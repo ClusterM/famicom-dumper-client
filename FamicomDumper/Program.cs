@@ -45,6 +45,7 @@ namespace com.clusterrr.Famicom
     {
         private static DateTime startTime;
         private static string MappersSearchDirectory = "mappers";
+        private static string ScriptsSearchDirectory = "scripts";
         private const string ScriptStartMethod = "Run";
         private static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
         private static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
@@ -517,19 +518,22 @@ namespace com.clusterrr.Famicom
         static Dictionary<string, IMapper> CompileAllMappers()
         {
             var result = new Dictionary<string, IMapper>();
-            var directory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
-            Console.WriteLine($"Compiling mappers in {directory}...");
-            foreach (var f in Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories))
+            var mappersDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
+            Console.WriteLine($"Compiling mappers in {mappersDirectory}...");
+            foreach (var f in Directory.GetFiles(mappersDirectory, "*.cs", SearchOption.AllDirectories))
             {
                 result[f] = CompileMapper(f);
             }
             return result;
         }
 
-        static void CompileAndExecute(string path, FamicomDumperConnection dumper)
+        static void CompileAndExecute(string scriptPath, FamicomDumperConnection dumper)
         {
-            Console.WriteLine($"Compiling {path}...");
-            Assembly assembly = Compile(path);
+            var scriptsDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), ScriptsSearchDirectory);
+            if (!File.Exists(scriptPath) && File.Exists(Path.Combine(scriptsDirectory, scriptPath)))
+                scriptPath = Path.Combine(scriptsDirectory, scriptPath);
+            Console.WriteLine($"Compiling {scriptPath}...");
+            Assembly assembly = Compile(scriptPath);
             var programs = assembly.GetTypes();
             if (!programs.Any())
                 throw new InvalidProgramException("There is no assemblies");
