@@ -382,7 +382,7 @@ namespace com.clusterrr.Famicom
                     {
                         if (data[bank][b] != rdata[b])
                         {
-                            Console.WriteLine("Mismatch at {0:X4}: {1:X2} != {2:X2}", b, rdata[b], data[bank][b]);
+                            Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[bank][b]:X2}");
                             ok = false;
                         }
                     }
@@ -400,18 +400,20 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void FullTest(FamicomDumperConnection dumper, int count = -1)
+        public static void FullTest(FamicomDumperConnection dumper, int count = -1, int chrSize = -1)
         {
             while (count != 0)
             {
-                TestChrRam(dumper, 1);
+                TestChrRam(dumper, 1, chrSize);
                 TestPrgRam(dumper, 1);
                 if (count > 0) count--;
             }
         }
 
-        public static void TestChrRam(FamicomDumperConnection dumper, int count = -1)
+        public static void TestChrRam(FamicomDumperConnection dumper, int count = -1, int chrSize = -1)
         {
+            if (chrSize < 0) chrSize = 256 * 1024;
+            Console.WriteLine($"Testing CHR RAM, size: {chrSize / 1024}KB");
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
             var rnd = new Random();
@@ -442,31 +444,33 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
 
             Console.WriteLine("Global test.");
-            data = new byte[256 * 1024];
-            while (count != 0)
+            data = new byte[chrSize];
+            for (; count != 0; count--)
             {
                 Program.Reset(dumper);
                 dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
                 rnd.NextBytes(data);
-                for (byte bank = 0; bank < 32; bank++)
+                for (byte bank = 0; bank < data.Length / 0x2000; bank++)
                 {
                     Console.WriteLine("Writing CHR RAM bank #{0}...", bank);
-                    dumper.WriteCpu(0x5003, bank); // select bank
+                    dumper.WriteCpu(0x5003, (byte)(bank & 0b00011111)); // select bank, low 5 bits
+                    dumper.WriteCpu(0x5005, (byte)((bank & 0b00100000) << 2)); // select bank, 6th bit
                     var d = new byte[0x2000];
                     Array.Copy(data, bank * 0x2000, d, 0, 0x2000);
                     dumper.WritePpu(0x0000, d);
                 }
-                for (byte bank = 0; bank < 32; bank++)
+                for (byte bank = 0; bank < data.Length / 0x2000; bank++)
                 {
                     Console.Write("Reading CHR RAM bank #{0}... ", bank);
-                    dumper.WriteCpu(0x5003, bank); // select bank
+                    dumper.WriteCpu(0x5003, (byte)(bank & 0b00011111)); // select bank, low 5 bits
+                    dumper.WriteCpu(0x5005, (byte)((bank & 0b00100000) << 2)); // select bank, 6th bit
                     rdata = dumper.ReadPpu(0x0000, 0x2000);
                     ok = true;
                     for (int b = 0; b < 0x2000; b++)
                     {
                         if (data[b + bank * 0x2000] != rdata[b])
                         {
-                            Console.WriteLine("Mismatch at {0:X4}: {1:X2} != {2:X2}", b, rdata[b], data[b + bank * 0x2000]);
+                            Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[b + bank * 0x2000]:X2}");
                             ok = false;
                         }
                     }
@@ -480,7 +484,6 @@ namespace com.clusterrr.Famicom
                     }
                     Console.WriteLine("OK");
                 }
-                count--;
             }
         }
     }

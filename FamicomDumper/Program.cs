@@ -275,10 +275,10 @@ namespace com.clusterrr.Famicom
                             break;
                         case "test-chr-coolgirl":
                         case "test-chr-ram-coolgirl":
-                            CoolgirlWriter.TestChrRam(dumper);
+                            CoolgirlWriter.TestChrRam(dumper, chrSize: ParseSize(csize));
                             break;
                         case "test-coolgirl":
-                            CoolgirlWriter.FullTest(dumper, testCount);
+                            CoolgirlWriter.FullTest(dumper, testCount, chrSize: ParseSize(csize));
                             break;
                         case "test-bads-coolgirl":
                             CoolgirlWriter.FindBads(dumper, silent);
