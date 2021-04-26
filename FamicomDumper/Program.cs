@@ -63,6 +63,7 @@ namespace com.clusterrr.Famicom
             string csize = null;
             string filename = null;
             string csFile = null;
+            string[] csArgs = new string[0];
             string unifName = null;
             string unifAuthor = null;
             bool reset = false;
@@ -91,6 +92,11 @@ namespace com.clusterrr.Famicom
                 for (int i = 1; i < args.Length; i++)
                 {
                     string param = args[i];
+                    if (param == "-")
+                    {
+                        csArgs = args.Skip(i + 1).ToArray();
+                        break;
+                    }
                     while (param.StartsWith("-") || param.StartsWith("—")) param = param.Substring(1);
                     string value = i < args.Length - 1 ? args[i + 1] : "";
                     switch (param.ToLower())
@@ -224,7 +230,7 @@ namespace com.clusterrr.Famicom
 
                     if (!string.IsNullOrEmpty(csFile))
                     {
-                        CompileAndExecute(csFile, dumper);
+                        CompileAndExecute(csFile, dumper, csArgs);
                     }
 
                     switch (command)
@@ -386,7 +392,7 @@ namespace com.clusterrr.Famicom
 
         static void PrintHelp()
         {
-            Console.WriteLine($"Usage: {Path.GetFileName(Assembly.GetExecutingAssembly().Location)} <command> [options]");
+            Console.WriteLine($"Usage: {Path.GetFileName(Assembly.GetExecutingAssembly().Location)} <command> [<options>] [- <cs_script_arguments>]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-25}{1}", "list-mappers", "list available mappers to dump");
@@ -467,6 +473,11 @@ namespace com.clusterrr.Famicom
                 source = "using System;\r\n" + source;
                 linesOffset++;
             }
+            if (!new Regex(@"^using\s+System\.IO\s*;").IsMatch(source))
+            {
+                source = "using System.IO;\r\n" + source;
+                linesOffset++;
+            }
             if (!new Regex(@"^using\s+System\.Collections\.Generic\s*;").IsMatch(source))
             {
                 source = "using System.Collections.Generic;\r\n" + source;
@@ -527,7 +538,7 @@ namespace com.clusterrr.Famicom
             return result;
         }
 
-        static void CompileAndExecute(string scriptPath, FamicomDumperConnection dumper)
+        static void CompileAndExecute(string scriptPath, FamicomDumperConnection dumper, string[] args)
         {
             var scriptsDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), ScriptsSearchDirectory);
             if (!File.Exists(scriptPath) && File.Exists(Path.Combine(scriptsDirectory, scriptPath)))
@@ -539,27 +550,51 @@ namespace com.clusterrr.Famicom
                 throw new InvalidProgramException("There is no assemblies");
             Type program = programs.First();
 
-            // Is it static method?
-            var staticMethod = program.GetMethod(ScriptStartMethod, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
-            if (staticMethod != null)
-            {
-                Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
-                staticMethod.Invoke(program, new object[] { dumper });
-                return;
-            }
-
-            // Let's try instance method, need to call constructor first
-            var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
-            if (constructor == null)
-                throw new InvalidProgramException("There is no valid default constructor");
-            var obj = constructor.Invoke(new object[0]);
-            var instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
-            if (instanceMethod == null)
-                throw new InvalidProgramException($"There is no {ScriptStartMethod} method");
-            Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
             try
             {
-                instanceMethod.Invoke(obj, new object[] { dumper });
+                // Is it static method with string[] parameter?
+                var staticMethod = program.GetMethod(ScriptStartMethod, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
+                if (staticMethod != null)
+                {
+                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                    staticMethod.Invoke(program, new object[] { dumper, args });
+                    return;
+                }
+                // Is it static method without string[] parameter?
+                staticMethod = program.GetMethod(ScriptStartMethod, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+                if (staticMethod != null)
+                {
+                    if (args.Any())
+                        Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{ScriptStartMethod} declared without string[] parameter");
+                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                    staticMethod.Invoke(program, new object[] { dumper });
+                    return;
+                }
+
+                // Let's try instance method, need to call constructor first
+                var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
+                if (constructor == null)
+                    throw new InvalidProgramException($"There is no static {ScriptStartMethod} method and no valid default constructor");
+                var obj = constructor.Invoke(new object[0]);
+                // Is it instance method with string[] parameter?
+                var instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
+                if (instanceMethod != null)
+                {
+                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                    instanceMethod.Invoke(obj, new object[] { dumper, args });
+                    return;
+                }
+                instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+                if (instanceMethod != null)
+                {
+                    if (args.Any())
+                        Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{ScriptStartMethod} declared without string[] parameter");
+                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                    instanceMethod.Invoke(obj, new object[] { dumper });
+                    return;
+                }
+
+                throw new InvalidProgramException($"There is no {ScriptStartMethod} method");
             }
             catch (TargetInvocationException ex)
             {
@@ -568,7 +603,6 @@ namespace com.clusterrr.Famicom
                 else
                     throw;
             }
-
         }
 
         static void ListMappers()
