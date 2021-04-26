@@ -69,7 +69,6 @@ namespace com.clusterrr.Famicom
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
-            bool needCheckPause = false;
             bool writePBBs = false;
             List<int> badSectors = new List<int>();
             int testCount = -1;
@@ -127,23 +126,29 @@ namespace com.clusterrr.Famicom
                             fdsDumpHiddenFiles = false;
                             break;
                         case "csfile":
+                        case "cs-file":
                         case "scriptfile":
+                        case "script-file":
                             csFile = value;
                             i++;
                             break;
                         case "psize":
+                        case "prg-size":
                             psize = value;
                             i++;
                             break;
                         case "csize":
+                        case "chr-size":
                             csize = value;
                             i++;
                             break;
                         case "unifname":
+                        case "unif-name":
                             unifName = value;
                             i++;
                             break;
                         case "unifauthor":
+                        case "unif-author":
                             unifAuthor = value;
                             i++;
                             break;
@@ -157,22 +162,22 @@ namespace com.clusterrr.Famicom
                         case "verify":
                             needCheck = true;
                             break;
-                        case "checkpause":
-                            needCheckPause = true;
-                            break;
                         case "lock":
                             writePBBs = true;
                             break;
                         case "testcount":
+                        case "test-count":
                             testCount = int.Parse(value);
                             i++;
                             break;
                         case "badsectors":
+                        case "bad-sectors":
                             foreach (var v in value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                                 badSectors.Add(int.Parse(v));
                             i++;
                             break;
                         case "tcpport":
+                        case "tcp-port":
                             tcpPort = uint.Parse(value);
                             i++;
                             break;
@@ -181,6 +186,7 @@ namespace com.clusterrr.Famicom
                             i++;
                             break;
                         case "ignorebadsectors":
+                        case "ignore-bad-sectors":
                             ignoreBadSectors = true;
                             break;
                         default:
@@ -300,12 +306,12 @@ namespace com.clusterrr.Famicom
                         case "write-coolboy-gpio": // for backward compatibility
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("Please specify ROM filename using --file argument");
-                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
+                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("Please specify ROM filename using --file argument");
-                            CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, needCheckPause, writePBBs, ignoreBadSectors);
+                            CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-eeprom":
                             if (string.IsNullOrEmpty(filename))
@@ -323,7 +329,7 @@ namespace com.clusterrr.Famicom
                             break;
                         case "script":
                             if (string.IsNullOrEmpty(csFile))
-                                throw new ArgumentNullException("Please specify C# script using --csfile argument");
+                                throw new ArgumentNullException("Please specify C# script using --cs-file argument");
                             break;
                         case "server":
                             StartServer(dumper, tcpPort);
@@ -398,7 +404,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "list-mappers", "list available mappers to dump");
             Console.WriteLine(" {0,-25}{1}", "dump", "dump cartridge");
             Console.WriteLine(" {0,-25}{1}", "server", "start server for remote dumping");
-            Console.WriteLine(" {0,-25}{1}", "script", "execute C# script specified by --csfile option");
+            Console.WriteLine(" {0,-25}{1}", "script", "execute C# script specified by --cs-file option");
             Console.WriteLine(" {0,-25}{1}", "reset", "simulate reset (M2 goes to Z-state for a second)");
             Console.WriteLine(" {0,-25}{1}", "dump-fds", "dump FDS card using RAM adapter and FDS drive");
             Console.WriteLine(" {0,-25}{1}", "write-fds", "write FDS card using RAM adapter and FDS drive");
@@ -421,23 +427,23 @@ namespace com.clusterrr.Famicom
             Console.WriteLine();
             Console.WriteLine("Available options:");
             Console.WriteLine(" {0,-25}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
-            Console.WriteLine(" {0,-25}{1}", "--tcpport <port>", "TCP port for client/server communication, default - 26672");
+            Console.WriteLine(" {0,-25}{1}", "--tcp-port <port>", "TCP port for client/server communication, default - 26672");
             Console.WriteLine(" {0,-25}{1}", "--host <host>", "enable network client and connect to specified host");
             Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
-            Console.WriteLine(" {0,-25}{1}", "--psize <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-25}{1}", "--csize <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-25}{1}", "--csfile <C#_file>", "execute C# script from file");
+            Console.WriteLine(" {0,-25}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-25}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-25}{1}", "--cs-file <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-25}{1}", "--reset", "simulate reset first");
-            Console.WriteLine(" {0,-25}{1}", "--unifname <name>", "internal ROM name for UNIF dumps");
-            Console.WriteLine(" {0,-25}{1}", "--unifauthor <name>", "author of dump for UNIF dumps");
+            Console.WriteLine(" {0,-25}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
+            Console.WriteLine(" {0,-25}{1}", "--unif-author <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-25}{1}", "--fds-sides", "number of FDS sides to dump (default 1)");
             Console.WriteLine(" {0,-25}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping");
-            Console.WriteLine(" {0,-25}{1}", "--badsectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
-            Console.WriteLine(" {0,-25}{1}", "--ignorebadsectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
+            Console.WriteLine(" {0,-25}{1}", "--bad-sectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
+            Console.WriteLine(" {0,-25}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
-            Console.WriteLine(" {0,-25}{1}", "--check", "verify COOLBOY/COOLGIRL/FDS after writing");
+            Console.WriteLine(" {0,-25}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
@@ -694,7 +700,7 @@ namespace com.clusterrr.Famicom
             // TODO: move GetMapper to IMapper, so it will not be optional
             //mirroring = mapper.GetMirroring(dumper);
             mirroring = GetMirroring(dumper, mapper);
-            Console.WriteLine("Saving to {0}...", fileName);
+            Console.Write($"Saving to {fileName}... ");
             if (mapper.Number >= 0)
             {
                 // TODO: add RAM and NV-RAM settings for NES 2.0
@@ -726,6 +732,7 @@ namespace com.clusterrr.Famicom
                 unifFile.DumpingSoftware = "Famicom Dumper by Cluster / https://github.com/ClusterM/famicom-dumper-client";
                 unifFile.Save(fileName);
             }
+            Console.WriteLine("OK");
         }
 
         static void ReadPrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
@@ -738,7 +745,10 @@ namespace com.clusterrr.Famicom
             mapper.EnablePrgRam(dumper);
             Console.Write("Reading PRG RAM... ");
             var prgram = dumper.ReadCpu(0x6000, 0x2000);
+            Console.WriteLine("OK");
+            Console.Write($"Saving to {fileName}... ");
             File.WriteAllBytes(fileName, prgram);
+            Console.WriteLine("OK");
             dumper.ReadCpu(0x0, 1); // to avoid corruption
             Reset(dumper);
         }
@@ -754,6 +764,7 @@ namespace com.clusterrr.Famicom
             Console.Write("Writing PRG RAM... ");
             var prgram = File.ReadAllBytes(fileName);
             dumper.WriteCpu(0x6000, prgram);
+            Console.WriteLine("OK");
             dumper.ReadCpu(0x0, 1); // to avoid corruption
             Reset(dumper);
         }

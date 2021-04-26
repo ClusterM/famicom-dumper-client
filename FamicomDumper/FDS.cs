@@ -149,8 +149,10 @@ namespace com.clusterrr.Famicom
                     }
                 }
             }
+            Console.Write($"Saving to {fileName}... ");
             var fdsImage = new FdsFile(sideImages);
             fdsImage.Save(fileName, useHeader);
+            Console.WriteLine("OK");
         }
 
         private static FdsDiskSide DumpFDSSide(FamicomDumperConnection dumper, bool dumpHiddenFiles = true)

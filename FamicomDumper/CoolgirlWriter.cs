@@ -23,7 +23,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool checkPause = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -148,12 +148,6 @@ namespace com.clusterrr.Famicom
             if (needCheck)
             {
                 Console.WriteLine("Starting verification process");
-                if (checkPause)
-                {
-                    Console.Write("Press enter to continue");
-                    if (!silent) Program.PlayDoneSound();
-                    Console.ReadLine();
-                }
                 Program.Reset(dumper);
 
                 var readStartTime = DateTime.Now;
