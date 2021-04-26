@@ -190,7 +190,7 @@ namespace com.clusterrr.Famicom
                             ignoreBadSectors = true;
                             break;
                         default:
-                            Console.WriteLine("Unknown parameter: " + param);
+                            Console.WriteLine("Unknown option: " + param);
                             PrintHelp();
                             return 2;
                     }
@@ -341,7 +341,12 @@ namespace com.clusterrr.Famicom
 
                     }
                     var timePassed = DateTime.Now - startTime;
-                    Console.WriteLine($"Done in {timePassed.Hours}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
+                    if (timePassed.TotalMinutes >= 60)
+                        Console.WriteLine($"Done in {timePassed.Hours}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
+                    else if (timePassed.TotalSeconds >= 10 )
+                        Console.WriteLine($"Done in {timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
+                    else
+                        Console.WriteLine($"Done in {(int)timePassed.TotalMilliseconds}ms");
                     if (!silent) PlayDoneSound();
                 }
                 finally
