@@ -1,5 +1,5 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace com.clusterrr.FdsSpeedMeasure
 {
@@ -28,41 +28,50 @@ namespace com.clusterrr.FdsSpeedMeasure
                 if ((ext & 0x7F) != 0x7F) ramAdapterPresent = false;
                 if (!ramAdapterPresent) throw new IOException("Famicom Disk System RAM adapter IO error, is it connected?");
 
-                dumper.WriteCpu(0x4025, /*0b00100110*/ 0x26); // reset
-                dumper.WriteCpu(0x4025, /*0b00100101*/ 0x25); // enable motor without data transfer
+                dumper.WriteCpu(0x4025, 0b00100110); // reset
+                dumper.WriteCpu(0x4025, 0b00100101); // enable motor without data transfer
                 Thread.Sleep(100);
                 // Check battery health
                 ext = dumper.ReadCpu(0x4033, 1)[0];
                 if ((ext & 0x80) == 0) throw new IOException("Battery voltage is low or power supply is not connected");
 
-                Console.WriteLine("Measuring FDS drive speed, make sure that disk card is inserted and wait.");
-                DateTime? lastCycleTime = null;
-                while (true)
-                {
-                    // Reset
-                    dumper.WriteCpu(0x4025, /*0b00100110*/ 0x26); // reset
-                    dumper.WriteCpu(0x4025, /*0b00100101*/ 0x25); // enable motor without data transfer
-
-                    // Wait for ready state
-                    var startTime = DateTime.Now; // for timeout
-                    while ((dumper.ReadCpu(0x4032, 1)[0] & 2) != 0)
-                    {
-                        if ((DateTime.Now - startTime).TotalSeconds >= 20) throw new TimeoutException("Timeout");
-                    }
-
-                    // Calculate and print cycle duration
-                    if (lastCycleTime != null)
-                    {
-                        Console.WriteLine("Full cycle time: {0} ms", (int)(DateTime.Now - lastCycleTime.Value).TotalMilliseconds);
-                    }
-                    // Remember cycle start time
-                    lastCycleTime = DateTime.Now;
-                }
+                Console.WriteLine("Measuring FDS drive speed, make sure that disk card is inserted and wait. Press ENTER to stop.");
+                var cancellationTokenSource = new CancellationTokenSource();
+                var task = SpeedMeasureLoop(dumper, cancellationTokenSource.Token);
+                Console.ReadLine();
+                cancellationTokenSource.Cancel();
+                task.GetAwaiter().GetResult();
             }
             finally
             {
                 // Stop
-                dumper.WriteCpu(0x4025, /*0b00100110*/ 0x26);
+                dumper.WriteCpu(0x4025, 0b00100110);
+            }
+        }
+
+        async Task SpeedMeasureLoop(IFamicomDumperConnection dumper, CancellationToken cancellationToken = default)
+        {
+            DateTime? lastCycleTime = null;
+            while (true)
+            {
+                // Reset
+                dumper.WriteCpu(0x4025, 0b00100110); // reset
+                dumper.WriteCpu(0x4025, 0b00100101); // enable motor without data transfer
+
+                // Wait for ready state
+                while ((dumper.ReadCpu(0x4032, 1)[0] & 2) != 0)
+                {
+                    if (cancellationToken.IsCancellationRequested) return;
+                    await Task.Delay(1);
+                }
+
+                // Calculate and print cycle duration
+                if (lastCycleTime != null)
+                {
+                    Console.WriteLine("Full cycle time: {0} ms", (int)(DateTime.Now - lastCycleTime.Value).TotalMilliseconds);
+                }
+                // Remember cycle start time
+                lastCycleTime = DateTime.Now;
             }
         }
     }
