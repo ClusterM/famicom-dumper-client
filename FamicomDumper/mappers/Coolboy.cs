@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace com.clusterrr.Famicom.Mappers
+﻿namespace com.clusterrr.Famicom.Mappers
 {
     class Coolboy : IMapper
     {

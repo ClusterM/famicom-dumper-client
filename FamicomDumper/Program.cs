@@ -23,6 +23,9 @@
 
 using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
@@ -343,7 +346,7 @@ namespace com.clusterrr.Famicom
                     var timePassed = DateTime.Now - startTime;
                     if (timePassed.TotalMinutes >= 60)
                         Console.WriteLine($"Done in {timePassed.Hours}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
-                    else if (timePassed.TotalSeconds >= 10 )
+                    else if (timePassed.TotalSeconds >= 10)
                         Console.WriteLine($"Done in {timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
                     else
                         Console.WriteLine($"Done in {(int)timePassed.TotalMilliseconds}ms");
@@ -475,50 +478,71 @@ namespace com.clusterrr.Famicom
             options.GenerateExecutable = false;
             options.IncludeDebugInformation = true;
 
-
             var source = File.ReadAllText(path);
             // And usings
             int linesOffset = 0;
-            if (!new Regex(@"^using\s+System\s*;").IsMatch(source))
+            if (!new Regex(@"^using\s+System\s*;", RegexOptions.Multiline).IsMatch(source))
             {
                 source = "using System;\r\n" + source;
                 linesOffset++;
             }
-            if (!new Regex(@"^using\s+System\.IO\s*;").IsMatch(source))
+            if (!new Regex(@"^using\s+System\.IO\s*;", RegexOptions.Multiline).IsMatch(source))
             {
                 source = "using System.IO;\r\n" + source;
                 linesOffset++;
             }
-            if (!new Regex(@"^using\s+System\.Collections\.Generic\s*;").IsMatch(source))
+            if (!new Regex(@"^using\s+System\.Collections\.Generic\s*;", RegexOptions.Multiline).IsMatch(source))
             {
                 source = "using System.Collections.Generic;\r\n" + source;
                 linesOffset++;
             }
-            if (!new Regex(@"^using\s+System\.Linq\s*;").IsMatch(source))
+            if (!new Regex(@"^using\s+System\.Linq\s*;", RegexOptions.Multiline).IsMatch(source))
             {
                 source = "using System.Linq;\r\n" + source;
                 linesOffset++;
             }
-            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.DumperConnection\s*;").IsMatch(source))
+            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.DumperConnection\s*;", RegexOptions.Multiline).IsMatch(source))
             {
                 source = "using com.clusterrr.Famicom.DumperConnection;\r\n" + source;
                 linesOffset++;
             }
-            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.Containers\s*;").IsMatch(source))
+            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.Containers\s*;", RegexOptions.Multiline).IsMatch(source))
             {
                 source = "using com.clusterrr.Famicom.Containers;\r\n" + source;
                 linesOffset++;
             }
 
-            CompilerResults results = provider.CompileAssemblyFromSource(options, source);
-            if (results.Errors.HasErrors)
-            {
-                foreach (CompilerError error in results.Errors)
-                    Console.WriteLine($"In {Path.GetFileName(path)} on line {error.Line - linesOffset}: ({error.ErrorNumber}) {error.ErrorText}");
-                throw new InvalidProgramException();
-            }
+            SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
+            var dotNetAssemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
 
-            return results.CompiledAssembly;
+            var cs = CSharpCompilation.Create("Script", new[] { tree },
+                new MetadataReference[]
+                {
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.Data.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.Core.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "FamicomDumperConnection.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "NesContainers.dll")),
+                },
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+            );
+            using (var memoryStream = new MemoryStream())
+            {
+                EmitResult result = cs.Emit(memoryStream);
+                foreach (Diagnostic d in result.Diagnostics.Where(d => d.Severity != DiagnosticSeverity.Hidden))
+                {
+                    Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
+                }
+                if (result.Success)
+                {
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    Assembly assembly = Assembly.Load(memoryStream.ToArray());
+                    return assembly;
+                }
+                else throw new InvalidProgramException();
+            }
         }
 
         static IMapper CompileMapper(string path)
