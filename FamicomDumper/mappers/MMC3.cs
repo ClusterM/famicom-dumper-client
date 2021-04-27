@@ -38,13 +38,13 @@
             if (banks > 256) throw new ArgumentOutOfRangeException("size", "PRG size is too big");
             for (var bank = 0; bank < banks - 2; bank += 2)
             {
-                Console.Write("Reading PRG banks #{0} and #{1}... ", bank, bank + 1);
+                Console.Write($"Reading PRG banks #{bank} and #{bank + 1}... ");
                 dumper.WriteCpu(0x8000, new byte[] { 6, (byte)bank });
                 dumper.WriteCpu(0x8000, new byte[] { 7, (byte)(bank | 1) });
                 data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                 Console.WriteLine("OK");
             }
-            Console.Write("Reading last PRG banks #{0} and #{1}... ", banks - 2, banks - 1);
+            Console.Write($"Reading last PRG banks #{banks - 2} and #{banks - 1}... ");
             data.AddRange(dumper.ReadCpu(0xC000, 0x4000));
             Console.WriteLine("OK");
         }
@@ -55,7 +55,7 @@
             if (banks > 256) throw new ArgumentOutOfRangeException("size", "CHR size is too big");
             for (var bank = 0; bank < banks; bank += 4)
             {
-                Console.Write("Reading CHR banks #{0}, #{1}, #{2}, #{3}... ", bank, bank + 1, bank + 2, bank + 3);
+                Console.Write($"Reading CHR banks #{bank}, #{bank + 1}, #{bank + 2}, #{bank + 3}... ");
                 dumper.WriteCpu(0x8000, new byte[] { 2, (byte)bank });
                 dumper.WriteCpu(0x8000, new byte[] { 3, (byte)(bank | 1) });
                 dumper.WriteCpu(0x8000, new byte[] { 4, (byte)(bank | 2) });
