@@ -25,6 +25,7 @@ using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CSharp;
 using System;
@@ -479,42 +480,32 @@ namespace com.clusterrr.Famicom
             options.IncludeDebugInformation = true;
 
             var source = File.ReadAllText(path);
-            // And usings
             int linesOffset = 0;
-            if (!new Regex(@"^using\s+System\s*;", RegexOptions.Multiline).IsMatch(source))
-            {
-                source = "using System;\r\n" + source;
-                linesOffset++;
-            }
-            if (!new Regex(@"^using\s+System\.IO\s*;", RegexOptions.Multiline).IsMatch(source))
-            {
-                source = "using System.IO;\r\n" + source;
-                linesOffset++;
-            }
-            if (!new Regex(@"^using\s+System\.Collections\.Generic\s*;", RegexOptions.Multiline).IsMatch(source))
-            {
-                source = "using System.Collections.Generic;\r\n" + source;
-                linesOffset++;
-            }
-            if (!new Regex(@"^using\s+System\.Linq\s*;", RegexOptions.Multiline).IsMatch(source))
-            {
-                source = "using System.Linq;\r\n" + source;
-                linesOffset++;
-            }
-            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.DumperConnection\s*;", RegexOptions.Multiline).IsMatch(source))
-            {
-                source = "using com.clusterrr.Famicom.DumperConnection;\r\n" + source;
-                linesOffset++;
-            }
-            if (!new Regex(@"^using\s+com\.clusterrr\.Famicom\.Containers\s*;", RegexOptions.Multiline).IsMatch(source))
-            {
-                source = "using com.clusterrr.Famicom.Containers;\r\n" + source;
-                linesOffset++;
-            }
-
+            // And usings
             SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
-            var dotNetAssemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+            var usings = root.Usings.Select(e => e.Name.ToString());
+            var usingsToAdd = new string[]
+            {
+                "System",
+                "System.IO",
+                "System.Collections.Generic",
+                "System.Linq",
+                "com.clusterrr.Famicom.DumperConnection",
+                "com.clusterrr.Famicom.Containers"
+            };
+            foreach(var @using in usingsToAdd)
+            {
+                if (!usings.Contains(@using))
+                {
+                    source = $"using {@using};\r\n" + source;
+                    linesOffset++;
+                }
+            }
+            tree = CSharpSyntaxTree.ParseText(source);
 
+            // Compile
+            var dotNetAssemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
             var cs = CSharpCompilation.Create("Script", new[] { tree },
                 new MetadataReference[]
                 {
@@ -533,7 +524,7 @@ namespace com.clusterrr.Famicom
                 EmitResult result = cs.Emit(memoryStream);
                 foreach (Diagnostic d in result.Diagnostics.Where(d => d.Severity != DiagnosticSeverity.Hidden))
                 {
-                    Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
+                    Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition.Line-linesOffset+1}, {d.Location.GetLineSpan().StartLinePosition.Character+1}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
                 }
                 if (result.Success)
                 {

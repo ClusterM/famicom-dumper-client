@@ -45,6 +45,7 @@
 
         public static byte DetectVersion(IFamicomDumperConnection dumper)
         {
+            boo();
             byte version;
             Console.Write("Detecting COOLBOY version... ");
             // 0th CHR bank using both methods
