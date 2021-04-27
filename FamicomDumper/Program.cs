@@ -50,6 +50,7 @@ namespace com.clusterrr.Famicom
         private static DateTime startTime;
         private static string MappersSearchDirectory = "mappers";
         private static string ScriptsSearchDirectory = "scripts";
+        private static string ScriptsCacheDirectory = ".dumpercache";
         private const string ScriptStartMethod = "Run";
         private static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
         private static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
@@ -465,22 +466,25 @@ namespace com.clusterrr.Famicom
 
         static Assembly Compile(string path)
         {
-            var provider = new CSharpCodeProvider();
-            CompilerParameters options = new CompilerParameters();
-            var entryAssemblyLocation = Assembly.GetEntryAssembly().Location;
-            // Automatically add references
-            options.ReferencedAssemblies.Add("System.dll");
-            options.ReferencedAssemblies.Add("System.Data.dll");
-            options.ReferencedAssemblies.Add("System.Core.dll");
-            options.ReferencedAssemblies.Add(entryAssemblyLocation);
-            options.ReferencedAssemblies.Add(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "FamicomDumperConnection.dll"));
-            options.ReferencedAssemblies.Add(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "NesContainers.dll"));
-            options.GenerateInMemory = true;
-            options.GenerateExecutable = false;
-            options.IncludeDebugInformation = true;
-
-            var source = File.ReadAllText(path);
             int linesOffset = 0;
+            var source = File.ReadAllText(path);
+            var cacheDirectory = Path.Combine(Path.GetDirectoryName(path), ScriptsCacheDirectory);
+            var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
+
+            // Try to load cached assembly
+            if (File.Exists(cacheFile) && (new FileInfo(cacheFile).LastWriteTime >= new FileInfo(path).LastWriteTime))
+            {
+                try
+                {
+                    var rawAssembly = File.ReadAllBytes(cacheFile);
+                    return Assembly.Load(rawAssembly);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Can't load cached compiled script file: {ex.Message}");
+                }
+            }
+
             // And usings
             SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
@@ -494,26 +498,27 @@ namespace com.clusterrr.Famicom
                 "com.clusterrr.Famicom.DumperConnection",
                 "com.clusterrr.Famicom.Containers"
             };
-            foreach(var @using in usingsToAdd)
+            foreach (var @using in usingsToAdd)
             {
                 if (!usings.Contains(@using))
                 {
                     source = $"using {@using};\r\n" + source;
-                    linesOffset++;
+                    linesOffset++; // for correct line numbers in errors
                 }
             }
             tree = CSharpSyntaxTree.ParseText(source);
 
             // Compile
             var dotNetAssemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            var entryAssemblyLocation = Assembly.GetEntryAssembly().Location;
             var cs = CSharpCompilation.Create("Script", new[] { tree },
                 new MetadataReference[]
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location),
                     MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.Data.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.Core.dll")),
+                    MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location),
                     MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "FamicomDumperConnection.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "NesContainers.dll")),
                 },
@@ -524,12 +529,20 @@ namespace com.clusterrr.Famicom
                 EmitResult result = cs.Emit(memoryStream);
                 foreach (Diagnostic d in result.Diagnostics.Where(d => d.Severity != DiagnosticSeverity.Hidden))
                 {
-                    Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition.Line-linesOffset+1}, {d.Location.GetLineSpan().StartLinePosition.Character+1}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
+                    Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition.Line - linesOffset + 1}, {d.Location.GetLineSpan().StartLinePosition.Character + 1}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
                 }
                 if (result.Success)
                 {
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    Assembly assembly = Assembly.Load(memoryStream.ToArray());
+                    var rawAssembly = memoryStream.ToArray();
+                    Assembly assembly = Assembly.Load(rawAssembly);
+                    // Save compiled assembly to cache (at least try)
+                    try
+                    {
+                        if (!Directory.Exists(cacheDirectory))
+                            Directory.CreateDirectory(cacheDirectory);
+                        File.WriteAllBytes(cacheFile, rawAssembly);
+                    }
+                    catch { }
                     return assembly;
                 }
                 else throw new InvalidProgramException();
