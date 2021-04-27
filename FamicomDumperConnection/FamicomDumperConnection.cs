@@ -932,7 +932,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 case DumperCommand.FDS_DISK_WRITE_PROTECTED:
                     throw new IOException("Disk card is write protected");
                 case DumperCommand.FDS_BATTERY_LOW:
-                    throw new IOException("Battery low");
+                    throw new IOException("Battery voltage is low or power supply is not connected");
                 case DumperCommand.FDS_TIMEOUT:
                     throw new IOException("FDS read timeout");
                 case DumperCommand.FDS_END_OF_HEAD:
