@@ -64,6 +64,7 @@ namespace com.clusterrr.Famicom
             string psize = null;
             string csize = null;
             string filename = null;
+            bool battery = false;
             string csFile = null;
             string[] csArgs = new string[0];
             string unifName = null;
@@ -143,6 +144,9 @@ namespace com.clusterrr.Famicom
                         case "chr-size":
                             csize = value;
                             i++;
+                            break;
+                        case "battery":
+                            battery = true;
                             break;
                         case "unifname":
                         case "unif-name":
@@ -251,7 +255,7 @@ namespace com.clusterrr.Famicom
                             ListMappers();
                             break;
                         case "dump":
-                            Dump(dumper, filename ?? "output.nes", mapper, ParseSize(psize), ParseSize(csize), unifName, unifAuthor);
+                            Dump(dumper, filename ?? "output.nes", mapper, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery);
                             break;
                         case "dump-fds":
                             FDS.DumpFDS(dumper, filename ?? "output.fds", fdsSides, fdsDumpHiddenFiles, fdsUseHeader);
@@ -440,6 +444,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
             Console.WriteLine(" {0,-25}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-25}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-25}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
             Console.WriteLine(" {0,-25}{1}", "--cs-file <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-25}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-25}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
@@ -703,7 +708,7 @@ namespace com.clusterrr.Famicom
             return (byte)method.Invoke(mapper, new object[] { });
         }
 
-        static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor)
+        static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -745,6 +750,7 @@ namespace com.clusterrr.Famicom
                 nesFile.Mirroring = mirroring;
                 nesFile.PRG = prg.ToArray();
                 nesFile.CHR = chr.ToArray();
+                nesFile.Battery = battery;
                 nesFile.Save(fileName);
             }
             else
@@ -758,6 +764,7 @@ namespace com.clusterrr.Famicom
                 if (chr.Count > 0)
                     unifFile.Fields["CHR0"] = chr.ToArray();
                 unifFile.Mirroring = mirroring;
+                unifFile.Battery = battery;
                 if (!string.IsNullOrEmpty(unifAuthor))
                     unifFile.DumperName = unifAuthor;
                 unifFile.DumpingSoftware = "Famicom Dumper by Cluster / https://github.com/ClusterM/famicom-dumper-client";
