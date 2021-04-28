@@ -408,7 +408,7 @@ namespace com.clusterrr.Famicom
             var rnd = new Random();
             var data = new byte[0x2000];
             rnd.NextBytes(data);
-            Console.WriteLine("Basic test.");
+            Console.WriteLine("Single bank test.");
             Console.Write("Writing CHR RAM... ");
             dumper.WritePpu(0x0000, data);
             Console.Write("Reading CHR RAM... ");
@@ -432,11 +432,10 @@ namespace com.clusterrr.Famicom
             }
             Console.WriteLine("OK");
 
-            Console.WriteLine("Global test.");
+            Console.WriteLine("Multibank test.");
             data = new byte[chrSize];
             for (; count != 0; count--)
             {
-                Program.Reset(dumper);
                 dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
                 rnd.NextBytes(data);
                 for (byte bank = 0; bank < data.Length / 0x2000; bank++)
