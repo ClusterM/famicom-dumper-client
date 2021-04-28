@@ -1,4 +1,27 @@
-﻿using System.Threading;
+﻿/* Famicom Disk System speed measure script
+ *
+ * Copyright notice for this file:
+ *  Copyright (C) 2021 Cluster
+ *  http://clusterrr.com
+ *  clusterrr@clusterrr.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+using System.Threading;
 using System.Threading.Tasks;
 
 class FdsSpeedMeasure
@@ -7,11 +30,6 @@ class FdsSpeedMeasure
     {
         try
         {
-            Console.WriteLine();
-            Console.WriteLine("  Famicom Disk System speed measure script");
-            Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
-            Console.WriteLine();
-
             // Just simple test that RAM adapter is connected
             bool ramAdapterPresent = true;
             dumper.WriteCpu(0x4023, 0x01); // enable disk registers

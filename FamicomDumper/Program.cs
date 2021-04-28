@@ -1,7 +1,7 @@
 ﻿/* Famicom Dumper/Programmer
  *
  * Copyright notice for this file:
- *  Copyright (C) 2020 Cluster
+ *  Copyright (C) 2021 Cluster
  *  http://clusterrr.com
  *  clusterrr@clusterrr.com
  *
