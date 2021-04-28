@@ -507,18 +507,18 @@ namespace com.clusterrr.Famicom
             tree = CSharpSyntaxTree.ParseText(source);
 
             // Compile
-            var dotNetAssemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            var entryAssemblyLocation = Assembly.GetEntryAssembly().Location;
+            var dotNetAssemblyDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            var entryAssemblyDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             var cs = CSharpCompilation.Create("Script", new[] { tree },
                 new MetadataReference[]
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.Data.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyPath, "System.Core.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Data.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Core.dll")),
                     MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location),
-                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "FamicomDumperConnection.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(entryAssemblyLocation), "NesContainers.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(entryAssemblyDirectory, "FamicomDumperConnection.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(entryAssemblyDirectory, "NesContainers.dll")),
                 },
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
