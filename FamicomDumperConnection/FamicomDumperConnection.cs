@@ -1,4 +1,5 @@
-﻿using FTD2XX_NET;
+﻿using com.clusterrr.Famicom.Containers;
+using FTD2XX_NET;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,8 +7,6 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
-using System.Management;
-using com.clusterrr.Famicom.Containers;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
@@ -989,7 +988,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                         return NesFile.MirroringType.OneScreenA; // One-screen A
                     case "1111":
                         return NesFile.MirroringType.OneScreenB; // One-screen B
-                }                
+                }
             }
             return NesFile.MirroringType.Unknown; // Unknown
         }

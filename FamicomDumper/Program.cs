@@ -27,9 +27,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CSharp;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
@@ -40,7 +38,6 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Security;
-using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace com.clusterrr.Famicom
@@ -495,6 +492,7 @@ namespace com.clusterrr.Famicom
                 "System.IO",
                 "System.Collections.Generic",
                 "System.Linq",
+                "com.clusterrr.Famicom",
                 "com.clusterrr.Famicom.DumperConnection",
                 "com.clusterrr.Famicom.Containers"
             };
@@ -719,13 +717,13 @@ namespace com.clusterrr.Famicom
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
             if (prgSize > 0)
             {
-                Console.WriteLine("PRG memory size: {0}KB", prgSize / 1024);
+                Console.WriteLine($"PRG memory size: {prgSize / 1024}KB");
                 mapper.DumpPrg(dumper, prg, prgSize);
                 while (prg.Count % 0x4000 != 0) prg.Add(0);
             }
             if (chrSize > 0)
             {
-                Console.WriteLine("CHR memory size: {0}KB", chrSize / 1024);
+                Console.WriteLine($"CHR memory size: {chrSize / 1024}KB");
                 mapper.DumpChr(dumper, chr, chrSize);
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
@@ -772,9 +770,9 @@ namespace com.clusterrr.Famicom
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
-                Console.WriteLine("Using mapper: {0}", mapper.Name);
+                Console.WriteLine($"Using mapper: {mapper.Name}");
             mapper.EnablePrgRam(dumper);
             Console.Write("Reading PRG RAM... ");
             var prgram = dumper.ReadCpu(0x6000, 0x2000);
@@ -790,9 +788,9 @@ namespace com.clusterrr.Famicom
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
-                Console.WriteLine("Using mapper: {0}", mapper.Name);
+                Console.WriteLine($"Using mapper: {mapper.Name}");
             mapper.EnablePrgRam(dumper);
             Console.Write("Writing PRG RAM... ");
             var prgram = File.ReadAllBytes(fileName);
@@ -806,9 +804,9 @@ namespace com.clusterrr.Famicom
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
-                Console.WriteLine("Using mapper: {0}", mapper.Name);
+                Console.WriteLine($"Using mapper: {mapper.Name}");
             mapper.EnablePrgRam(dumper);
             var rnd = new Random();
             while (count != 0)
@@ -824,7 +822,7 @@ namespace com.clusterrr.Famicom
                 {
                     if (data[b] != rdata[b])
                     {
-                        Console.WriteLine("Mismatch at {0:X4}: {1:X2} != {2:X2}", b, rdata[b], data[b]);
+                        Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[b]:X2}");
                         ok = false;
                     }
                 }
@@ -845,9 +843,9 @@ namespace com.clusterrr.Famicom
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
-                Console.WriteLine("Using mapper: {0}", mapper.Name);
+                Console.WriteLine($"Using mapper: {mapper.Name}");
             mapper.EnablePrgRam(dumper);
             var rnd = new Random();
             var data = new byte[0x2000];
@@ -866,7 +864,7 @@ namespace com.clusterrr.Famicom
             {
                 if (data[b] != rdata[b])
                 {
-                    Console.WriteLine("Mismatch at {0:X4}: {1:X2} != {2:X2}", b, rdata[b], data[b]);
+                    Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[b]:X2}");
                     ok = false;
                 }
             }
@@ -892,7 +890,7 @@ namespace com.clusterrr.Famicom
                 {
                     if (data[b] != rdata[b])
                     {
-                        Console.WriteLine("Mismatch at {0:X4}: {1:X2} != {2:X2}", b, rdata[b], data[b]);
+                        Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[b]:X2}");
                         ok = false;
                     }
                 }
@@ -954,17 +952,17 @@ namespace com.clusterrr.Famicom
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine("Using mapper: #{0} ({1})", mapper.Number, mapper.Name);
+                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
-                Console.WriteLine("Using mapper: {0}", mapper.Name);
+                Console.WriteLine($"Using mapper: {mapper.Name}");
             Console.WriteLine("Dumping...");
             List<byte> chr = new List<byte>();
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
-            Console.WriteLine("CHR memory size: {0}K", chrSize / 1024);
+            Console.WriteLine($"CHR memory size: {chrSize / 1024}K");
             mapper.DumpChr(dumper, chr, chrSize);
             var tiles = new TilesExtractor(chr.ToArray());
             var allTiles = tiles.GetAllTiles();
-            Console.WriteLine("Saving to {0}...", fileName);
+            Console.WriteLine($"Saving to {fileName}...");
             allTiles.Save(fileName, ImageFormat.Png);
         }
 

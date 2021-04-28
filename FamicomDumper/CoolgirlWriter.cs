@@ -5,13 +5,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security;
-using System.Text;
-using System.Threading;
 
 namespace com.clusterrr.Famicom
 {
     public static class CoolgirlWriter
     {
+        const int BANK_SIZE = 0x8000;
+
         public static void PringFlashInfo(FamicomDumperConnection dumper)
         {
             Program.Reset(dumper);
@@ -44,7 +44,7 @@ namespace com.clusterrr.Famicom
                 }
             }
 
-            int prgBanks = PRG.Length / 0x8000;
+            int banks = PRG.Length / BANK_SIZE;
 
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
@@ -72,11 +72,11 @@ namespace com.clusterrr.Famicom
 
             var writeStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
-            var timeTotal = new TimeSpan();
+            var timeEstimated = new TimeSpan();
             int totalErrorCount = 0;
             int currentErrorCount = 0;
             var newBadSectorsList = new List<int>();
-            for (int bank = 0; bank < prgBanks; bank++)
+            for (int bank = 0; bank < banks; bank++)
             {
                 while (badSectors.Contains(bank / 4) || newBadSectorsList.Contains(bank / 4)) bank += 4; // bad sector :(
                 try
@@ -86,12 +86,12 @@ namespace com.clusterrr.Famicom
                     dumper.WriteCpu(0x5000, r0);
                     dumper.WriteCpu(0x5001, r1);
 
-                    var data = new byte[0x8000];
-                    int pos = bank * 0x8000;
+                    var data = new byte[BANK_SIZE];
+                    int pos = bank * BANK_SIZE;
                     if (pos % (128 * 1024) == 0)
                     {
-                        timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
-                        timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
+                        timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 4);
+                        timeEstimated = timeEstimated.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 4}... ");
                         dumper.EraseCpuFlashSector();
@@ -99,11 +99,10 @@ namespace com.clusterrr.Famicom
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
-                    Console.Write("Writing {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
-                        timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                    Console.Write($"Writing bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
                     dumper.WriteCpuFlash(0x0000, data);
                     Console.WriteLine("OK");
-                    if ((bank % 4 == 3) || (bank == prgBanks - 1)) // After last bank in sector
+                    if ((bank % 4 == 3) || (bank == banks - 1)) // After last bank in sector
                     {
                         if (writePBBs)
                             FlashHelper.PPBSet(dumper);
@@ -152,9 +151,9 @@ namespace com.clusterrr.Famicom
 
                 var readStartTime = DateTime.Now;
                 lastSectorTime = DateTime.Now;
-                timeTotal = new TimeSpan();
+                timeEstimated = new TimeSpan();
                 dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
-                for (int bank = 0; bank < prgBanks; bank++)
+                for (int bank = 0; bank < banks; bank++)
                 {
                     while (badSectors.Contains(bank / 4)) bank += 4; // bad sector :(
                     byte r0 = (byte)(bank >> 7);
@@ -162,12 +161,12 @@ namespace com.clusterrr.Famicom
                     dumper.WriteCpu(0x5000, r0);
                     dumper.WriteCpu(0x5001, r1);
 
-                    var data = new byte[0x8000];
-                    int pos = bank * 0x8000;
+                    var data = new byte[BANK_SIZE];
+                    int pos = bank * BANK_SIZE;
                     if (pos % (128 * 1024) == 0)
                     {
-                        timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
-                        timeTotal = timeTotal.Add(DateTime.Now - readStartTime);
+                        timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 4);
+                        timeEstimated = timeEstimated.Add(DateTime.Now - readStartTime);
                         lastSectorTime = DateTime.Now;
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
@@ -184,9 +183,8 @@ namespace com.clusterrr.Famicom
                         }
                     }
                     var timePassed = DateTime.Now - readStartTime;
-                    Console.Write("Reading CRC {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
-                        timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                    var crcr = dumper.ReadCpuCrc(0x8000, 0x8000);
+                    Console.Write($"Reading CRC of bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
+                    var crcr = dumper.ReadCpuCrc(0x8000, BANK_SIZE);
                     if (crcr != crc)
                     {
                         Console.WriteLine($"Verification failed: {crcr:X4} != {crc:X4}");
@@ -194,7 +192,7 @@ namespace com.clusterrr.Famicom
                         wrongCrcSectorsList.Add(bank / 4);
                     }
                     else
-                        Console.WriteLine("OK (CRC = {0:X4})", crcr);
+                        Console.WriteLine($"OK (CRC = {crcr:X4})");
                 }
                 if (totalErrorCount > 0)
                     Console.WriteLine($"Write error count: {totalErrorCount}");
@@ -238,19 +236,19 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5001, 0);
             var cfi = FlashHelper.GetCFIInfo(dumper);
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
-            uint prgBanks = cfi.DeviceSize / 0x8000;
+            uint banks = cfi.DeviceSize / BANK_SIZE;
             FlashHelper.LockBitsCheckPrint(dumper);
 
             Console.Write("Erasing sector #0... ");
             dumper.EraseCpuFlashSector();
             Console.WriteLine("OK");
-            var data = new byte[0x8000];
+            var data = new byte[BANK_SIZE];
             new Random().NextBytes(data);
             Console.Write("Writing sector #0 for test... ");
             dumper.WriteCpuFlash(0x0000, data);
             Console.WriteLine("OK");
             Console.Write("Reading sector #0 for test... ");
-            var datar = dumper.ReadCpu(0x8000, 0x8000);
+            var datar = dumper.ReadCpu(0x8000, BANK_SIZE);
             for (int i = 0; i < data.Length; i++)
                 if (data[i] != datar[i])
                 {
@@ -260,22 +258,21 @@ namespace com.clusterrr.Famicom
 
             var writeStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
-            var timeTotal = new TimeSpan();
+            var timeEstimated = new TimeSpan();
             var badSectors = new List<int>();
 
-            for (int bank = 0; bank < prgBanks; bank += 4)
+            for (int bank = 0; bank < banks; bank += 4)
             {
                 byte r0 = (byte)(bank >> 7);
                 byte r1 = (byte)(bank << 1);
                 dumper.WriteCpu(0x5000, r0);
                 dumper.WriteCpu(0x5001, r1);
 
-                timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
-                timeTotal = timeTotal.Add(DateTime.Now - writeStartTime);
+                timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 4);
+                timeEstimated = timeEstimated.Add(DateTime.Now - writeStartTime);
                 lastSectorTime = DateTime.Now;
                 var timePassed = DateTime.Now - writeStartTime;
-                Console.Write("Erasing sector {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank / 4 + 1, prgBanks / 4, (int)(100 * bank / prgBanks),
-                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
+                Console.Write($"Erasing sector #{bank / 4}/{banks / 4} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
                 try
                 {
                     dumper.EraseCpuFlashSector();
@@ -298,7 +295,7 @@ namespace com.clusterrr.Famicom
                     }
                     catch
                     {
-                        Console.WriteLine("ERROR! Sector #{0} is bad.", bank / 4);
+                        Console.WriteLine($"ERROR! Sector #{bank / 4} is bad.");
                         if (!silent) Program.PlayErrorSound();
                         badSectors.Add(bank / 4);
                     }
@@ -307,7 +304,7 @@ namespace com.clusterrr.Famicom
             if (badSectors.Count > 0)
             {
                 foreach (var bad in badSectors)
-                    Console.WriteLine("Bad sector: {0}", bad);
+                    Console.WriteLine($"Bad sector: {bad}");
                 throw new IOException("Bad sectors found");
             }
             else Console.WriteLine("There is no bad sectors");
@@ -320,35 +317,33 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
             var cfi = FlashHelper.GetCFIInfo(dumper);
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
-            uint prgBanks = cfi.DeviceSize / 0x8000;
+            uint banks = cfi.DeviceSize / BANK_SIZE;
 
             var readStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
-            var timeTotal = new TimeSpan();
-            UInt16 crc = 0;
-            for (int bank = 0; bank < /*16*/prgBanks; bank++)
+            var timeEstimated = new TimeSpan();
+            ushort crc = 0;
+            for (int bank = 0; bank < banks; bank++)
             {
                 byte r0 = (byte)(bank >> 7);
                 byte r1 = (byte)(bank << 1);
                 dumper.WriteCpu(0x5000, r0);
                 dumper.WriteCpu(0x5001, r1);
 
-                var data = new byte[0x8000];
-                int pos = bank * 0x8000;
+                int pos = bank * BANK_SIZE;
                 if (pos % (128 * 1024) == 0)
                 {
-                    timeTotal = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (prgBanks - bank) / 4);
-                    timeTotal = timeTotal.Add(DateTime.Now - readStartTime);
+                    timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 4);
+                    timeEstimated = timeEstimated.Add(DateTime.Now - readStartTime);
                     lastSectorTime = DateTime.Now;
                 }
                 var timePassed = DateTime.Now - readStartTime;
-                Console.Write("Reading CRC {0}/{1} ({2}%, {3:D2}:{4:D2}:{5:D2}/{6:D2}:{7:D2}:{8:D2})... ", bank + 1, prgBanks, (int)(100 * bank / prgBanks),
-                    timePassed.Hours, timePassed.Minutes, timePassed.Seconds, timeTotal.Hours, timeTotal.Minutes, timeTotal.Seconds);
-                var crcr = dumper.ReadCpuCrc(0x8000, 0x8000);
-                Console.WriteLine("CRC = {0:X4}", crcr);
+                Console.Write($"Reading CRC of bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
+                var crcr = dumper.ReadCpuCrc(0x8000, BANK_SIZE);
+                Console.WriteLine($"CRC = {crcr:X4}");
                 crc ^= crcr;
             }
-            Console.WriteLine("Total CRC = {0:X4}", crc);
+            Console.WriteLine($"Total CRC = {crc:X4}");
         }
 
         public static void TestPrgRam(FamicomDumperConnection dumper, int count = -1)
@@ -361,14 +356,14 @@ namespace com.clusterrr.Famicom
                 var data = new byte[][] { new byte[0x2000], new byte[0x2000], new byte[0x2000], new byte[0x2000] };
                 for (byte bank = 0; bank < 4; bank++)
                 {
-                    Console.WriteLine("Writing PRG RAM, bank #{0}... ", bank);
+                    Console.WriteLine($"Writing PRG RAM, bank #{bank}/{4}... ");
                     rnd.NextBytes(data[bank]);
                     dumper.WriteCpu(0x5005, bank);
                     dumper.WriteCpu(0x6000, data[bank]);
                 }
                 for (byte bank = 0; bank < 4; bank++)
                 {
-                    Console.Write("Reading PRG RAM, bank #{0}... ", bank);
+                    Console.Write($"Reading PRG RAM, bank #{bank}/{4}... ");
                     dumper.WriteCpu(0x5005, bank);
                     var rdata = dumper.ReadCpu(0x6000, 0x2000);
                     bool ok = true;
@@ -423,7 +418,7 @@ namespace com.clusterrr.Famicom
             {
                 if (data[b] != rdata[b])
                 {
-                    Console.WriteLine("Mismatch at {0:X4}: {1:X2} != {2:X2}", b, rdata[b], data[b]);
+                    Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[b]:X2}");
                     ok = false;
                 }
             }
@@ -446,7 +441,7 @@ namespace com.clusterrr.Famicom
                 rnd.NextBytes(data);
                 for (byte bank = 0; bank < data.Length / 0x2000; bank++)
                 {
-                    Console.WriteLine("Writing CHR RAM bank #{0}...", bank);
+                    Console.WriteLine($"Writing CHR RAM bank #{bank}/{data.Length / 0x2000}...");
                     dumper.WriteCpu(0x5003, (byte)(bank & 0b00011111)); // select bank, low 5 bits
                     dumper.WriteCpu(0x5005, (byte)((bank & 0b00100000) << 2)); // select bank, 6th bit
                     var d = new byte[0x2000];
@@ -455,7 +450,7 @@ namespace com.clusterrr.Famicom
                 }
                 for (byte bank = 0; bank < data.Length / 0x2000; bank++)
                 {
-                    Console.Write("Reading CHR RAM bank #{0}... ", bank);
+                    Console.Write($"Reading CHR RAM bank #{bank}/{data.Length / 0x2000}... ");
                     dumper.WriteCpu(0x5003, (byte)(bank & 0b00011111)); // select bank, low 5 bits
                     dumper.WriteCpu(0x5005, (byte)((bank & 0b00100000) << 2)); // select bank, 6th bit
                     rdata = dumper.ReadPpu(0x0000, 0x2000);

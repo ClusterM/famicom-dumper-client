@@ -1,70 +1,67 @@
-﻿namespace com.clusterrr.Famicom.Mappers
+﻿class Mapper57 : IMapper
 {
-    class Mapper57 : IMapper
+    public string Name
     {
-        public string Name
-        {
-            get { return "Mapper 57"; }
-        }
+        get { return "Mapper 57"; }
+    }
 
-        public int Number
-        {
-            get { return 57; }
-        }
+    public int Number
+    {
+        get { return 57; }
+    }
 
-        public byte Submapper
-        {
-            get { return 0; }
-        }
+    public byte Submapper
+    {
+        get { return 0; }
+    }
 
-        public string UnifName
-        {
-            get { return null; }
-        }
+    public string UnifName
+    {
+        get { return null; }
+    }
 
-        public int DefaultPrgSize
-        {
-            get { return 8 * 0x4000; }
-        }
+    public int DefaultPrgSize
+    {
+        get { return 8 * 0x4000; }
+    }
 
-        public int DefaultChrSize
-        {
-            get { return 8 * 0x2000; }
-        }
+    public int DefaultChrSize
+    {
+        get { return 8 * 0x2000; }
+    }
 
-        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
+    public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
+    {
+        var banks = size / 0x4000;
+        for (var bank = 0; bank < banks; bank++)
         {
-            var banks = size / 0x4000;
-            for (var bank = 0; bank < banks; bank++)
-            {
-                Console.Write("Reading PRG bank #{0}... ", bank);
-                dumper.WriteCpu(0x8800, (byte)(bank << 5));
-                data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
-                Console.WriteLine("OK");
-            }
+            Console.Write($"Reading PRG bank #{bank}/{banks}... ");
+            dumper.WriteCpu(0x8800, (byte)(bank << 5));
+            data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
+            Console.WriteLine("OK");
         }
+    }
 
-        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
+    public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
+    {
+        var banks = size / 0x2000;
+        for (var bank = 0; bank < banks; bank++)
         {
-            var banks = size / 0x2000;
-            for (var bank = 0; bank < banks; bank++)
-            {
-                Console.Write("Reading CHR bank #{0}... ", bank);
-                dumper.WriteCpu(0x8000, (byte)bank);
-                dumper.WriteCpu(0x8800, (byte)bank);
-                Console.WriteLine("OK");
-                data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
-            }
+            Console.Write($"Reading CHR bank #{bank}/{banks}... ");
+            dumper.WriteCpu(0x8000, (byte)(0b10000000 | ((bank & 0b00001000) << 3)));
+            dumper.WriteCpu(0x8800, (byte)(bank & 0b00000111));
+            Console.WriteLine("OK");
+            data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
         }
+    }
 
-        public void EnablePrgRam(IFamicomDumperConnection dumper)
-        {
-            throw new NotSupportedException("SRAM is not supported by this mapper");
-        }
+    public void EnablePrgRam(IFamicomDumperConnection dumper)
+    {
+        throw new NotSupportedException("PRG RAM is not supported by this mapper");
+    }
 
-        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
-        {
-            return NesFile.MirroringType.MapperControlled;
-        }
+    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    {
+        return NesFile.MirroringType.MapperControlled;
     }
 }

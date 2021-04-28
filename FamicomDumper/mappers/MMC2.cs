@@ -1,72 +1,69 @@
-﻿namespace com.clusterrr.Famicom.Mappers
+﻿class MMC2 : IMapper
 {
-    class MMC2 : IMapper
+    public string Name
     {
-        public string Name
+        get { return "MMC2"; }
+    }
+
+    public int Number
+    {
+        get { return 9; }
+    }
+
+    public byte Submapper
+    {
+        get { return 0; }
+    }
+
+    public string UnifName
+    {
+        get { return null; }
+    }
+
+    public int DefaultPrgSize
+    {
+        get { return 128 * 1024; }
+    }
+
+    public int DefaultChrSize
+    {
+        get { return 0; }
+    }
+
+    public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
+    {
+        var banks = size / 0x2000;
+
+        for (var bank = 0; bank < banks; bank++)
         {
-            get { return "MMC2"; }
+            Console.Write($"Reading PRG bank #{bank}/{banks}... ");
+            dumper.WriteCpu(0xA000, (byte)bank);
+            data.AddRange(dumper.ReadCpu(0x8000, 0x2000));
+            Console.WriteLine("OK");
         }
+    }
 
-        public int Number
+    public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
+    {
+        var banks = size / 0x1000;
+
+        for (var bank = 0; bank < banks; bank++)
         {
-            get { return 9; }
+            Console.Write($"Reading CHR bank #{bank}/{banks}... ");
+            dumper.WriteCpu(0xB000, (byte)bank); // CHR ROM $FD/0000 bank select
+            dumper.WriteCpu(0xC000, (byte)bank); // CHR ROM $FE/0000 bank select
+            data.AddRange(dumper.ReadPpu(0x0000, 0x1000));
+            Console.WriteLine("OK");
         }
+    }
 
-        public byte Submapper
-        {
-            get { return 0; }
-        }
+    public void EnablePrgRam(IFamicomDumperConnection dumper)
+    {
+        throw new NotSupportedException("PRG RAM is not supported by this mapper");
+    }
 
-        public string UnifName
-        {
-            get { return null; }
-        }
-
-        public int DefaultPrgSize
-        {
-            get { return 128 * 1024; }
-        }
-
-        public int DefaultChrSize
-        {
-            get { return 0; }
-        }
-
-        public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
-        {
-            var banks = size / 0x2000;
-
-            for (var bank = 0; bank < banks; bank++)
-            {
-                Console.Write("Reading PRG bank #{0}... ", bank);
-                dumper.WriteCpu(0xA000, (byte)bank);
-                data.AddRange(dumper.ReadCpu(0x8000, 0x2000));
-                Console.WriteLine("OK");
-            }
-        }
-
-        public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
-        {
-            var banks = size / 0x1000;
-
-            for (var bank = 0; bank < banks; bank++)
-            {
-                Console.Write("Reading CHR bank #{0}... ", bank, bank);
-                dumper.WriteCpu(0xB000, (byte)bank); // CHR ROM $FD/0000 bank select
-                dumper.WriteCpu(0xC000, (byte)bank); // CHR ROM $FE/0000 bank select
-                data.AddRange(dumper.ReadPpu(0x0000, 0x1000));
-                Console.WriteLine("OK");
-            }
-        }
-
-        public void EnablePrgRam(IFamicomDumperConnection dumper)
-        {
-            throw new NotSupportedException("SRAM is not supported by this mapper");
-        }
-
-        public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
-        {
-            return NesFile.MirroringType.MapperControlled;
-        }
+    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    {
+        return NesFile.MirroringType.MapperControlled;
     }
 }

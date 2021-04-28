@@ -1,5 +1,4 @@
-﻿using com.clusterrr.Famicom.Containers;
-using com.clusterrr.Famicom.DumperConnection;
+﻿using com.clusterrr.Famicom.DumperConnection;
 using System.Collections.Generic;
 
 namespace com.clusterrr.Famicom
@@ -15,12 +14,12 @@ namespace com.clusterrr.Famicom
         /// Number of the mapper to spore in the iNES header (-1 if none)
         /// </summary>
         int Number { get; }
-        
+
         /// <summary>
         /// Number of submapper (0 if none)
         /// </summary>
         //byte Submapper { get; }
-        
+
         /// <summary>
         /// Name of the mapper to store in UNIF container (null if none)
         /// </summary>
