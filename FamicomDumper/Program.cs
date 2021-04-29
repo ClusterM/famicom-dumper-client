@@ -1000,6 +1000,7 @@ namespace com.clusterrr.Famicom
             RemotingServices.Marshal(dumper, "dumper");
             Console.WriteLine($"Listening port {tcpPort}, press any key to stop");
             Console.ReadKey();
+            Console.WriteLine();
             ChannelServices.UnregisterChannel(channel);
             channel.StopListening(null);
         }
