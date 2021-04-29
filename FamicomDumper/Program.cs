@@ -452,7 +452,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--fds-sides", "number of FDS sides to dump (default 1)");
             Console.WriteLine(" {0,-25}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping");
-            Console.WriteLine(" {0,-25}{1}", "--bad-sectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
+            Console.WriteLine(" {0,-25}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
             Console.WriteLine(" {0,-25}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-25}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
