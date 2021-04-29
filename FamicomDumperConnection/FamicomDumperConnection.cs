@@ -516,16 +516,31 @@ namespace com.clusterrr.Famicom.DumperConnection
             return commRecvCrc;
         }
 
+        /// <summary>
+        /// Init dumper (flush queud data, check connection, read version)
+        /// </summary>
+        /// <returns></returns>
         public bool DumperInit()
         {
             if (Verbose)
                 Console.Write("Dumper initialization... ");
-
             bool result = false;
             var oldTimeout = Timeout;
             try
             {
                 Timeout = 250;
+                // Flush all queud data
+                while (true)
+                {
+                    try
+                    {
+                        RecvCommand();
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
                 for (int i = 0; i < 300 && !result; i++)
                 {
                     try
@@ -545,33 +560,38 @@ namespace com.clusterrr.Famicom.DumperConnection
                     }
                     catch { }
                 }
-                // Flush all queud data
-                while (true)
-                {
-                    try
-                    {
-                        RecvCommand();
-                    }
-                    catch
-                    {
-                        break;
-                    }
-                }
             }
             finally
             {
                 Timeout = oldTimeout;
             }
-
             if (Verbose)
-                Console.WriteLine("failed");
+                Console.WriteLine(result ? "OK" : "failed");
             return result;
         }
 
+        /// <summary>
+        /// Read single byte from CPU (PRG) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <returns>Data from CPU (PRG) bus</returns>
+        public byte ReadCpu(ushort address) => ReadCpu(address, 1)[0];
+
+        /// <summary>
+        /// Read data from CPU (PRG) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <param name="length">Number of bytes to read</param>
+        /// <returns>Data from CPU (PRG) bus</returns>
         public byte[] ReadCpu(ushort address, int length)
         {
             if (Verbose)
-                Console.Write($"Reading 0x{length:X4}B <= 0x{address:X4} @ CPU...");
+            {
+                if (length > 1)
+                    Console.Write($"Reading 0x{address:X4}-0x{address + length - 1:X4} @ CPU... ");
+                else
+                    Console.Write($"Reading 0x{address:X4} @ CPU... ");
+            }
             var result = new List<byte>();
             while (length > 0)
             {
@@ -582,10 +602,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             if (Verbose && result.Count <= 32)
             {
                 foreach (var b in result)
-                    Console.Write($" {b:X2}");
+                    Console.Write($"{b:X2} ");
             }
             else if (Verbose)
-                Console.WriteLine(" OK");
+                Console.WriteLine("OK");
             return result.ToArray();
         }
 
@@ -603,10 +623,21 @@ namespace com.clusterrr.Famicom.DumperConnection
             return recv.Data;
         }
 
+        /// <summary>
+        /// Read CRC16 checksum of data at CPU (PRG) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <param name="length">Number of bytes to read</param>
+        /// <returns>Checksum</returns>
         public ushort ReadCpuCrc(ushort address, int length)
         {
             if (Verbose)
-                Console.Write($"Reading CRC of 0x{length:X4}b of 0x{address:X4} @ CPU...");
+            {
+                if (length > 1)
+                    Console.Write($"Reading CRC of 0x{address:X4}-0x{address + length - 1:X4} @ CPU... ");
+                else
+                    Console.Write($"Reading CRC of 0x{address:X4} @ CPU... ");
+            }
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
             buffer[1] = (byte)((address >> 8) & 0xFF);
@@ -619,10 +650,12 @@ namespace com.clusterrr.Famicom.DumperConnection
             return (ushort)(recv.Data[0] | (recv.Data[1] << 8));
         }
 
-        public void WriteCpu(ushort address, byte data)
-            => WriteCpu(address, new byte[] { data });
-
-        public void WriteCpu(ushort address, byte[] data)
+        /// <summary>
+        /// Write data to CPU (PRG) bus
+        /// </summary>
+        /// <param name="address">Address to write to</param>
+        /// <param name="data">Data to write, address will be incremented after each byte</param>
+        public void WriteCpu(ushort address, params byte[] data)
         {
             if (Verbose)
             {
@@ -631,11 +664,14 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing ");
                     foreach (var b in data)
                         Console.Write($"0x{b:X2} ");
-                    Console.Write($"=> 0x{address:X4} @ CPU...");
+                    if (data.Length > 1)
+                        Console.Write($"=> 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU... ");
+                    else
+                        Console.Write($"=> 0x{address:X4} @ CPU... ");
                 }
                 else
                 {
-                    Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ CPU...");
+                    Console.Write($"Writing to 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU... ");
                 }
             }
             int wlength = data.Length;
@@ -650,7 +686,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 wlength -= wdata.Length;
             }
             if (Verbose)
-                Console.WriteLine(" OK");
+                Console.WriteLine("OK");
             return;
         }
 
@@ -669,6 +705,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
+        /// <summary>
+        /// Erase current flash sector
+        /// </summary>
         public void EraseCpuFlashSector()
         {
             SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, new byte[0]);
@@ -681,6 +720,11 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
+        /// <summary>
+        /// Write flash
+        /// </summary>
+        /// <param name="address">Address to write to</param>
+        /// <param name="data">Data to write, address will be incremented after each byte</param>
         public void WriteCpuFlash(ushort address, byte[] data)
         {
             if (Verbose)
@@ -690,11 +734,14 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing ");
                     foreach (var b in data)
                         Console.Write($"0x{b:X2} ");
-                    Console.Write($"=> 0x{address:X4} @ CPU flash...");
+                    if (data.Length > 1)
+                        Console.Write($"=> 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU flash... ");
+                    else
+                        Console.Write($"=> 0x{address:X4} @ CPU flash... ");
                 }
                 else
                 {
-                    Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ CPU flash...");
+                    Console.Write($"Writing to 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU flash... ");
                 }
             }
             int wlength = data.Length;
@@ -710,7 +757,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 wlength -= wdata.Length;
             }
             if (Verbose)
-                Console.WriteLine(" OK");
+                Console.WriteLine("OK");
         }
 
         private void WriteCpuFlashBlock(ushort address, byte[] data)
@@ -732,10 +779,28 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
+        /// <summary>
+        /// Read single byte from PPU (CHR) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <returns>Data from PPU (CHR) bus</returns>
+        public byte ReadPpu(ushort address) => ReadPpu(address, 1)[0];
+
+        /// <summary>
+        /// Read data from PPU (CHR) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <param name="length">Number of bytes to read</param>
+        /// <returns>Data from PPU (CHR) bus</returns>
         public byte[] ReadPpu(ushort address, int length)
         {
             if (Verbose)
-                Console.Write($"Reading 0x{length:X4}B <= 0x{address:X4} @ PPU...");
+            {
+                if (length > 1)
+                    Console.Write($"Reading 0x{address:X4}-0x{address + length - 1:X4} @ PPU... ");
+                else
+                    Console.Write($"Reading 0x{address:X4} @ PPU... ");
+            }
             var result = new List<byte>();
             while (length > 0)
             {
@@ -743,14 +808,19 @@ namespace com.clusterrr.Famicom.DumperConnection
                 address += MaxReadPacketSize;
                 length -= MaxReadPacketSize;
             }
-            if (Verbose && result.Count <= 32)
+            if (Verbose)
             {
-                foreach (var b in result)
-                    Console.Write($" {b:X2}");
-                Console.WriteLine();
+                if (result.Count <= 32)
+                {
+                    foreach (var b in result)
+                        Console.Write($"{b:X2} ");
+                    Console.WriteLine();
+                }
+                else
+                {
+                    Console.WriteLine("OK");
+                }
             }
-            else if (Verbose)
-                Console.WriteLine(" OK");
             return result.ToArray();
         }
 
@@ -768,10 +838,21 @@ namespace com.clusterrr.Famicom.DumperConnection
             return recv.Data;
         }
 
+        /// <summary>
+        /// Read CRC16 checksum of data at PPU (CHR) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <param name="length">Number of bytes to read</param>
+        /// <returns>Checksum</returns>
         public ushort ReadPpuCrc(ushort address, int length)
         {
             if (Verbose)
-                Console.Write($"Reading CRC of 0x{length:X4}b of 0x{address:X4} @ PPU...");
+            {
+                if (length > 1)
+                    Console.Write($"Reading CRC of 0x{address:X4}-0x{address + length - 1:X4} @ PPU... ");
+                else
+                    Console.Write($"Reading CRC of 0x{address:X4} @ PPU... ");
+            }
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
             buffer[1] = (byte)((address >> 8) & 0xFF);
@@ -784,10 +865,12 @@ namespace com.clusterrr.Famicom.DumperConnection
             return (ushort)(recv.Data[0] | (recv.Data[1] << 8));
         }
 
-        public void WritePpu(ushort address, byte data)
-            => WritePpu(address, new byte[] { data });
-
-        public void WritePpu(ushort address, byte[] data)
+        /// <summary>
+        /// Write data to PPU (CHR) bus
+        /// </summary>
+        /// <param name="address">Address to write to</param>
+        /// <param name="data">Data to write, address will be incremented after each byte</param>
+        public void WritePpu(ushort address, params byte[] data)
         {
             if (Verbose)
             {
@@ -796,31 +879,34 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing ");
                     foreach (var b in data)
                         Console.Write($"0x{b:X2} ");
-                    Console.Write($"=> 0x{address:X4} @ PPU...");
+                    if (data.Length > 1)
+                        Console.Write($"=> 0x{address:X4}-0x{address + data.Length - 1:X4} @ PPU... ");
+                    else
+                        Console.Write($"=> 0x{address:X4} @ CPU... ");
                 }
                 else
                 {
-                    Console.Write($"Writing 0x{data.Length:X4}B => 0x{address:X4} @ PPU...");
+                    Console.Write($"Writing to 0x{address:X4}-0x{address + data.Length - 1:X4} @ PPU... ");
                 }
             }
-            if (data.Length > MaxWritePacketSize) // Split packets
+            int wlength = data.Length;
+            int pos = 0;
+            while (wlength > 0)
             {
-                int wlength = data.Length;
-                int pos = 0;
-                while (wlength > 0)
-                {
-                    var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
-                    Array.Copy(data, pos, wdata, 0, wdata.Length);
-                    WritePpu(address, wdata);
-                    address += (ushort)wdata.Length;
-                    pos += wdata.Length;
-                    wlength -= wdata.Length;
-                }
-                if (Verbose)
-                    Console.WriteLine(" OK");
-                return;
+                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
+                Array.Copy(data, pos, wdata, 0, wdata.Length);
+                WritePpuBlock(address, wdata);
+                address += (ushort)wdata.Length;
+                pos += wdata.Length;
+                wlength -= wdata.Length;
             }
+            if (Verbose)
+                Console.WriteLine("OK");
+            return;
+        }
 
+        private void WritePpuBlock(ushort address, byte[] data)
+        {
             int length = data.Length;
             var buffer = new byte[4 + length];
             buffer[0] = (byte)(address & 0xFF);
@@ -834,18 +920,22 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {recv.Command}");
         }
 
-        public IFdsBlock[] ReadFdsBlocks(byte startBlock = 0, byte blockCount = byte.MaxValue)
+        /// <summary>
+        /// Read Famicom Disk System blocks
+        /// </summary>
+        /// <param name="startBlock">First block number to read (zero-based)</param>
+        /// <param name="maxBlockCount">Maximum number of blocks to read</param>
+        /// <returns>Array of Famicom Disk System blocks</returns>
+        public IFdsBlock[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue)
         {
             if (ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
-
             if (Verbose)
-                Console.Write($"Reading FDS block(s) {startBlock}-{startBlock + blockCount - 1}... ");
-
+                Console.Write($"Reading FDS block(s) {startBlock}-{((maxBlockCount < byte.MaxValue) ? $"{startBlock + maxBlockCount - 1}" : "*")}... ");
             var blocks = new List<IFdsBlock>();
             var buffer = new byte[2];
             buffer[0] = startBlock;
-            buffer[1] = blockCount;
+            buffer[1] = maxBlockCount;
             SendCommand(DumperCommand.FDS_READ_REQUEST, buffer);
             bool receiving = true;
             int currentBlock = startBlock;
@@ -856,7 +946,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 {
                     case DumperCommand.FDS_READ_RESULT_BLOCK:
                         {
-                            // ignore any data after invalid data
                             var data = recv.Data.Take(recv.Data.Length - 2).ToArray();
                             IFdsBlock newBlock;
                             if (currentBlock == 0)
@@ -893,14 +982,23 @@ namespace com.clusterrr.Famicom.DumperConnection
                 }
             }
             if (Verbose)
-                Console.WriteLine(" OK");
+                Console.WriteLine("OK");
             return blocks.ToArray();
         }
 
-        public void WriteFdsBlocks(byte[] blockNumbers, byte[][] blocks)
+        /// <summary>
+        /// Write blocks to Famicom Disk System card
+        /// </summary>
+        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+        /// <param name="blocks">Raw blocks data</param>
+        public void WriteFdsBlocks(byte[] blockNumbers, params byte[][] blocks)
         {
+            if (ProtocolVersion < 3)
+                throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
             if (blockNumbers.Length != blocks.Length)
                 throw new ArgumentException("blockNumbers.Length != blocks.Length");
+            if (Verbose)
+                Console.Write($"Writing FDS block(s) {string.Join(", ", blockNumbers)}... ");
             var buffer = new byte[1 + blocks.Length + blocks.Length * 2 + blocks.Sum(e => e.Length)];
             buffer[0] = (byte)(blocks.Length);
             for (int i = 0; i < blocks.Length; i++)
@@ -923,6 +1021,8 @@ namespace com.clusterrr.Famicom.DumperConnection
             switch (recv.Command)
             {
                 case DumperCommand.FDS_WRITE_DONE:
+                    if (Verbose)
+                        Console.WriteLine("OK");
                     return;
                 case DumperCommand.FDS_NOT_CONNECTED:
                     throw new IOException("RAM adapter IO error, is it connected?");
@@ -945,13 +1045,34 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
         }
 
+        /// <summary>
+        /// Write blocks to Famicom Disk System card
+        /// </summary>
+        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+        /// <param name="blocks">Blocks data</param>
         public void WriteFdsBlocks(byte[] blockNumbers, IEnumerable<IFdsBlock> blocks)
             => WriteFdsBlocks(blockNumbers, blocks.Select(b => b.ToBytes()).ToArray());
-        public void WriteFdsBlocks(byte[] blockNumbers, byte[] block)
-            => WriteFdsBlocks(blockNumbers, new byte[][] { block });
-        public void WriteFdsBlocks(byte blockNumber, IFdsBlock block)
-            => WriteFdsBlocks(new byte[] { blockNumber }, new byte[][] { block.ToBytes() });
 
+        /// <summary>
+        /// Write single block to Famicom Disk System card
+        /// </summary>
+        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+        /// <param name="block">Block data</param>
+        public void WriteFdsBlocks(byte blockNumber, byte[] block)
+            => WriteFdsBlocks(new byte[] { blockNumber }, block );
+
+        /// <summary>
+        /// Write single block to Famicom Disk System card
+        /// </summary>
+        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+        /// <param name="block">Block data</param>
+        public void WriteFdsBlocks(byte blockNumber, IFdsBlock block)
+            => WriteFdsBlocks(new byte[] { blockNumber }, block.ToBytes() );
+
+        /// <summary>
+        /// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)
+        /// </summary>
+        /// <returns>Values of CIRAM A10 pin for $2000-$23FF, $2400-$27FF, $2800-$2BFF and $2C00-$2FFF</returns>
         public bool[] GetMirroringRaw()
         {
             if (Verbose)
@@ -961,12 +1082,19 @@ namespace com.clusterrr.Famicom.DumperConnection
             if (recv.Command != DumperCommand.MIRRORING_RESULT)
                 throw new IOException($"Invalid data received: {recv.Command}");
             var mirroringRaw = recv.Data;
-            foreach (var b in mirroringRaw)
-                Console.Write($"{b} ");
-            Console.WriteLine();
+            if (Verbose)
+            {
+                foreach (var b in mirroringRaw)
+                    Console.Write($"{b} ");
+                Console.WriteLine();
+            }
             return mirroringRaw.Select(v => v != 0 ? true : false).ToArray();
         }
 
+        /// <summary>
+        /// Read decoded current mirroring mode
+        /// </summary>
+        /// <returns>Current mirroring</returns>
         public NesFile.MirroringType GetMirroring()
         {
             var mirroringRaw = GetMirroringRaw();
@@ -993,6 +1121,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             return NesFile.MirroringType.Unknown; // Unknown
         }
 
+        /// <summary>
+        /// Set maximum number of bytes in multi-byte flash program
+        /// </summary>
+        /// <param name="pageSize"></param>
         public void SetMaximumNumberOfBytesInMultiProgram(uint pageSize)
         {
             if (ProtocolVersion < 3)
@@ -1011,10 +1143,14 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// </summary>
         public void Reset()
         {
+            if (Verbose)
+                Console.Write("Reset... ");
             SendCommand(DumperCommand.RESET, new byte[0]);
             var recv = RecvCommand();
             if (recv.Command != DumperCommand.RESET_ACK)
                 throw new IOException($"Invalid data received: {recv.Command}");
+            if (Verbose)
+                Console.WriteLine("OK");
         }
 
         public void Bootloader()
