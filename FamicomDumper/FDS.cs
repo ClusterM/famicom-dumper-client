@@ -80,9 +80,9 @@ namespace com.clusterrr.Famicom
                         for (int f = 0; f < rom.Sides[sideNumber].Files.Count; f++)
                         {
                             if (!sideImage.Files[f].HeaderBlock.Equals(rom.Sides[sideNumber].Files[f].HeaderBlock))
-                                throw new IOException($"File #{f + 1} header block verification failed");
+                                throw new IOException($"File #{f} header block verification failed");
                             if (!sideImage.Files[f].DataBlock.Equals(rom.Sides[sideNumber].Files[f].DataBlock))
-                                throw new IOException($"File #{f + 1} data block verification failed");
+                                throw new IOException($"File #{f} data block verification failed");
                         }
                         Console.WriteLine("Verification successful.");
                     }
@@ -214,9 +214,9 @@ namespace com.clusterrr.Famicom
                         break;
                     default:
                         if ((blockNumber % 2) == 0)
-                            Console.Write($"Reading file #{(blockNumber - 2) / 2 + 1}/{(blocks[1] as FdsBlockFileAmount).FileAmount} header block... ");
+                            Console.Write($"Reading file #{(blockNumber - 2) / 2}/{(blocks[1] as FdsBlockFileAmount).FileAmount} header block... ");
                         else
-                            Console.Write($"Reading file #{(blockNumber - 2) / 2 + 1}/{(blocks[1] as FdsBlockFileAmount).FileAmount} data block... ");
+                            Console.Write($"Reading file #{(blockNumber - 2) / 2}/{(blocks[1] as FdsBlockFileAmount).FileAmount} data block... ");
                         break;
                 }
                 var fdsData = dumper.ReadFdsBlocks(blockNumber, 1);
@@ -227,7 +227,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine("Invalid block, it's not hidden file, aboritng");
                         break;
                     }
-                    throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
+                    throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2})");
                 }
                 var block = fdsData[0];
                 if (!block.IsValid)
@@ -247,7 +247,7 @@ namespace com.clusterrr.Famicom
                     else
                     {
                         // Fatal error if bad block ID on non-hidden file
-                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1}) type");
+                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2}) type");
                     }
                 }
                 if (!block.CrcOk)
@@ -262,7 +262,7 @@ namespace com.clusterrr.Famicom
                     if (blocks.Count < 2 + (blocks[1] as FdsBlockFileAmount).FileAmount * 2)
                     {
                         // Fatal error if bad CRC on non-hidden file
-                        throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
+                        throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2})");
                     }
                     else
                     {
@@ -341,7 +341,7 @@ namespace com.clusterrr.Famicom
                 if (!block.IsValid)
                 {
                     if (blocks.Length < 2 + fileAmount * 2)
-                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1}) type");
+                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2}) type");
                     else
                     {
                         if (printDiskInfo)
@@ -353,7 +353,7 @@ namespace com.clusterrr.Famicom
                 if (!block.CrcOk)
                 {
                     if (blocks.Length < 2 + fileAmount * 2)
-                        throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
+                        throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2})");
                     else
                     {
                         if (printDiskInfo)
@@ -366,7 +366,7 @@ namespace com.clusterrr.Famicom
                 {
                     if (printDiskInfo)
                     {
-                        Console.WriteLine($"File #{(blockNumber - 2) / 2 + 1}/{fileAmount}:");
+                        Console.WriteLine($"File #{(blockNumber - 2) / 2}/{fileAmount}:");
                         PrintFileHeaderInfo(block as FdsBlockFileHeader);
                     }
                 }
