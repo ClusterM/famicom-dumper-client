@@ -58,7 +58,7 @@ namespace com.clusterrr.Famicom
         void EnablePrgRam(IFamicomDumperConnection dumper);
 
         /// <summary>
-        /// This method must return mirroring type, it can call dumper.GetMirroring() if it's not fixed
+        /// This method must return mirroring type, it can call dumper.GetMirroring() if it's fixed
         /// </summary>
         /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
         /// <returns></returns>
