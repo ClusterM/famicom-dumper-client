@@ -68,7 +68,7 @@ Available options:
 - **--unif-author** <*name*> - author of dump for UNIF dumps
 - **--fds-sides** - number of FDS sides to dump (default 1)
 - **--fds-no-header** - do not add header to output file during FDS dumping
-- **--fds-dump-hidden** - try to dump hidden files during FDS dumping
+- **--fds-dump-hidden** - try to dump hidden files during FDS dumping (used for some copy-protected games)
 - **--bad-sectors** <*bad_sectors*> - comma separated list of bad sectors for COOLBOY/COOLGIRL writing
 - **--ignore-bad-sectors** - ignore bad sectors while writing COOLBOY/COOLGIRL
 - **--sound** - play sound when done or error occured
