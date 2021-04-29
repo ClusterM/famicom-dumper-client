@@ -70,7 +70,7 @@ namespace com.clusterrr.Famicom
                     {
                         Console.WriteLine("Starting verification process");
                         var hiddenFiles = rom.Sides[sideNumber].Files.Count > rom.Sides[sideNumber].FileAmount;
-                        var sideImage = DumpFDSSide(dumper, hiddenFiles);
+                        var sideImage = DumpFDSSide(dumper, dumpHiddenFiles: hiddenFiles, printDiskInfo: false);
                         if (!sideImage.DiskInfoBlock.Equals(rom.Sides[sideNumber].DiskInfoBlock))
                             throw new IOException("Disk info block verification failed");
                         if (!sideImage.FileAmount.Equals(rom.Sides[sideNumber].FileAmount))
@@ -129,7 +129,7 @@ namespace com.clusterrr.Famicom
                     }
                     Console.WriteLine("OK");
                 }
-                var sideImage = DumpFDSSide(dumper, dumpHiddenFiles);
+                var sideImage = DumpFDSSide(dumper, dumpHiddenFiles, printDiskInfo: true);
                 sideImages.Add(sideImage);
 
                 if (side < sides)
@@ -153,7 +153,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        private static FdsDiskSide DumpFDSSide(FamicomDumperConnection dumper, bool dumpHiddenFiles = true)
+        private static FdsDiskSide DumpFDSSide(FamicomDumperConnection dumper, bool dumpHiddenFiles = true, bool printDiskInfo = false)
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -166,10 +166,10 @@ namespace com.clusterrr.Famicom
                 IEnumerable<IFdsBlock> blocks;
                 if (dumper.MaxReadPacketSize != ushort.MaxValue)
                     // Reading block by block
-                    blocks = DumpSlow(dumper, dumpHiddenFiles);
+                    blocks = DumpSlow(dumper, dumpHiddenFiles, printDiskInfo);
                 else
                     // Reading the whole disk at once
-                    blocks = DumpFast(dumper, dumpHiddenFiles);
+                    blocks = DumpFast(dumper, dumpHiddenFiles, printDiskInfo);
                 var sideImage = new FdsDiskSide(blocks);
                 if (sideImage.Files.Count < sideImage.FileAmount)
                     throw new IOException($"Invalid file count: {sideImage.Files.Count} < {sideImage.FileAmount}");
@@ -198,7 +198,7 @@ namespace com.clusterrr.Famicom
             if (!ramAdapterPresent) throw new IOException("RAM adapter IO error, is it connected?");
         }
 
-        private static IEnumerable<IFdsBlock> DumpSlow(FamicomDumperConnection dumper, bool dumpHiddenFiles = false)
+        private static IEnumerable<IFdsBlock> DumpSlow(FamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
         {
             var blocks = new List<IFdsBlock>();
             byte blockNumber = 0;
@@ -273,21 +273,24 @@ namespace com.clusterrr.Famicom
                 blocks.AddRange(fdsData);
                 Console.WriteLine($"OK");
                 // Some info
-                switch (blockNumber)
+                if (printDiskInfo)
                 {
-                    case 0:
-                        PrintDiskHeaderInfo(block as FdsBlockDiskInfo);
-                        break;
-                    case 1:
-                        Console.WriteLine($"Number of non-hidden files: {(block as FdsBlockFileAmount).FileAmount}");
-                        break;
-                    default:
-                        if ((blockNumber % 2) == 0)
-                        {
-                            Console.WriteLine($"File #{(blockNumber - 2) / 2}:");
-                            PrintFileHeaderInfo(block as FdsBlockFileHeader);
-                        }
-                        break;
+                    switch (blockNumber)
+                    {
+                        case 0:
+                            PrintDiskHeaderInfo(block as FdsBlockDiskInfo);
+                            break;
+                        case 1:
+                            Console.WriteLine($"Number of non-hidden files: {(block as FdsBlockFileAmount).FileAmount}");
+                            break;
+                        default:
+                            if ((blockNumber % 2) == 0)
+                            {
+                                Console.WriteLine($"File #{(blockNumber - 2) / 2}:");
+                                PrintFileHeaderInfo(block as FdsBlockFileHeader);
+                            }
+                            break;
+                    }
                 }
                 // Abort if end of head meet
                 if (block.EndOfHeadMeet)
@@ -307,7 +310,7 @@ namespace com.clusterrr.Famicom
             return blocks;
         }
 
-        private static IEnumerable<IFdsBlock> DumpFast(FamicomDumperConnection dumper, bool dumpHiddenFiles = false)
+        private static IEnumerable<IFdsBlock> DumpFast(FamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
         {
             Console.Write($"Reading disk... ");
             var blocks = dumper.ReadFdsBlocks().ToArray();
@@ -318,7 +321,8 @@ namespace com.clusterrr.Famicom
                 throw new IOException($"Invalid disk info block type");
             if (!blocks[0].CrcOk)
                 throw new IOException($"Invalid CRC on disk info block");
-            PrintDiskHeaderInfo(blocks[0] as FdsBlockDiskInfo);
+            if (printDiskInfo)
+                PrintDiskHeaderInfo(blocks[0] as FdsBlockDiskInfo);
             if (blocks.Length == 1)
                 throw new IOException("Invalid file amount block");
             if (!blocks[1].IsValid)
@@ -326,7 +330,8 @@ namespace com.clusterrr.Famicom
             if (!blocks[1].CrcOk)
                 throw new IOException($"Invalid CRC on file amount block");
             var fileAmount = (blocks[1] as FdsBlockFileAmount).FileAmount;
-            Console.WriteLine($"Number of non-hidden files: {fileAmount}");
+            if (printDiskInfo)
+                Console.WriteLine($"Number of non-hidden files: {fileAmount}");
 
             // Check files and print info
             int validBlocks = 2 + fileAmount * 2;
@@ -339,7 +344,8 @@ namespace com.clusterrr.Famicom
                         throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1}) type");
                     else
                     {
-                        Console.WriteLine($"Invalid block #{blockNumber}, it's not hidden file, aboritng");
+                        if (printDiskInfo)
+                            Console.WriteLine($"Invalid block #{blockNumber}, it's not hidden file, aboritng");
                         validBlocks = blockNumber;
                         break;
                     }
@@ -350,20 +356,24 @@ namespace com.clusterrr.Famicom
                         throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2 + 1})");
                     else
                     {
-                        Console.WriteLine($"Invalid CRC on block #{blockNumber}, it's not hidden file, aboritng");
+                        if (printDiskInfo)
+                            Console.WriteLine($"Invalid CRC on block #{blockNumber}, it's not hidden file, aboritng");
                         validBlocks = blockNumber;
                         break;
                     }
                 }
                 if ((blockNumber % 2) == 0)
                 {
-                    Console.WriteLine($"File #{(blockNumber - 2) / 2 + 1}/{fileAmount}:");
-                    PrintFileHeaderInfo(block as FdsBlockFileHeader);
+                    if (printDiskInfo)
+                    {
+                        Console.WriteLine($"File #{(blockNumber - 2) / 2 + 1}/{fileAmount}:");
+                        PrintFileHeaderInfo(block as FdsBlockFileHeader);
+                    }
                 }
             }
             if (blocks.Length < 2 + fileAmount * 2)
                 throw new IOException($"Only {(blocks.Length - 2) / 2} of {fileAmount} valid files received");
-            if (dumpHiddenFiles)
+            if (dumpHiddenFiles && printDiskInfo)
             {
                 Console.WriteLine($"Number of hidden files: {(blocks.Length - 2) / 2 - fileAmount}");
             }
