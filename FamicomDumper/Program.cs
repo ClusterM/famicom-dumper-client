@@ -346,6 +346,7 @@ namespace com.clusterrr.Famicom
                             return 2;
 
                     }
+#if DEBUG
                     var timePassed = DateTime.Now - startTime;
                     if (timePassed.TotalMinutes >= 60)
                         Console.WriteLine($"Done in {timePassed.Hours}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
@@ -353,6 +354,7 @@ namespace com.clusterrr.Famicom
                         Console.WriteLine($"Done in {timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
                     else
                         Console.WriteLine($"Done in {(int)timePassed.TotalMilliseconds}ms");
+#endif
                     if (!silent) PlayDoneSound();
                 }
                 finally
@@ -736,6 +738,7 @@ namespace com.clusterrr.Famicom
             // TODO: move GetMapper to IMapper, so it will not be optional
             //mirroring = mapper.GetMirroring(dumper);
             mirroring = GetMirroring(dumper, mapper);
+            Console.WriteLine($"Mirroring: {mirroring}");
             Console.Write($"Saving to {fileName}... ");
             if (mapper.Number >= 0)
             {
