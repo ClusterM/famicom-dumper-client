@@ -48,7 +48,7 @@ Available commands:
 - **test-prg-ram-coolgirl** - run PRG RAM test for COOLGIRL cartridge
 - **test-chr-ram-coolgirl** - run CHR RAM test for COOLGIRL cartridge
 - **test-coolgirl** - run all RAM tests for COOLGIRL cartridge
-- **test-bads-coolgirl** - find bad sectors on COOLGIRL cartridge
+- **test-bads-coolgirl** - find bad sectors on COOLGIRL cartridge and list them afterwards
 - **read-crc-coolgirl** - show CRC checksum for COOLGIRL
 - **info-coolboy** - show information about COOLBOY's flash memory
 - **info-coolgirl** - show information about COOLGIRL's flash memory

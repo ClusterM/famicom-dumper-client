@@ -431,7 +431,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
             Console.WriteLine(" {0,-25}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-25}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge");
+            Console.WriteLine(" {0,-25}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge and list them afterwards");
             Console.WriteLine(" {0,-25}{1}", "read-crc-coolgirl", "show CRC checksum for COOLGIRL");
             Console.WriteLine(" {0,-25}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
             Console.WriteLine(" {0,-25}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
@@ -453,7 +453,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping");
             Console.WriteLine(" {0,-25}{1}", "--bad-sectors", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
-            Console.WriteLine(" {0,-25}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL and list them afterwards");
+            Console.WriteLine(" {0,-25}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL");
             Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-25}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
