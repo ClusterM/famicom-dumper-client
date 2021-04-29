@@ -314,9 +314,8 @@ namespace com.clusterrr.Famicom
         {
             Console.Write($"Reading disk... ");
             var blocks = dumper.ReadFdsBlocks().ToArray();
-            Console.WriteLine($"Done.");
             if (blocks.Length == 0)
-                Console.WriteLine("Invalid disk info block");
+                throw new IOException("Invalid disk info block");
             if (!blocks[0].IsValid)
                 throw new IOException($"Invalid disk info block type");
             if (!blocks[0].CrcOk)
@@ -329,6 +328,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException($"Invalid file amount block type");
             if (!blocks[1].CrcOk)
                 throw new IOException($"Invalid CRC on file amount block");
+            Console.WriteLine($"Done");
             var fileAmount = (blocks[1] as FdsBlockFileAmount).FileAmount;
             if (printDiskInfo)
                 Console.WriteLine($"Number of non-hidden files: {fileAmount}");

@@ -386,7 +386,7 @@ Dump two-sided Famicom Disk System card:
 >FamicomDumper.exe dump-fds --fds-sides 2 --file game.fds
 Autodetected virtual serial port: COM13
 Dumper initialization... OK
-Reading disk... Done.
+Reading disk... Done
 Disk info block:
  Game name: MET
  Manufacturer code: Nintendo
@@ -434,7 +434,7 @@ Number of hidden files: 0
 Total blocks to write: 18
 Writing block(s): 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17... OK
 Starting verification process
-Reading disk... Done.
+Reading disk... Done
 Verification successful.
 ~~~
 
