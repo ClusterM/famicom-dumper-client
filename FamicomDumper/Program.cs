@@ -126,7 +126,7 @@ namespace com.clusterrr.Famicom
                             fdsUseHeader = false;
                             break;
                         case "fds-dump-hidden":
-                            fdsDumpHiddenFiles = false;
+                            fdsDumpHiddenFiles = true;
                             break;
                         case "csfile":
                         case "cs-file":
