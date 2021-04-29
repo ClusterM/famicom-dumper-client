@@ -37,7 +37,7 @@
         for (var bank = 0; bank < banks; bank++)
         {
             Console.Write($"Reading PRG banks #{bank}/{banks}... ");
-            dumper.WriteCpu(0x8000, new byte[] { 6, (byte)bank });
+            dumper.WriteCpu(0x8000, 6, (byte)bank);
             data.AddRange(dumper.ReadCpu(0x8000, 0x2000));
             Console.WriteLine("OK");
         }
@@ -51,7 +51,7 @@
         for (var bank = 0; bank < banks; bank++)
         {
             Console.Write($"Reading CHR banks #{bank}/{banks}... ");
-            dumper.WriteCpu(0x8000, new byte[] { 2, (byte)bank });
+            dumper.WriteCpu(0x8000, 2, (byte)bank);
             data.AddRange(dumper.ReadPpu(0x1000, 0x0400));
             Console.WriteLine("OK");
         }

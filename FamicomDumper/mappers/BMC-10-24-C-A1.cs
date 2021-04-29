@@ -44,8 +44,8 @@
             for (var bank = 0; bank < banks; bank += 2)
             {
                 Console.Write($"Reading PRG banks #{outbank}|{bank} and #{outbank}|{bank + 1}... ");
-                dumper.WriteCpu(0x8000, new byte[] { 6, (byte)bank });
-                dumper.WriteCpu(0x8000, new byte[] { 7, (byte)(bank | 1) });
+                dumper.WriteCpu(0x8000, 6, (byte)bank);
+                dumper.WriteCpu(0x8000, 7, (byte)(bank | 1));
                 data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
                 Console.WriteLine("OK");
             }
@@ -67,10 +67,10 @@
             for (var bank = 0; bank < banks; bank += 4)
             {
                 Console.Write($"Reading CHR banks #{outbank}|{bank}, #{outbank}|{bank + 1}, #{outbank}|{bank + 2}, #{outbank}|{bank + 3}... ");
-                dumper.WriteCpu(0x8000, new byte[] { 2, (byte)bank });
-                dumper.WriteCpu(0x8000, new byte[] { 3, (byte)(bank | 1) });
-                dumper.WriteCpu(0x8000, new byte[] { 4, (byte)(bank | 2) });
-                dumper.WriteCpu(0x8000, new byte[] { 5, (byte)(bank | 3) });
+                dumper.WriteCpu(0x8000, 2, (byte)bank);
+                dumper.WriteCpu(0x8000, 3, (byte)(bank | 1));
+                dumper.WriteCpu(0x8000, 4, (byte)(bank | 2));
+                dumper.WriteCpu(0x8000, 5, (byte)(bank | 3));
                 data.AddRange(dumper.ReadPpu(0x1000, 0x1000));
                 Console.WriteLine("OK");
             }

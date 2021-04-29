@@ -46,23 +46,23 @@
         byte version;
         Console.Write("Detecting COOLBOY version... ");
         // 0th CHR bank using both methods
-        dumper.WriteCpu(0x5000, new byte[] { 0, 0, 0, 0x10 });
-        dumper.WriteCpu(0x6000, new byte[] { 0, 0, 0, 0x10 });
+        dumper.WriteCpu(0x5000, 0, 0, 0, 0x10);
+        dumper.WriteCpu(0x6000, 0, 0, 0, 0x10);
         // Writing 0
-        dumper.WritePpu(0x0000, new byte[] { 0 });
+        dumper.WritePpu(0x0000, 0);
         // First CHR bank using both methods
-        dumper.WriteCpu(0x5000, new byte[] { 0, 0, 1, 0x10 });
-        dumper.WriteCpu(0x6000, new byte[] { 0, 0, 1, 0x10 });
+        dumper.WriteCpu(0x5000, 0, 0, 1, 0x10);
+        dumper.WriteCpu(0x6000, 0, 0, 1, 0x10);
         // Writing 1
-        dumper.WritePpu(0x0000, new byte[] { 1 });
+        dumper.WritePpu(0x0000, 1);
         // 0th bank using first method
-        dumper.WriteCpu(0x6000, new byte[] { 0, 0, 0, 0x10 });
-        byte v6000 = dumper.ReadPpu(0x0000, 1)[0];
+        dumper.WriteCpu(0x6000, 0, 0, 0, 0x10);
+        byte v6000 = dumper.ReadPpu(0x0000);
         // return
-        dumper.WriteCpu(0x6000, new byte[] { 0, 0, 1, 0x10 });
+        dumper.WriteCpu(0x6000, 0, 0, 1, 0x10);
         // 0th bank using second method
-        dumper.WriteCpu(0x5000, new byte[] { 0, 0, 0, 0x10 });
-        byte v5000 = dumper.ReadPpu(0x0000, 1)[0];
+        dumper.WriteCpu(0x5000, 0, 0, 0, 0x10);
+        byte v5000 = dumper.ReadPpu(0x0000);
 
         if (v6000 == 0 && v5000 == 1)
             version = 1;
@@ -92,7 +92,7 @@
             var r2 = (byte)0;
             var r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
-            dumper.WriteCpu(coolboyReg, new byte[] { r0, r1, r2, r3 });
+            dumper.WriteCpu(coolboyReg, r0, r1, r2, r3 );
 
             Console.Write($"Reading PRG bank #{bank}/{banks}... ");
             data.AddRange(dumper.ReadCpu(0x8000, 0x4000));

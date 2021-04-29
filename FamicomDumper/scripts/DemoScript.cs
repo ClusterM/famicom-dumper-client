@@ -17,7 +17,7 @@
         {
             if (bank > 256) throw new InvalidDataException("Bank number out of range, did you actually insert the MMC3 cartridge?");
             Console.Write($"Reading PRG bank #{bank}... ");
-            dumper.WriteCpu(0x8000, new byte[] { 6, (byte)bank });
+            dumper.WriteCpu(0x8000, 6, (byte)bank);
             var data = dumper.ReadCpu(0x8000, 0x2000);
             Console.WriteLine("OK");
             if (bank == 0)
@@ -34,7 +34,7 @@
         {
             if (bank > 256) throw new InvalidDataException("Bank number out of range, did you actually insert the MMC3 cartridge?");
             Console.Write($"Reading CHR bank #{bank}... ");
-            dumper.WriteCpu(0x8000, new byte[] { 2, (byte)bank });
+            dumper.WriteCpu(0x8000, 2, (byte)bank);
             var data = dumper.ReadPpu(0x1000, 0x0400);
             Console.WriteLine("OK");
             if (bank == 0)

@@ -107,7 +107,7 @@ namespace com.clusterrr.Famicom
                 // Bits Program
                 dumper.WriteCpu(0x8000, 0xA0);
                 dumper.WriteCpu(0x8000, (byte)(1 << 2) ^ 0xFF); // password protection
-                var r = dumper.ReadCpu(0x8000, 1)[0];
+                var r = dumper.ReadCpu(0x8000);
                 if ((r & 7) != 3)
                     throw new InvalidDataException("Lock bit verification failed");
             }
@@ -151,7 +151,7 @@ namespace com.clusterrr.Famicom
                 dumper.WriteCpu(0x8AAA, 0xAA);
                 dumper.WriteCpu(0x8555, 0x55);
                 dumper.WriteCpu(0x8AAA, 0x40);
-                var lockRegister = dumper.ReadCpu(0x8000, 1)[0];
+                var lockRegister = dumper.ReadCpu(0x8000);
                 if ((lockRegister & 1) == 0)
                     Console.WriteLine("WARNING: Secured Silicon Sector Protection Bit is set!");
                 if ((lockRegister & 2) == 0)
@@ -173,7 +173,7 @@ namespace com.clusterrr.Famicom
                 dumper.WriteCpu(0x8AAA, 0xAA);
                 dumper.WriteCpu(0x8555, 0x55);
                 dumper.WriteCpu(0x8AAA, 0x50);
-                var ppbLockStatus = dumper.ReadCpu(0x8000, 1)[0];
+                var ppbLockStatus = dumper.ReadCpu(0x8000);
                 if (ppbLockStatus == 0)
                     Console.WriteLine("WARNING: PPB Lock Bit is set!");
             }
@@ -192,7 +192,7 @@ namespace com.clusterrr.Famicom
                 dumper.WriteCpu(0x8555, 0x55);
                 dumper.WriteCpu(0x8AAA, 0xC0);
                 // PPB Status Read
-                return dumper.ReadCpu(0x8000, 1)[0];
+                return dumper.ReadCpu(0x8000);
             }
             finally
             {
@@ -216,7 +216,7 @@ namespace com.clusterrr.Famicom
                 DateTime startTime = DateTime.Now;
                 while (true)
                 {
-                    byte b = dumper.ReadCpu(0x8000, 1)[0];
+                    byte b = dumper.ReadCpu(0x8000);
                     if (b == 0x00)
                         break;
                     if ((DateTime.Now - startTime).TotalMilliseconds >= 1500)
@@ -248,7 +248,7 @@ namespace com.clusterrr.Famicom
                 DateTime startTime = DateTime.Now;
                 while (true)
                 {
-                    byte b = dumper.ReadCpu(0x8000, 1)[0];
+                    byte b = dumper.ReadCpu(0x8000);
                     if (b == 0x01)
                         break;
                     if ((DateTime.Now - startTime).TotalMilliseconds >= 1500)

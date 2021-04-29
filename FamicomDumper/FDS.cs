@@ -24,14 +24,14 @@ namespace com.clusterrr.Famicom
 
                 for (int sideNumber = 0; sideNumber < rom.Sides.Count; sideNumber++)
                 {
-                    var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                    var driveStatus = dumper.ReadCpu(0x4032);
                     if ((driveStatus & 1) != 0)
                     {
                         Console.Write($"Please set disk card, side #{sideNumber + 1}... ");
                         while ((driveStatus & 1) != 0)
                         {
                             Thread.Sleep(100);
-                            driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                            driveStatus = dumper.ReadCpu(0x4032);
                         }
                         Console.WriteLine("OK");
                     }
@@ -89,14 +89,14 @@ namespace com.clusterrr.Famicom
 
                     if (sideNumber + 1 < rom.Sides.Count)
                     {
-                        driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                        driveStatus = dumper.ReadCpu(0x4032);
                         if ((driveStatus & 1) == 0)
                         {
                             Console.Write($"Please remove disk card... ");
                             while ((driveStatus & 1) == 0)
                             {
                                 Thread.Sleep(100);
-                                driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                                driveStatus = dumper.ReadCpu(0x4032);
                             }
                             Console.WriteLine("OK");
                         }
@@ -118,14 +118,14 @@ namespace com.clusterrr.Famicom
             var sideImages = new List<FdsDiskSide>();
             for (int side = 1; side <= sides; side++)
             {
-                var driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                var driveStatus = dumper.ReadCpu(0x4032);
                 if ((driveStatus & 1) != 0)
                 {
                     Console.Write($"Please set disk card, side #{side}... ");
                     while ((driveStatus & 1) != 0)
                     {
                         Thread.Sleep(100);
-                        driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                        driveStatus = dumper.ReadCpu(0x4032);
                     }
                     Console.WriteLine("OK");
                 }
@@ -134,14 +134,14 @@ namespace com.clusterrr.Famicom
 
                 if (side < sides)
                 {
-                    driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                    driveStatus = dumper.ReadCpu(0x4032);
                     if ((driveStatus & 1) == 0)
                     {
                         Console.Write($"Please remove disk card... ");
                         while ((driveStatus & 1) == 0)
                         {
                             Thread.Sleep(100);
-                            driveStatus = dumper.ReadCpu(0x4032, 1)[0];
+                            driveStatus = dumper.ReadCpu(0x4032);
                         }
                         Console.WriteLine("OK");
                     }
@@ -189,11 +189,11 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x4026, 0x00);
             dumper.WriteCpu(0x4025, 0b00100110); // reset
             dumper.WriteCpu(0x0000, 0xFF); // to prevent open bus read
-            var ext = dumper.ReadCpu(0x4033, 1)[0];
+            var ext = dumper.ReadCpu(0x4033);
             if (ext != 0x00) ramAdapterPresent = false;
             dumper.WriteCpu(0x4026, 0xFF);
             dumper.WriteCpu(0x0000, 0x00); // to prevent open bus read
-            ext = dumper.ReadCpu(0x4033, 1)[0];
+            ext = dumper.ReadCpu(0x4033);
             if ((ext & 0x7F) != 0x7F) ramAdapterPresent = false;
             if (!ramAdapterPresent) throw new IOException("RAM adapter IO error, is it connected?");
         }
