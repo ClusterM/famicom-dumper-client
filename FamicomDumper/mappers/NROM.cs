@@ -46,7 +46,7 @@
 
     public void EnablePrgRam(IFamicomDumperConnection dumper)
     {
-        throw new NotSupportedException("PRG RAM is not supported by this mapper");
+        // Actually PRG RAM is present in Family Basic
     }
 
     public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
