@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.clusterrr.Famicom.Dumper";
+option java_outer_classname = "FamicomDumper";
+option objc_class_prefix = "FD";
+
+package RemoteDumper;
+
+service Dumper {
+	// Get Famicom Dumper serial protocol version (depends on firmware)
+	rpc GetProtocolVersion (EmptyRequest) returns (ProtocolVersionResponse);
+
+	// Get Famicom Dumper maximum read packet size (depends on firmware and hardware)
+	rpc GetMaxReadPacketSize (EmptyRequest) returns (PacketSizeResponse);
+
+	// Get Famicom Dumper maximum write packet size (depends on firmware and hardware)
+	rpc GetMaxWritePacketSize (EmptyRequest) returns (PacketSizeResponse);
+
+	// Get timeout for all read/write operations (in milliseconds)
+	rpc GetTimeout(EmptyRequest) returns (GetTimeoutResponse);
+
+	// Get timeout for all read/write operations (in milliseconds)
+	rpc SetTimeout(SetTimeoutRequest) returns (EmptyResponse);
+
+	// Simulate reset (M2 goes to Z-state for a second)
+	rpc Reset (EmptyRequest) returns (EmptyResponse);
+
+	// Read data from CPU (PRG) bus
+	rpc ReadCpu (ReadRequest) returns (ReadResponse);
+
+	// Read data from PPU (CHR) bus
+	rpc ReadPpu (ReadRequest) returns (ReadResponse);
+
+	// Write data to CPU (PRG) bus
+	rpc WriteCpu (WriteRequest) returns (EmptyResponse);
+
+	// Read CRC16 checksum of data at CPU (PRG) bus
+	rpc ReadCpuCrc (ReadRequest) returns (ReadCrcResponse);
+
+	// Read CRC16 checksum of data at PPU (CHR) bus
+	rpc ReadPpuCrc (ReadRequest) returns (ReadCrcResponse);
+
+	// Write data to PPU (CHR) bus
+	rpc WritePpu (WriteRequest) returns (EmptyResponse);
+
+	// Erase COOLBOY/GOOLGIRL current flash sector
+	rpc EraseFlashSector (EmptyRequest) returns (EmptyResponse);
+
+	// Write COOLBOY/GOOLGIRL flash memory
+	rpc WriteFlash (WriteRequest) returns (EmptyResponse);
+
+	// Read Famicom Disk System blocks
+	rpc ReadFdsBlocks (ReadFdsRequest) returns (ReadFdsResponse);
+
+	// Write blocks to Famicom Disk System card
+	rpc WriteFdsBlocks (WriteFdsRequest) returns (EmptyResponse);
+
+	// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)
+	rpc GetMirroringRaw (EmptyRequest) returns (MirroringRawResponse);
+
+	// Read decoded current mirroring mode
+	rpc GetMirroring (EmptyRequest) returns (MirroringResponse);
+
+	// Set maximum number of bytes in multi-byte flash program
+	rpc SetMaximumNumberOfBytesInMultiProgram (SetMaximumNumberOfBytesInMultiProgramRequest) returns (EmptyResponse);
+}
+
+message EmptyRequest{
+}
+
+message EmptyResponse{
+	optional ErrorInfo error_info = 1;
+}
+
+message ProtocolVersionResponse {
+	optional ErrorInfo error_info = 1;
+	// Protocol version
+	int32 protocol_version = 2;
+}
+
+message PacketSizeResponse {
+	optional ErrorInfo error_info = 1;
+	// Packet size
+	int32 max_packet_size = 2;
+}
+
+message GetTimeoutResponse {
+	optional ErrorInfo error_info = 1;
+	// Timeout value (in milliseconds)
+	int32 timeout = 2;
+}
+
+message SetTimeoutRequest {
+	// Timeout value (in milliseconds)
+	int32 timeout = 1;
+}
+
+message ReadRequest {
+	// Address to read from
+	fixed32 address = 1;
+	// Number of bytes to read
+	optional int32 length = 2;
+}
+
+message ReadResponse {
+	optional ErrorInfo error_info = 1;
+	// Read data
+	bytes data = 2;
+}
+
+message ReadCrcResponse {
+	optional ErrorInfo error_info = 1;
+	// CRC16
+	int32 crc = 2;
+}
+
+message WriteRequest {
+	// Address to write to
+	fixed32 address = 1;
+	// Data to write, address will be incremented after each byte
+	bytes data = 2;
+}
+
+message ReadFdsRequest {
+	// First block number to read (zero-based)
+	uint32 start_block = 1;
+	// Maximum number of blocks to read
+	optional uint32 max_block_count = 2;
+}
+
+message ReadFdsResponse {
+	optional ErrorInfo error_info = 1;
+	// Array of Famicom Disk System blocks data
+	repeated bytes fds_blocks = 2;
+}
+
+message WriteFdsRequest {
+	// Block numbers to write (zero-based)
+	repeated uint32 block_numbers = 1;
+	// Array of Famicom Disk System blocks data
+	repeated bytes fds_blocks = 2;
+}
+
+message MirroringRawResponse {
+	optional ErrorInfo error_info = 1;
+	// Values of CIRAM A10 pin for $2000-$23FF, $2400-$27FF, $2800-$2BFF and $2C00-$2FFF
+	repeated bool mirroring = 2;
+}
+
+message MirroringResponse {
+	optional ErrorInfo error_info = 1;
+	enum Mirroring {
+        // PPU A11 (horizontal mirroring)
+        Horizontal = 0;
+        // PPU A10 (vertical mirroring)
+        Vertical = 1;
+        // Ground (one-screen A)
+        OneScreenA = 2;
+        // Vcc (one-screen B)
+        OneScreenB = 3;
+        // Extra memory has been added (four-screen)
+        FourScreenVram = 4;
+        // Mapper controlled
+        MapperControlled = 5;
+        // Unknown value
+        Unknown = 0xff;
+	}
+	// Current mirroring
+	Mirroring mirroring = 2;
+}
+
+message SetMaximumNumberOfBytesInMultiProgramRequest {
+	int32 page_size = 1;
+}
+
+// Basic information about error
+message ErrorInfo {
+	// Exception name
+	optional string exception_name = 1;
+
+	// Exception message
+	optional string exception_message = 2;
+}

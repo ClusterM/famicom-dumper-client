@@ -11,7 +11,7 @@ namespace com.clusterrr.Famicom
     {
         const int BANK_SIZE = 0x4000;
 
-        public static byte DetectVersion(FamicomDumperConnection dumper)
+        public static byte DetectVersion(IFamicomDumperConnection dumper)
         {
             byte version;
             Console.Write("Detecting COOLBOY version... ");
@@ -43,7 +43,7 @@ namespace com.clusterrr.Famicom
             return version;
         }
 
-        public static void PrintFlashInfo(FamicomDumperConnection dumper)
+        public static void PrintFlashInfo(IFamicomDumperConnection dumper)
         {
             Program.Reset(dumper);
             var version = DetectVersion(dumper);
@@ -65,7 +65,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(IFamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -140,13 +140,13 @@ namespace com.clusterrr.Famicom
                         timeEstimated = timeEstimated.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 8}... ");
-                        dumper.EraseCpuFlashSector();
+                        dumper.EraseFlashSector();
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write($"Writing bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
-                    dumper.WriteCpuFlash(0x0000, data);
+                    dumper.WriteFlash(0x0000, data);
                     Console.WriteLine("OK");
                     if ((bank % 8 == 7) || (bank == banks - 1)) // After last bank in sector
                     {
@@ -164,7 +164,7 @@ namespace com.clusterrr.Famicom
                     if (currentErrorCount >= 5)
                     {
                         if (!ignoreBadSectors)
-                            throw ex;
+                            throw;
                         else
                         {
                             newBadSectorsList.Add(bank / 8);
@@ -256,7 +256,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        public static void PPBClear(FamicomDumperConnection dumper, ushort coolboyReg)
+        public static void PPBClear(IFamicomDumperConnection dumper, ushort coolboyReg)
         {
             // Sector 0
             int bank = 0;

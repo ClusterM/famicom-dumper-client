@@ -121,7 +121,11 @@ namespace FTD2XX_NET
         ~FTDI()
         {
             // FreeLibrary here - we should only do this if we are completely finished
-            FreeLibrary(hFTD2XXDLL);
+            try
+            {
+                FreeLibrary(hFTD2XXDLL);
+            }
+            catch { }
             hFTD2XXDLL = IntPtr.Zero;
         }
         #endregion

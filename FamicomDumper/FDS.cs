@@ -10,7 +10,7 @@ namespace com.clusterrr.Famicom
 {
     public class FDS
     {
-        public static void WriteFDS(FamicomDumperConnection dumper, string fileName, bool needCheck = false)
+        public static void WriteFDS(IFamicomDumperConnection dumper, string fileName, bool needCheck = false)
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -109,7 +109,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void DumpFDS(FamicomDumperConnection dumper, string fileName, byte sides = 1, bool dumpHiddenFiles = true, bool useHeader = true)
+        public static void DumpFDS(IFamicomDumperConnection dumper, string fileName, byte sides = 1, bool dumpHiddenFiles = true, bool useHeader = true)
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -153,7 +153,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        private static FdsDiskSide DumpFDSSide(FamicomDumperConnection dumper, bool dumpHiddenFiles = true, bool printDiskInfo = false)
+        private static FdsDiskSide DumpFDSSide(IFamicomDumperConnection dumper, bool dumpHiddenFiles = true, bool printDiskInfo = false)
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -181,7 +181,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        private static void CheckRAMAdapter(FamicomDumperConnection dumper)
+        private static void CheckRAMAdapter(IFamicomDumperConnection dumper)
         {
             // Just simple test that RAM adapter is connected
             bool ramAdapterPresent = true;
@@ -198,7 +198,7 @@ namespace com.clusterrr.Famicom
             if (!ramAdapterPresent) throw new IOException("RAM adapter IO error, is it connected?");
         }
 
-        private static IEnumerable<IFdsBlock> DumpSlow(FamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
+        private static IEnumerable<IFdsBlock> DumpSlow(IFamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
         {
             var blocks = new List<IFdsBlock>();
             byte blockNumber = 0;
@@ -310,7 +310,7 @@ namespace com.clusterrr.Famicom
             return blocks;
         }
 
-        private static IEnumerable<IFdsBlock> DumpFast(FamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
+        private static IEnumerable<IFdsBlock> DumpFast(IFamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
         {
             Console.Write($"Reading disk... ");
             var blocks = dumper.ReadFdsBlocks().ToArray();

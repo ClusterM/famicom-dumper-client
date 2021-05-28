@@ -15,7 +15,7 @@ namespace com.clusterrr.Famicom
             x8_and_x16_via_word_pin = 0x0004,
         }
 
-        public static void ResetFlash(FamicomDumperConnection dumper)
+        public static void ResetFlash(IFamicomDumperConnection dumper)
         {
             // Exit command set entry if any
             dumper.WriteCpu(0x8000, 0x90);
@@ -24,7 +24,7 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu(0x8000, 0xF0);
         }
 
-        public static CFIInfo GetCFIInfo(FamicomDumperConnection dumper)
+        public static CFIInfo GetCFIInfo(IFamicomDumperConnection dumper)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void LockBitsCheckPrint(FamicomDumperConnection dumper)
+        public static void LockBitsCheckPrint(IFamicomDumperConnection dumper)
         {
             try
             {
@@ -165,7 +165,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void PPBLockBitCheckPrint(FamicomDumperConnection dumper)
+        public static void PPBLockBitCheckPrint(IFamicomDumperConnection dumper)
         {
             try
             {
@@ -183,7 +183,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static byte PPBRead(FamicomDumperConnection dumper)
+        public static byte PPBRead(IFamicomDumperConnection dumper)
         {
             try
             {
@@ -200,7 +200,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void PPBSet(FamicomDumperConnection dumper)
+        public static void PPBSet(IFamicomDumperConnection dumper)
         {
             Console.Write("Writing PPB for sector... ");
             // PPB Command Set Entry
@@ -230,7 +230,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        public static void PPBClear(FamicomDumperConnection dumper)
+        public static void PPBClear(IFamicomDumperConnection dumper)
         {
             LockBitsCheckPrint(dumper);
             PPBLockBitCheckPrint(dumper);

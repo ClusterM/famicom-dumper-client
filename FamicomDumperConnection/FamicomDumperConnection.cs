@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
-    public class FamicomDumperConnection : MarshalByRefObject, IDisposable, IFamicomDumperConnection
+    public class FamicomDumperConnection : IDisposable, IFamicomDumperConnection
     {
         const int PortBaudRate = 250000;
         const ushort DefaultMaxReadPacketSize = 1024;
@@ -616,13 +616,17 @@ namespace com.clusterrr.Famicom.DumperConnection
                 address += MaxReadPacketSize;
                 length -= MaxReadPacketSize;
             }
-            if (Verbose && result.Count <= 32)
+            if (Verbose)
             {
-                foreach (var b in result)
-                    Console.Write($"{b:X2} ");
+                if (result.Count <= 32)
+                {
+                    foreach (var b in result)
+                        Console.Write($"{b:X2} ");
+                    Console.WriteLine();
+                }
+                else if (Verbose)
+                    Console.WriteLine("OK");
             }
-            else if (Verbose)
-                Console.WriteLine("OK");
             return result.ToArray();
         }
 
@@ -664,7 +668,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             var recv = RecvCommand();
             if (recv.Command != DumperCommand.PRG_READ_RESULT)
                 throw new IOException($"Invalid data received: {recv.Command}");
-            return (ushort)(recv.Data[0] | (recv.Data[1] << 8));
+            var crc = (ushort)(recv.Data[0] | (recv.Data[1] << 8));
+            if (Verbose)
+                Console.WriteLine($"{crc:X4}");
+            return crc;
         }
 
         /// <summary>
@@ -723,9 +730,9 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         /// <summary>
-        /// Erase current flash sector
+        /// Erase COOLBOY/GOOLGIRL current flash sector
         /// </summary>
-        public void EraseCpuFlashSector()
+        public void EraseFlashSector()
         {
             SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, new byte[0]);
             var recv = RecvCommand();
@@ -738,11 +745,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         /// <summary>
-        /// Write flash
+        /// Write COOLBOY/GOOLGIRL flash memory
         /// </summary>
         /// <param name="address">Address to write to</param>
         /// <param name="data">Data to write, address will be incremented after each byte</param>
-        public void WriteCpuFlash(ushort address, byte[] data)
+        public void WriteFlash(ushort address, byte[] data)
         {
             if (Verbose)
             {
@@ -833,10 +840,8 @@ namespace com.clusterrr.Famicom.DumperConnection
                         Console.Write($"{b:X2} ");
                     Console.WriteLine();
                 }
-                else
-                {
+                else if (Verbose)
                     Console.WriteLine("OK");
-                }
             }
             return result.ToArray();
         }
@@ -879,7 +884,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             var recv = RecvCommand();
             if (recv.Command != DumperCommand.CHR_READ_RESULT)
                 throw new IOException($"Invalid data received: {recv.Command}");
-            return (ushort)(recv.Data[0] | (recv.Data[1] << 8));
+            var crc = (ushort)(recv.Data[0] | (recv.Data[1] << 8));
+            if (Verbose)
+                Console.WriteLine($"{crc:X4}");
+            return crc;
         }
 
         /// <summary>
@@ -1173,16 +1181,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void Bootloader()
         {
             SendCommand(DumperCommand.BOOTLOADER, new byte[0]);
-        }
-
-        private static bool IsRunningOnMono()
-        {
-            return Type.GetType("Mono.Runtime") != null;
-        }
-
-        public override object InitializeLifetimeService()
-        {
-            return null; // Infinity
         }
 
         public void Dispose()

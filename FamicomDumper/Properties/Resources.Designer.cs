@@ -79,7 +79,7 @@ namespace com.clusterrr.Famicom.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 0a5757c (dirty).
+        ///   Looks up a localized string similar to fff3ab5.
         /// </summary>
         internal static string gitCommit {
             get {

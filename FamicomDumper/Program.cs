@@ -23,10 +23,12 @@
 
 using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
+using Grpc.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
+using RemoteDumper;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -34,9 +36,7 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Reflection;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
@@ -49,8 +49,6 @@ namespace com.clusterrr.Famicom
         private static string ScriptsSearchDirectory = "scripts";
         private static string ScriptsCacheDirectory = ".dumpercache";
         private const string ScriptStartMethod = "Run";
-        private static SoundPlayer doneSound = new SoundPlayer(Properties.Resources.DoneSound);
-        private static SoundPlayer errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
 
         static int Main(string[] args)
         {
@@ -75,7 +73,7 @@ namespace com.clusterrr.Famicom
             bool writePBBs = false;
             List<int> badSectors = new List<int>();
             int testCount = -1;
-            uint tcpPort = 26672;
+            int tcpPort = 26673;
             bool ignoreBadSectors = false;
             string remoteHost = null;
             byte fdsSides = 1;
@@ -184,7 +182,7 @@ namespace com.clusterrr.Famicom
                             break;
                         case "tcpport":
                         case "tcp-port":
-                            tcpPort = uint.Parse(value);
+                            tcpPort = int.Parse(value);
                             i++;
                             break;
                         case "host":
@@ -208,14 +206,23 @@ namespace com.clusterrr.Famicom
                     return 0;
                 }
 
-                FamicomDumperConnection dumper;
+                IFamicomDumperConnection dumper;
+                Channel channel = null;
+
                 if (string.IsNullOrEmpty(remoteHost))
                 {
-                    dumper = new FamicomDumperConnection(port);
-                    dumper.Open();
+                    var localDumper = new FamicomDumperConnection(port);
+                    localDumper.Open();
+                    Console.Write("Dumper initialization... ");
+                    bool prgInit = localDumper.DumperInit();
+                    if (!prgInit) throw new IOException("Can't init dumper");
+                    Console.WriteLine("OK");
+                    dumper = localDumper;
                 }
                 else
                 {
+                    // TODO: remoting
+                    /*
                     BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
                         = new BinaryServerFormatterSinkProvider();
                     BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
@@ -229,14 +236,13 @@ namespace com.clusterrr.Famicom
                     ChannelServices.RegisterChannel(channel, false);
                     dumper = (FamicomDumperConnection)Activator.GetObject(typeof(IFamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
                     var lifetime = dumper.GetLifetimeService();
+                    */
+                    channel = new Channel($"{remoteHost}:{tcpPort}", ChannelCredentials.Insecure);
+                    var rpcClient = new Dumper.DumperClient(channel);
+                    dumper = new FamicomDumperClient(rpcClient);
                 }
                 try
                 {
-                    Console.Write("Dumper initialization... ");
-                    bool prgInit = dumper.DumperInit();
-                    if (!prgInit) throw new IOException("Can't init dumper");
-                    Console.WriteLine("OK");
-
                     if (reset)
                         Reset(dumper);
 
@@ -319,16 +325,11 @@ namespace com.clusterrr.Famicom
                                 throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
-                        case "write-eeprom":
-                            if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
-                            WriteEeprom(dumper, filename);
-                            break;
                         case "info-coolboy":
                             CoolboyWriter.PrintFlashInfo(dumper);
                             break;
                         case "info-coolgirl":
-                            CoolgirlWriter.PringFlashInfo(dumper);
+                            CoolgirlWriter.PrintFlashInfo(dumper);
                             break;
                         case "bootloader":
                             Bootloader(dumper);
@@ -338,7 +339,7 @@ namespace com.clusterrr.Famicom
                                 throw new ArgumentNullException("Please specify C# script using --cs-file argument");
                             break;
                         case "server":
-                            StartServer(dumper, tcpPort);
+                            StartServer(dumper as FamicomDumperConnection, tcpPort);
                             break;
                         default:
                             Console.WriteLine("Unknown command: " + command);
@@ -359,8 +360,10 @@ namespace com.clusterrr.Famicom
                 }
                 finally
                 {
-                    if (string.IsNullOrEmpty(remoteHost))
-                        dumper.Dispose();
+                    if (dumper is FamicomDumperConnection)
+                        (dumper as FamicomDumperConnection).Dispose();
+                    if (channel != null)
+                        channel.ShutdownAsync().Wait();
                 }
             }
             catch (Exception ex)
@@ -395,19 +398,45 @@ namespace com.clusterrr.Famicom
             return int.Parse(size) * mul;
         }
 
-        public static void PlayErrorSound()
+        #region Sounds
+        [SupportedOSPlatform("windows")]
+        public static void PlayErrorSoundWav()
         {
             if (!IsRunningOnMono())
+            {
+                var errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
                 errorSound.PlaySync();
+            }
             else
                 Console.Beep();
         }
 
+        public static void PlayErrorSoundBeep()
+        {
+            Console.Beep();
+        }
+
+        public static void PlayErrorSound()
+        {
+            if (OperatingSystem.IsWindows())
+                PlayErrorSoundWav();
+            else
+                PlayErrorSoundBeep();
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static void PlayDoneSoundWav()
+        {
+            var doneSound = new SoundPlayer(Properties.Resources.DoneSound);
+            doneSound.PlaySync();
+        }
+
         public static void PlayDoneSound()
         {
-            if (!IsRunningOnMono())
-                doneSound.PlaySync();
+            if (OperatingSystem.IsWindows())
+                PlayDoneSoundWav();
         }
+        #endregion
 
         static void PrintHelp()
         {
@@ -461,7 +490,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
-        static public void Reset(FamicomDumperConnection dumper)
+        static public void Reset(IFamicomDumperConnection dumper)
         {
             Console.Write("Reset... ");
             dumper.Reset();
@@ -582,7 +611,7 @@ namespace com.clusterrr.Famicom
             return result;
         }
 
-        static void CompileAndExecute(string scriptPath, FamicomDumperConnection dumper, string[] args)
+        static void CompileAndExecute(string scriptPath, IFamicomDumperConnection dumper, string[] args)
         {
             var scriptsDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), ScriptsSearchDirectory);
             if (!File.Exists(scriptPath) && File.Exists(Path.Combine(scriptsDirectory, scriptPath)))
@@ -690,7 +719,7 @@ namespace com.clusterrr.Famicom
             return mapper.Value;
         }
 
-        static NesFile.MirroringType GetMirroring(FamicomDumperConnection dumper, IMapper mapper)
+        static NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper, IMapper mapper)
         {
             var method = mapper.GetType().GetMethod(
                 "GetMirroring", BindingFlags.Instance | BindingFlags.Public,
@@ -710,7 +739,7 @@ namespace com.clusterrr.Famicom
             return (byte)method.Invoke(mapper, new object[] { });
         }
 
-        static void Dump(FamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
+        static void Dump(IFamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -776,7 +805,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        static void ReadPrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
+        static void ReadPrgRam(IFamicomDumperConnection dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -794,7 +823,7 @@ namespace com.clusterrr.Famicom
             Reset(dumper);
         }
 
-        static void WritePrgRam(FamicomDumperConnection dumper, string fileName, string mapperName)
+        static void WritePrgRam(IFamicomDumperConnection dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -810,7 +839,7 @@ namespace com.clusterrr.Famicom
             Reset(dumper);
         }
 
-        static void TestPrgRam(FamicomDumperConnection dumper, string mapperName, int count = -1)
+        static void TestPrgRam(IFamicomDumperConnection dumper, string mapperName, int count = -1)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -849,7 +878,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        static void TestBattery(FamicomDumperConnection dumper, string mapperName)
+        static void TestBattery(IFamicomDumperConnection dumper, string mapperName)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -884,7 +913,7 @@ namespace com.clusterrr.Famicom
                 throw new VerificationException("Failed!");
         }
 
-        static void TestChrRam(FamicomDumperConnection dumper)
+        static void TestChrRam(IFamicomDumperConnection dumper)
         {
             var rnd = new Random();
             while (true)
@@ -916,49 +945,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        static void WriteEeprom(FamicomDumperConnection dumper, string fileName)
-        {
-            var nesFile = new NesFile(fileName);
-            var prg = new byte[0x8000];
-            int s = 0;
-            while (s < prg.Length)
-            {
-                var n = Math.Min(nesFile.PRG.Count(), prg.Length - s);
-                Array.Copy(nesFile.PRG.ToArray(), s % nesFile.PRG.Count(), prg, s, n);
-                s += n;
-            }
-            var chr = new byte[0x2000];
-            s = 0;
-            while (s < chr.Length)
-            {
-                var n = Math.Min(nesFile.CHR.Count(), chr.Length - s);
-                Array.Copy(nesFile.CHR.ToArray(), s % nesFile.CHR.Count(), chr, s, n);
-                s += n;
-            }
-
-            dumper.Timeout = 1000;
-            var buff = new byte[64];
-            Console.Write("Writing PRG EEPROM");
-            for (UInt16 a = 0; a < prg.Length; a += 64)
-            {
-                Array.Copy(prg, a, buff, 0, buff.Length);
-                dumper.WriteCpu((UInt16)(0x8000 + a), buff);
-                Thread.Sleep(3);
-                Console.Write(".");
-            }
-            Console.WriteLine(" OK");
-            Console.Write("Writing CHR EEPROM");
-            for (UInt16 a = 0; a < chr.Length; a += 64)
-            {
-                Array.Copy(chr, a, buff, 0, buff.Length);
-                dumper.WritePpu(a, buff);
-                Thread.Sleep(3);
-                Console.Write(".");
-            }
-            Console.WriteLine(" OK");
-        }
-
-        static void DumpTiles(FamicomDumperConnection dumper, string fileName, string mapperName, int chrSize, int tilesPerLine = 16)
+        static void DumpTiles(IFamicomDumperConnection dumper, string fileName, string mapperName, int chrSize, int tilesPerLine = 16)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -976,14 +963,19 @@ namespace com.clusterrr.Famicom
             allTiles.Save(fileName, ImageFormat.Png);
         }
 
-        static void Bootloader(FamicomDumperConnection dumper)
+        static void Bootloader(IFamicomDumperConnection dumper)
         {
             Console.WriteLine("Rebooting to bootloader...");
-            dumper.Bootloader();
+            if (dumper is FamicomDumperConnection)
+                (dumper as FamicomDumperConnection).Bootloader();
+            else
+                throw new IOException("'bootloader' command for local dumper only");
         }
 
-        static void StartServer(FamicomDumperConnection dumper, uint tcpPort)
+        static void StartServer(FamicomDumperConnection dumper, int tcpPort)
         {
+            // TODO: remoting
+            /*
             BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
                 = new BinaryServerFormatterSinkProvider();
             BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
@@ -1003,6 +995,19 @@ namespace com.clusterrr.Famicom
             Console.WriteLine();
             ChannelServices.UnregisterChannel(channel);
             channel.StopListening(null);
+            */
+
+            dumper.Verbose = true;
+            Server server = new Server
+            {
+                Services = { Dumper.BindService(new FamicomDumperService(dumper)) },
+                Ports = { new ServerPort("0.0.0.0", tcpPort, ServerCredentials.Insecure) }
+            };
+            server.Start();
+            Console.WriteLine($"Listening port {tcpPort}, press any key to stop");
+            Console.ReadKey();
+            Console.WriteLine();
+            server.ShutdownAsync().Wait();
         }
 
         private static bool IsRunningOnMono()

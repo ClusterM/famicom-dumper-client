@@ -12,7 +12,7 @@ namespace com.clusterrr.Famicom
     {
         const int BANK_SIZE = 0x8000;
 
-        public static void PringFlashInfo(FamicomDumperConnection dumper)
+        public static void PrintFlashInfo(IFamicomDumperConnection dumper)
         {
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
@@ -23,7 +23,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(FamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(IFamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -94,13 +94,13 @@ namespace com.clusterrr.Famicom
                         timeEstimated = timeEstimated.Add(DateTime.Now - writeStartTime);
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 4}... ");
-                        dumper.EraseCpuFlashSector();
+                        dumper.EraseFlashSector();
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write($"Writing bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
-                    dumper.WriteCpuFlash(0x0000, data);
+                    dumper.WriteFlash(0x0000, data);
                     Console.WriteLine("OK");
                     if ((bank % 4 == 3) || (bank == banks - 1)) // After last bank in sector
                     {
@@ -118,7 +118,7 @@ namespace com.clusterrr.Famicom
                     if (currentErrorCount >= 5)
                     {
                         if (!ignoreBadSectors)
-                            throw ex;
+                            throw;
                         else
                         {
                             newBadSectorsList.Add(bank / 4);
@@ -206,7 +206,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        public static void PPBClear(FamicomDumperConnection dumper)
+        public static void PPBClear(IFamicomDumperConnection dumper)
         {
             // enable PRG write
             dumper.WriteCpu(0x5007, 0x04);
@@ -219,7 +219,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBClear(dumper);
         }
 
-        public static void FindBads(FamicomDumperConnection dumper, bool silent)
+        public static void FindBads(IFamicomDumperConnection dumper, bool silent)
         {
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
@@ -240,12 +240,12 @@ namespace com.clusterrr.Famicom
             FlashHelper.LockBitsCheckPrint(dumper);
 
             Console.Write("Erasing sector #0... ");
-            dumper.EraseCpuFlashSector();
+            dumper.EraseFlashSector();
             Console.WriteLine("OK");
             var data = new byte[BANK_SIZE];
             new Random().NextBytes(data);
             Console.Write("Writing sector #0 for test... ");
-            dumper.WriteCpuFlash(0x0000, data);
+            dumper.WriteFlash(0x0000, data);
             Console.WriteLine("OK");
             Console.Write("Reading sector #0 for test... ");
             var datar = dumper.ReadCpu(0x8000, BANK_SIZE);
@@ -275,7 +275,7 @@ namespace com.clusterrr.Famicom
                 Console.Write($"Erasing sector #{bank / 4}/{banks / 4} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
                 try
                 {
-                    dumper.EraseCpuFlashSector();
+                    dumper.EraseFlashSector();
                     Console.WriteLine("OK");
                 }
                 catch
@@ -290,7 +290,7 @@ namespace com.clusterrr.Famicom
                     dumper.WriteCpu(0x5001, r1);
                     try
                     {
-                        dumper.EraseCpuFlashSector();
+                        dumper.EraseFlashSector();
                         Console.WriteLine("OK");
                     }
                     catch
@@ -310,7 +310,7 @@ namespace com.clusterrr.Famicom
             else Console.WriteLine("There is no bad sectors");
         }
 
-        public static void ReadCrc(FamicomDumperConnection dumper)
+        public static void ReadCrc(IFamicomDumperConnection dumper)
         {
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
@@ -346,7 +346,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine($"Total CRC = {crc:X4}");
         }
 
-        public static void TestPrgRam(FamicomDumperConnection dumper, int count = -1)
+        public static void TestPrgRam(IFamicomDumperConnection dumper, int count = -1)
         {
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x01); // enable PRG RAM
@@ -389,7 +389,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void FullTest(FamicomDumperConnection dumper, int count = -1, int chrSize = -1)
+        public static void FullTest(IFamicomDumperConnection dumper, int count = -1, int chrSize = -1)
         {
             while (count != 0)
             {
@@ -399,7 +399,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void TestChrRam(FamicomDumperConnection dumper, int count = -1, int chrSize = -1)
+        public static void TestChrRam(IFamicomDumperConnection dumper, int count = -1, int chrSize = -1)
         {
             if (chrSize < 0) chrSize = 256 * 1024;
             Console.WriteLine($"Testing CHR RAM, size: {chrSize / 1024}KB");
