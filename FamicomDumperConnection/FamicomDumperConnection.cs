@@ -209,15 +209,17 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 portName = null;
                 // Need to autodetect port
-                if (!IsRunningOnMono()) // Is it running on Windows?
+
+                // Is it running on Windows?
+                try
                 {
-                    // First of all lets check bus reported device description
+                    // First of all lets check bus reported device descriptions
                     var allComPorts = Win32DeviceMgmt.GetAllCOMPorts();
                     foreach (var port in allComPorts)
                     {
                         if (!DeviceNames.Contains(port.bus_description))
                             continue;
-                        // Seems like it's dumper port but it can me already busy
+                        // Seems like it's dumper port but it can be already busy
                         try
                         {
                             sPort = OpenPort(port.name, (int)Timeout);
@@ -231,87 +233,99 @@ namespace com.clusterrr.Famicom.DumperConnection
                             continue;
                         }
                     }
+                }
+                catch { }
 
-                    if (portName == null)
+                if (portName == null)
+                {
+                    // Port still not detected, using Windows FTDI driver to determine serial number
+                    try
                     {
-                        try
+                        FTDI myFtdiDevice = new FTDI();
+                        uint ftdiDeviceCount = 0;
+                        FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
+                        // FTDI serial number autodetect
+                        ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
+                        // Check status
+                        if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                            throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
+
+                        // If no devices available, return
+                        if (ftdiDeviceCount == 0)
+                            throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
+
+                        // Allocate storage for device info list
+                        FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
+
+                        // Populate our device list
+                        ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
+
+                        portName = null;
+                        if (ftStatus == FTDI.FT_STATUS.FT_OK)
                         {
-                            // Port still not detected, ising Windows FTDI driver to determine serial number
-                            FTDI myFtdiDevice = new FTDI();
-                            uint ftdiDeviceCount = 0;
-                            FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
-                            // FTDI serial number autodetect
-                            ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
-                            // Check status
-                            if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                                throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                            // If no devices available, return
-                            if (ftdiDeviceCount == 0)
-                                throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                            // Allocate storage for device info list
-                            FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
-
-                            // Populate our device list
-                            ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
-
-                            portName = null;
-                            if (ftStatus == FTDI.FT_STATUS.FT_OK)
-                            {
-                                var dumpers = ftdiDeviceList.Where(d => DeviceNames.Contains(d.Description));
-                                portName = dumpers.First().SerialNumber;
-                                Console.WriteLine($"Autodetected USB device serial number: {portName}");
-                            }
-                            if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                                throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
+                            var dumpers = ftdiDeviceList.Where(d => DeviceNames.Contains(d.Description));
+                            portName = dumpers.First().SerialNumber;
+                            Console.WriteLine($"Autodetected USB device serial number: {portName}");
                         }
-                        catch
-                        {
-                            throw new IOException($"{DeviceNames[0]} not found");
-                        }
+                        if (ftStatus != FTDI.FT_STATUS.FT_OK)
+                            throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
+                    }
+                    catch
+                    {
                     }
                 }
-                else
+
+                if (portName == null)
                 {
-                    // Linux?
+                    // Port still not detected, let's try Linux methods
                     var devices = GetLinuxUsbDevices();
                     var dumpers = devices.Where(d =>
                     {
                         var productFile = Path.Combine(d, "product");
                         return File.Exists(productFile) && DeviceNames.Contains(File.ReadAllText(productFile).Trim());
                     });
-                    if (!dumpers.Any())
-                        throw new IOException($"{DeviceNames[0]} not found");
-                    portName = LinuxDeviceToPort(dumpers.First());
-                    if (string.IsNullOrEmpty(portName))
-                        throw new IOException($"Can't detect device path");
-                    Console.WriteLine($"Autodetected USB device path: {portName}");
+                    if (dumpers.Any())
+                    {
+                        portName = LinuxDeviceToPort(dumpers.First());
+                        if (string.IsNullOrEmpty(portName))
+                            throw new IOException($"Can't detect device path");
+                        Console.WriteLine($"Autodetected USB device path: {portName}");
+                    }
                 }
+
+                if (portName == null)
+                    throw new IOException($"{DeviceNames.First()} not found, try to specify port name manually");
             }
 
-            if (portName.ToUpper().StartsWith("COM") || IsRunningOnMono())
+            if (sPort != null)
             {
-                // Using VCP
-                if (IsRunningOnMono() && !File.Exists(portName))
-                {
-                    // Need to convert serial number to port address
-                    var ttyPath = LinuxDeviceSerialToPort(portName);
-                    if (string.IsNullOrEmpty(ttyPath))
-                        throw new IOException($"Device with serial number {portName} not found");
-                    portName = ttyPath;
-                    Console.WriteLine($"Autodetected USB device path: {portName}");
-                }
-                // Port specified 
-                if (sPort == null)
-                {
-                    // If not already opened
-                    sPort = OpenPort(portName, (int)Timeout);
-                }
+                // success, already opened
                 serialPort = sPort;
+                return;
             }
-            else
+
+            if (portName.ToUpper().StartsWith("COM") || File.Exists(portName))
             {
+                // Serial port name/path to open
+                serialPort = OpenPort(portName, (int)Timeout);
+                return;
+            }
+
+            try
+            {
+                // Is it VCP serial number?
+                var ttyPath = LinuxDeviceSerialToPort(portName);
+                if (!string.IsNullOrEmpty(ttyPath))
+                {
+                    serialPort = OpenPort(ttyPath, (int)Timeout);
+                    return;
+                }
+            }
+            catch { }
+
+            try
+            {
+                // Is is FTDI serial number?
                 // Using Windows FTDI driver
                 FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
                 // Create new instance of the FTDI device class
@@ -340,9 +354,12 @@ namespace com.clusterrr.Famicom.DumperConnection
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                     throw new IOException($"Failed to set latency (error {ftStatus})");
                 d2xxPort = myFtdiDevice;
+                return;
             }
-        }
+            catch { }
 
+            throw new IOException($"Can't open {serialPort}");
+        }
         public void Close()
         {
             if (serialPort != null)
@@ -1059,7 +1076,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
         /// <param name="block">Block data</param>
         public void WriteFdsBlocks(byte blockNumber, byte[] block)
-            => WriteFdsBlocks(new byte[] { blockNumber }, block );
+            => WriteFdsBlocks(new byte[] { blockNumber }, block);
 
         /// <summary>
         /// Write single block to Famicom Disk System card
@@ -1067,7 +1084,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
         /// <param name="block">Block data</param>
         public void WriteFdsBlocks(byte blockNumber, IFdsBlock block)
-            => WriteFdsBlocks(new byte[] { blockNumber }, block.ToBytes() );
+            => WriteFdsBlocks(new byte[] { blockNumber }, block.ToBytes());
 
         /// <summary>
         /// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)

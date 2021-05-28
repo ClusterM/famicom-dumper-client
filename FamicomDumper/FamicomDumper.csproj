@@ -53,6 +53,9 @@
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Ports, Version=5.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IO.Ports.5.0.1\lib\net461\System.IO.Ports.dll</HintPath>
+    </Reference>
     <Reference Include="System.Reflection.Metadata, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Reflection.Metadata.5.0.0\lib\net461\System.Reflection.Metadata.dll</HintPath>
     </Reference>
@@ -193,11 +196,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FamicomDumperConnection\FamicomDumperConnection.csproj">
-      <Project>{E9721416-3405-41A4-A1E4-12F91E02D36A}</Project>
+      <Project>{7c55dbba-5356-4362-bb7e-eae7c75e5081}</Project>
       <Name>FamicomDumperConnection</Name>
     </ProjectReference>
     <ProjectReference Include="..\NesContainers\NesContainers.csproj">
-      <Project>{dbde5f39-ff67-496f-999f-65f86dcec1d5}</Project>
+      <Project>{cc0b9916-a053-4e0e-a52b-6d0db2f4f841}</Project>
       <Name>NesContainers</Name>
     </ProjectReference>
   </ItemGroup>
