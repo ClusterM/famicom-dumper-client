@@ -42,8 +42,16 @@ namespace com.clusterrr.Famicom
     class Program
     {
         private static DateTime startTime;
-        private static string MappersSearchDirectory = "mappers";
-        private static string ScriptsSearchDirectory = "scripts";
+        private static string[] MappersSearchDirectories = {
+            Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "mappers"),
+            Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
+            "/usr/share/famicom-dumper/mappers"
+        };
+        private static string[] ScriptsSearchDirectories = {
+            Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "scripts"),
+            Path.Combine(Directory.GetCurrentDirectory(), "scripts"), 
+            "/usr/share/famicom-dumper/scripts"
+        };
         private static string ScriptsCacheDirectory = ".dumpercache";
         private const string ScriptStartMethod = "Run";
 
@@ -101,6 +109,11 @@ namespace com.clusterrr.Famicom
                         case "p":
                         case "port":
                             port = value;
+                            i++;
+                            break;
+                        case "mappers":
+                            //MappersSearchDirectories = MappersSearchDirectories.Append(value).ToArray();
+                            MappersSearchDirectories = new string[] { value };
                             i++;
                             break;
                         case "m":
@@ -448,6 +461,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-25}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
             Console.WriteLine(" {0,-25}{1}", "--tcp-port <port>", "TCP port for client/server communication, default - 26672");
             Console.WriteLine(" {0,-25}{1}", "--host <host>", "enable network client and connect to specified host");
+            Console.WriteLine(" {0,-25}{1}", "--mappers <directory>", "directory to search mapper scripts");
             Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
             Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
             Console.WriteLine(" {0,-25}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
@@ -583,20 +597,38 @@ namespace com.clusterrr.Famicom
         static Dictionary<string, IMapper> CompileAllMappers()
         {
             var result = new Dictionary<string, IMapper>();
-            var mappersDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
-            Console.WriteLine($"Compiling mappers in {mappersDirectory}...");
-            foreach (var f in Directory.GetFiles(mappersDirectory, "*.cs", SearchOption.AllDirectories))
+            var mappersSearchDirectories = MappersSearchDirectories.Distinct().Where(d => Directory.Exists(d));
+            if (!mappersSearchDirectories.Any())
             {
-                result[f] = CompileMapper(f);
+                Console.WriteLine("None of the listed mappers directories were found:");
+                foreach (var d in MappersSearchDirectories)
+                    Console.WriteLine($" {d}");
+            }
+            foreach (var mappersDirectory in mappersSearchDirectories)
+            {
+                Console.WriteLine($"Compiling mappers in {mappersDirectory}...");
+                foreach (var f in Directory.GetFiles(mappersDirectory, "*.cs", SearchOption.AllDirectories))
+                {
+                    result[f] = CompileMapper(f);
+                }
             }
             return result;
         }
 
         static void CompileAndExecute(string scriptPath, IFamicomDumperConnection dumper, string[] args)
         {
-            var scriptsDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), ScriptsSearchDirectory);
-            if (!File.Exists(scriptPath) && File.Exists(Path.Combine(scriptsDirectory, scriptPath)))
-                scriptPath = Path.Combine(scriptsDirectory, scriptPath);
+            if (!File.Exists(scriptPath))
+            {
+                var scriptsPathes = ScriptsSearchDirectories.Select(d => Path.Combine(d, scriptPath)).Where(f => File.Exists(f));
+                if (!scriptsPathes.Any())
+                {
+                    Console.WriteLine($"{Path.Combine(Directory.GetCurrentDirectory(), scriptPath)} not found");
+                    foreach (var d in ScriptsSearchDirectories)
+                        Console.WriteLine($"{Path.Combine(d, scriptPath)} not found");
+                    throw new FileNotFoundException($"{scriptPath} not found");
+                }
+                scriptPath = scriptsPathes.First();
+            }
             Console.WriteLine($"Compiling {scriptPath}...");
             Assembly assembly = Compile(scriptPath);
             var programs = assembly.GetTypes();
@@ -661,8 +693,6 @@ namespace com.clusterrr.Famicom
 
         static void ListMappers()
         {
-            var directory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), MappersSearchDirectory);
-
             var mappers = CompileAllMappers();
             Console.WriteLine("Supported mappers:");
             Console.WriteLine(" {0,-30}{1,-24}{2,-9}{3,-24}", "File", "Name", "Number", "UNIF name");

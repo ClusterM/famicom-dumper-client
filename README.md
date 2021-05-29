@@ -24,9 +24,7 @@ It can be used to:
 
 It's a command-line application.
 
-Usage on Windows: **FamicomDumper.exe \<command\> [options]**
-
-On *nix you can run it using [Mono](https://www.mono-project.com/): **mono FamicomDumper.exe \<command\> [options]**
+Usage: **famicom-dumper \<command\> [options]**
 
 Available commands:
 - **list-mappers** - list available mappers to dump
@@ -57,6 +55,7 @@ Available options:
 - **--port** <*com*> - serial port of dumper or serial number of FTDI device, default - **auto**
 - **--tcp-port** <*port*> - TCP port for client/server communication, default - **26672**
 - **--host** <*host*> - enable network client and connect to specified host
+- **--mappers** <*directory*> - directory to search mapper scripts
 - **--mapper** <*mapper*> - number, name or path to C# script of mapper for dumping, default is 0 (NROM)
 - **--file** <*output.nes*> - output/input filename (.nes, .fds, .png or .sav)
 - **--prg-size** <*size*> - size of PRG memory to dump, you can use "K" or "M" suffixes
@@ -255,11 +254,11 @@ You can run custom C# scripts to interact with dumper and cartridge. It's useful
 
 You can run script alone like this:
 ```
-FamicomDumper.exe script --csfile DemoScript.cs
+famicom-dumper script --csfile DemoScript.cs
 ```
 Or execute it before main action like this:
 ```
-FamicomDumper.exe dump --mapper MMC3 --file game.nes --csfile DemoScript.cs
+famicom-dumper dump --mapper MMC3 --file game.nes --csfile DemoScript.cs
 ```
 
 So you can write your own code to interact with dumper object and read/write data from/to cartridge. This dumper object can be even on another PC (read below)! Check "scripts" directory for example scripts.
@@ -269,12 +268,12 @@ So you can write your own code to interact with dumper object and read/write dat
 
 You can start this application as server on one PC:
 ```
-FamicomDumper.exe server --port COM14
+famicom-dumper server --port COM14
 ```
 
 And dump cartridge over network using another PC:
 ```
-FamicomDumper.exe dump --mapper CNROM --file game.nes --host example.com
+famicom-dumper dump --mapper CNROM --file game.nes --host example.com
 ```
 
 It's useful if you want to reverse engineer cartridge of your remote friend. You can use all commands and scripts to interact with remote dumper just like it's connected locally.
@@ -284,7 +283,7 @@ It's useful if you want to reverse engineer cartridge of your remote friend. You
 
 Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR sizes are default.
 ~~~~
- > FamicomDumper.exe dump --port COM14 --mapper nrom --file game.nes
+ > famicom-dumper dump --port COM14 --mapper nrom --file game.nes
  Dumper initialization... OK
  Using mapper: #0 (NROM)
  Dumping...
@@ -298,7 +297,7 @@ Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR
 
 Dump MMC1-cartridge (iNES mapper #1) using dumper with serial number "A9Z1A0WD". PRG size is 128 kilobytes, CHR size is 128 kilobytes too.
 ~~~~
->FamicomDumper.exe dump --port A9Z1A0WD --mapper 1 --prg-size 128K --chr-size 128K --file game.nes
+>famicom-dumper dump --port A9Z1A0WD --mapper 1 --prg-size 128K --chr-size 128K --file game.nes
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Dumping...
@@ -313,7 +312,7 @@ Saving to game.nes... OK
 
 Dump 32K of PRG and 8K of CHR as simple NROM cartridge but execute C# script first:
 ~~~~
->FamicomDumper.exe dump --port COM14 --mapper 0 --prg-size 32K --chr-size 8K --file game.nes --csfile init.cs"
+>famicom-dumper dump --port COM14 --mapper 0 --prg-size 32K --chr-size 8K --file game.nes --csfile init.cs"
 Dumper initialization... OK
 Compiling init.cs...
 Running init.Run()...
@@ -328,7 +327,7 @@ Saving to game.nes... OK
 
 Dump 32MBytes of COOLBOY cartridge using C# script and save it as UNIF file with some extra info:
 ~~~~
->FamicomDumper.exe dump --port COM14 --mapper mappers\coolboy.cs --prg-size 32M --file coolboy.unf --unifname "COOLBOY 400-IN-1" --unifauthor "John Smith"
+>famicom-dumper dump --port COM14 --mapper mappers\coolboy.cs --prg-size 32M --file coolboy.unf --unifname "COOLBOY 400-IN-1" --unifauthor "John Smith"
 Dumper initialization... OK
 Using mapper: COOLBOY
 Dumping...
@@ -342,7 +341,7 @@ Saving to coolboy.unf... OK
 
 Read battery-backed save from MMC1 cartridge:
 ~~~~
->FamicomDumper.exe read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
+>famicom-dumper read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Reading PRG-RAM... OK
@@ -350,7 +349,7 @@ Reading PRG-RAM... OK
 
 Write battery-backed save back to MMC1 cartridge:
 ~~~~
->FamicomDumper.exe write-prg-ram --port COM14 --mapper mmc1 --file "zelda_hacked.sav"
+>famicom-dumper write-prg-ram --port COM14 --mapper mmc1 --file "zelda_hacked.sav"
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Writing PRG-RAM... OK
@@ -358,7 +357,7 @@ Writing PRG-RAM... OK
 
 Rewrite ultracheap chinese COOLBOY cartridge and play sound when it's done:
 ~~~~
->FamicomDumper.exe write-coolboy --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
+>famicom-dumper write-coolboy --port COM14 --file "CoolBoy 400-in-1 (Alt Version, 403 games)(Unl)[U][!].nes" --sound
 Dumper initialization... OK
 Reset... OK
 Erasing sector... OK
@@ -368,7 +367,7 @@ Writing 1/2048 (0%, 00:00:02/00:40:53)...
 
 Also you can write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges:
 ~~~~
->FamicomDumper.exe write-coolgirl --file multirom.unf --port COM14
+>famicom-dumper write-coolgirl --file multirom.unf --port COM14
 Dumper initialization... OK
 Reset... OK
 Erasing sector... OK
@@ -383,7 +382,7 @@ Writing bank #4/114 (3%, 00:00:03/00:00:29)... OK
 
 Dump two-sided Famicom Disk System card:
 ~~~~
->FamicomDumper.exe dump-fds --fds-sides 2 --file game.fds
+>famicom-dumper dump-fds --fds-sides 2 --file game.fds
 Autodetected virtual serial port: COM13
 Dumper initialization... OK
 Reading disk... Done
@@ -411,7 +410,7 @@ Saing to game.fds... OK
 
 Write Famicom Disk System card and verify written data:
 ~~~
->FamicomDumper.exe write-fds --verify --file "Super Mario Brothers 2 (Japan).fds"
+>famicom-dumper write-fds --verify --file "Super Mario Brothers 2 (Japan).fds"
 Autodetected virtual serial port: COM6
 Dumper initialization... OK
 Please set disk card, side #1... OK
@@ -440,7 +439,7 @@ Verification successful.
 
 Start server on TCP port 9999 and let other person to dump cartridge over network:
 ~~~~
->FamicomDumper.exe server --tcp-port 9999
+>famicom-dumper server --tcp-port 9999
 Autodetected virtual serial port: COM13
 Dumper initialization... OK
 Listening port 9999, press any key to stop
@@ -448,7 +447,7 @@ Listening port 9999, press any key to stop
 
 Connect to remote dumper using TCP port 9999 and execute C# script:
 ~~~~
-FamicomDumper.exe script --csfile DemoScript.cs --host clusterrr.com --tcp-port 9999
+famicom-dumper script --csfile DemoScript.cs --host clusterrr.com --tcp-port 9999
 Dumper initialization... OK
 Compiling DemoScript.cs...
 Running DemoScript.Run()...
