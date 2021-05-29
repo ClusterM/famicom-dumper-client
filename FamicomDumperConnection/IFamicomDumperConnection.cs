@@ -1,9 +1,10 @@
 ﻿using com.clusterrr.Famicom.Containers;
+using System;
 using System.Collections.Generic;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
-    public interface IFamicomDumperConnection
+    public interface IFamicomDumperConnection : IDisposable
     {
         /// <summary>
         /// Famicom Dumper serial protocol version (depends on firmware)

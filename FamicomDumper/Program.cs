@@ -2,7 +2,7 @@
  *
  * Copyright notice for this file:
  *  Copyright (C) 2021 Cluster
- *  http://clusterrr.com
+ *  https://clusterrr.com
  *  clusterrr@clusterrr.com
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,12 +23,10 @@
 
 using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
-using Grpc.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
-using RemoteDumper;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -38,7 +36,6 @@ using System.Media;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Security;
-using System.Threading;
 
 namespace com.clusterrr.Famicom
 {
@@ -207,10 +204,10 @@ namespace com.clusterrr.Famicom
                 }
 
                 IFamicomDumperConnection dumper;
-                Channel channel = null;
 
                 if (string.IsNullOrEmpty(remoteHost))
                 {
+                    // Using local dumper
                     var localDumper = new FamicomDumperConnection(port);
                     localDumper.Open();
                     Console.Write("Dumper initialization... ");
@@ -221,25 +218,8 @@ namespace com.clusterrr.Famicom
                 }
                 else
                 {
-                    // TODO: remoting
-                    /*
-                    BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
-                        = new BinaryServerFormatterSinkProvider();
-                    BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
-                        = new BinaryClientFormatterSinkProvider();
-                    binaryServerFormatterSinkProvider.TypeFilterLevel
-                        = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
-                    var dict = new System.Collections.Hashtable();
-                    dict["name"] = "FamicomDumperClient";
-                    dict["secure"] = false;
-                    var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
-                    ChannelServices.RegisterChannel(channel, false);
-                    dumper = (FamicomDumperConnection)Activator.GetObject(typeof(IFamicomDumperConnection), $"tcp://{remoteHost}:{tcpPort}/dumper");
-                    var lifetime = dumper.GetLifetimeService();
-                    */
-                    channel = new Channel($"{remoteHost}:{tcpPort}", ChannelCredentials.Insecure);
-                    var rpcClient = new Dumper.DumperClient(channel);
-                    dumper = new FamicomDumperClient(rpcClient);
+                    // Using remote dumper
+                    dumper = new FamicomDumperClient($"http://{remoteHost}:{tcpPort}");
                 }
                 try
                 {
@@ -360,10 +340,7 @@ namespace com.clusterrr.Famicom
                 }
                 finally
                 {
-                    if (dumper is FamicomDumperConnection)
-                        (dumper as FamicomDumperConnection).Dispose();
-                    if (channel != null)
-                        channel.ShutdownAsync().Wait();
+                    dumper.Dispose();
                 }
             }
             catch (Exception ex)
@@ -974,40 +951,8 @@ namespace com.clusterrr.Famicom
 
         static void StartServer(FamicomDumperConnection dumper, int tcpPort)
         {
-            // TODO: remoting
-            /*
-            BinaryServerFormatterSinkProvider binaryServerFormatterSinkProvider
-                = new BinaryServerFormatterSinkProvider();
-            BinaryClientFormatterSinkProvider binaryClientFormatterSinkProvider
-                = new BinaryClientFormatterSinkProvider();
-            binaryServerFormatterSinkProvider.TypeFilterLevel
-                = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full;
-            var dict = new System.Collections.Hashtable();
-            dict["name"] = "FamicomDumperServer";
-            dict["port"] = tcpPort;
-            dict["secure"] = false;
-            var channel = new TcpChannel(dict, binaryClientFormatterSinkProvider, binaryServerFormatterSinkProvider);
-            ChannelServices.RegisterChannel(channel, false);
-            dumper.Verbose = true;
-            RemotingServices.Marshal(dumper, "dumper");
-            Console.WriteLine($"Listening port {tcpPort}, press any key to stop");
-            Console.ReadKey();
-            Console.WriteLine();
-            ChannelServices.UnregisterChannel(channel);
-            channel.StopListening(null);
-            */
-
-            dumper.Verbose = true;
-            Server server = new Server
-            {
-                Services = { Dumper.BindService(new FamicomDumperService(dumper)) },
-                Ports = { new ServerPort("0.0.0.0", tcpPort, ServerCredentials.Insecure) }
-            };
-            server.Start();
-            Console.WriteLine($"Listening port {tcpPort}, press any key to stop");
-            Console.ReadKey();
-            Console.WriteLine();
-            server.ShutdownAsync().Wait();
+            Console.WriteLine($"Listening port {tcpPort}, press Ctrl-C to stop");
+            FamicomDumperService.StartServer(dumper, $"http://0.0.0.0:{tcpPort}");
         }
 
         private static bool IsRunningOnMono()

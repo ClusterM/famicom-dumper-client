@@ -3,6 +3,10 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RemoteDumper;
 using System;
 using System.Collections.Generic;
@@ -14,11 +18,28 @@ namespace com.clusterrr.Famicom.DumperConnection
 {
     public class FamicomDumperService : Dumper.DumperBase
     {
-        private readonly IFamicomDumperConnection dumper;
+        private static IFamicomDumperConnection dumper;
 
-        public FamicomDumperService(IFamicomDumperConnection dumper)
+        public static void StartServer(IFamicomDumperConnection dumper, string url)
         {
-            this.dumper = dumper;
+            if (dumper is FamicomDumperConnection)
+                (dumper as FamicomDumperConnection).Verbose = true;
+            FamicomDumperService.dumper = dumper;
+            Host.CreateDefaultBuilder()
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+#if !DEBUG
+                    webBuilder.ConfigureLogging((context, logging) => logging.ClearProviders());
+#endif
+                    webBuilder.UseUrls(url);
+                    webBuilder.ConfigureKestrel((options) =>
+                    {
+                        options.ConfigureEndpointDefaults(lo => lo.Protocols = HttpProtocols.Http2);
+                    });
+                    webBuilder.UseStartup<GrpcStartup>();
+                })
+                .Build()
+                .Run();
         }
 
         public override Task<ProtocolVersionResponse> GetProtocolVersion(EmptyRequest request, ServerCallContext context)

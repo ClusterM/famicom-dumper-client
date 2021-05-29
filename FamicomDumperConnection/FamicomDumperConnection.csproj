@@ -1,9 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>com.clusterrr.Famicom.DumperConnection</RootNamespace>
-    <AssemblyName>FamicomDumperConnection</AssemblyName>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -16,12 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.17.2" />
-    <PackageReference Include="Grpc" Version="2.38.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.38.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.37.0" />
     <PackageReference Include="System.IO.Ports" Version="5.0.1" />
   </ItemGroup>
 
@@ -32,4 +25,5 @@
   <ItemGroup>
     <Protobuf Include="Dumper.proto" />
   </ItemGroup>
+
 </Project>

@@ -6,16 +6,31 @@ using RemoteDumper;
 using System.IO;
 using Google.Protobuf;
 using System.Linq;
+using System.Net.Http;
+using Grpc.Net.Client;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
     public class FamicomDumperClient : IFamicomDumperConnection
     {
         private readonly Dumper.DumperClient client;
+        private GrpcChannel channel;
 
-        public FamicomDumperClient(Dumper.DumperClient client)
+        public FamicomDumperClient(string url)
         {
-            this.client = client;
+            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            var httpHandler = new HttpClientHandler();
+            httpHandler.ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            channel = GrpcChannel.ForAddress(url,
+                new GrpcChannelOptions { HttpHandler = httpHandler });
+            client = new Dumper.DumperClient(channel);
+        }
+
+        public void Dispose()
+        {
+            if (channel != null)
+                channel.Dispose();
         }
 
         private void ThrowIfNotSuccess(ErrorInfo errorInfo)
@@ -34,6 +49,8 @@ namespace com.clusterrr.Famicom.DumperConnection
                     throw new NotSupportedException(errorInfo.ExceptionMessage);
                 case nameof(ArgumentException):
                     throw new ArgumentException(errorInfo.ExceptionMessage);
+                case nameof(InvalidOperationException):
+                    throw new InvalidOperationException(errorInfo.ExceptionMessage);
                 default:
                     throw new Exception($"{errorInfo.ExceptionName}: {errorInfo.ExceptionMessage}");
             }
