@@ -66,7 +66,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine();
             var startTime = DateTime.Now;
             string port = "auto";
-            string mapper = "0";
+            string mapperName = null;
             string psize = null;
             string csize = null;
             string filename = null;
@@ -120,7 +120,7 @@ namespace com.clusterrr.Famicom
                             break;
                         case "m":
                         case "mapper":
-                            mapper = value;
+                            mapperName = value;
                             i++;
                             break;
                         case "f":
@@ -238,7 +238,7 @@ namespace com.clusterrr.Famicom
 
                     if (!string.IsNullOrEmpty(csFile))
                     {
-                        CompileAndExecute(csFile, dumper, filename, mapper, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery, csArgs);
+                        CompileAndExecute(csFile, dumper, filename, mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery, csArgs);
                     }
 
                     switch (command)
@@ -251,7 +251,7 @@ namespace com.clusterrr.Famicom
                             ListMappers();
                             break;
                         case "dump":
-                            Dump(dumper, filename ?? "output.nes", mapper, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery);
+                            Dump(dumper, filename ?? "output.nes", mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery);
                             break;
                         case "dump-fds":
                             FDS.DumpFDS(dumper, filename ?? "output.fds", fdsSides, fdsDumpHiddenFiles, fdsUseHeader);
@@ -259,7 +259,7 @@ namespace com.clusterrr.Famicom
                         case "read-prg-ram":
                         case "dump-prg-ram":
                         case "dump-sram":
-                            ReadPrgRam(dumper, filename ?? "savegame.sav", mapper);
+                            ReadPrgRam(dumper, filename ?? "savegame.sav", mapperName);
                             break;
                         case "write-fds":
                             if (string.IsNullOrEmpty(filename))
@@ -270,7 +270,7 @@ namespace com.clusterrr.Famicom
                         case "write-sram":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
-                            WritePrgRam(dumper, filename, mapper);
+                            WritePrgRam(dumper, filename, mapperName);
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
