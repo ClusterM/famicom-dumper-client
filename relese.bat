@@ -15,7 +15,7 @@ FOR %%a IN (%ARCHS%) do (
 )
 
 FOR %%a IN (%ARCHS%) do (
-  dotnet publish %PROJECT_PATH% -c Release -r %%a -p:PublishSingleFile=true --self-contained true -p:IncludeAllContentForSelfExtract=true -o %OUTPUT_DIR%\%%a-self-contained\%APP_NAME%
+  dotnet publish %PROJECT_PATH% -c Release -r %%a -p:PublishSingleFile=true --self-contained true -p:PublishTrimmed=true -p:IncludeAllContentForSelfExtract=true -o %OUTPUT_DIR%\%%a-self-contained\%APP_NAME%
   cd %OUTPUT_DIR%\%%a-self-contained
   7z a -r -tzip -mx9 ..\%APP_NAME%-%%a-self-contained.zip %APP_NAME%
   cd %START_DIRECTORY%
