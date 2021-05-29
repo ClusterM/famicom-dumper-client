@@ -282,10 +282,21 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 StartBlock = startBlock,
                 MaxBlockCount = maxBlockCount
-
             });
             ThrowIfNotSuccess(r.ErrorInfo);
-            return r.FdsBlocks.Select(block => FdsBlockParser.FromBytes(block.ToByteArray())).ToArray();
+            return r.FdsBlocks.Select(block => {
+                IFdsBlock parsedBlock = block.BlockType switch
+                {
+                    1 => FdsBlockDiskInfo.FromBytes(block.BlockData.ToByteArray()),
+                    2 => FdsBlockFileAmount.FromBytes(block.BlockData.ToByteArray()),
+                    3 => FdsBlockFileHeader.FromBytes(block.BlockData.ToByteArray()),
+                    4 => FdsBlockFileData.FromBytes(block.BlockData.ToByteArray()),
+                    _ => throw new InvalidDataException("Invalid FDS block type"),
+                };
+                parsedBlock.CrcOk = block.CrcOk;
+                parsedBlock.EndOfHeadMeet = block.EndOfHeadMeet;
+                return parsedBlock;
+            }).ToArray();
         }
 
         /// <summary>
@@ -297,7 +308,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             var request = new WriteFdsRequest();
             request.BlockNumbers.AddRange(blockNumbers.Select(b => (uint)b));
-            request.FdsBlocks.AddRange(blocks.Select(block => ByteString.CopyFrom(block)));
+            request.FdsBlocks.AddRange(blocks.Select(block => new FdsBlock()
+            {
+                BlockType = block[0],
+                BlockData = ByteString.CopyFrom(block[0])
+            }));
             var r = client.WriteFdsBlocks(request);
             ThrowIfNotSuccess(r.ErrorInfo);
         }
@@ -311,7 +326,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             var request = new WriteFdsRequest();
             request.BlockNumbers.AddRange(blockNumbers.Select(b => (uint)b));
-            request.FdsBlocks.AddRange(blocks.Select(block => ByteString.CopyFrom(block.ToBytes())));
+            request.FdsBlocks.AddRange(blocks.Select(block => new FdsBlock()
+            {
+                BlockType = block.ValidTypeID,
+                BlockData = ByteString.CopyFrom(block.ToBytes())
+            }));
             var r = client.WriteFdsBlocks(request);
             ThrowIfNotSuccess(r.ErrorInfo);
         }
@@ -325,7 +344,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             var request = new WriteFdsRequest();
             request.BlockNumbers.Add(blockNumber);
-            request.FdsBlocks.Add(ByteString.CopyFrom(block));
+            request.FdsBlocks.Add(new FdsBlock()
+            {
+                BlockType = block[0],
+                BlockData = ByteString.CopyFrom(block)
+            });
             var r = client.WriteFdsBlocks(request);
             ThrowIfNotSuccess(r.ErrorInfo);
         }
@@ -339,7 +362,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             var request = new WriteFdsRequest();
             request.BlockNumbers.Add(blockNumber);
-            request.FdsBlocks.Add(ByteString.CopyFrom(block.ToBytes()));
+            request.FdsBlocks.Add(new FdsBlock()
+            {
+                BlockType = block.ValidTypeID,
+                BlockData = ByteString.CopyFrom(block.ToBytes())
+            });
             var r = client.WriteFdsBlocks(request);
             ThrowIfNotSuccess(r.ErrorInfo);
         }

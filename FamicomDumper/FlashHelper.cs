@@ -70,7 +70,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        public static void PasswordProgramm(FamicomDumperConnection dumper, byte[] password)
+        public static void PasswordProgramm(FamicomDumperLocal dumper, byte[] password)
         {
             if (password.Length != 8)
                 throw new InvalidDataException("Invalid password length");
@@ -118,7 +118,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        public static void PasswordUnlock(FamicomDumperConnection dumper, byte[] password)
+        public static void PasswordUnlock(FamicomDumperLocal dumper, byte[] password)
         {
             try
             {

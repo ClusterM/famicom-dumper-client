@@ -387,8 +387,13 @@ namespace com.clusterrr.Famicom.DumperConnection
                     blocks = dumper.ReadFdsBlocks((byte)request.StartBlock, (byte)request.MaxBlockCount);
                 else
                     blocks = dumper.ReadFdsBlocks((byte)request.StartBlock);
-                var blocksRaw = blocks.Select(block => ByteString.CopyFrom(block.ToBytes()));
-                result.FdsBlocks.AddRange(blocksRaw);
+                result.FdsBlocks.AddRange(blocks.Select(block => new FdsBlock()
+                {
+                    BlockType = block.ValidTypeID,
+                    BlockData = ByteString.CopyFrom(block.ToBytes()),
+                    CrcOk = block.CrcOk,
+                    EndOfHeadMeet = block.EndOfHeadMeet
+                }));
                 Console.WriteLine("OK");
             }
             catch (Exception ex)
@@ -411,7 +416,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 Console.Write($"Writing FDS block(s) {string.Join(", ", request.BlockNumbers)}... ");
                 dumper.WriteFdsBlocks(
                     request.BlockNumbers.Select(b => (byte)b).ToArray(),
-                    request.FdsBlocks.Select(block => block.ToByteArray()).ToArray());
+                    request.FdsBlocks.Select(block => block.BlockData.ToByteArray()).ToArray());
                 Console.WriteLine("OK");
             }
             catch (Exception ex)

@@ -218,7 +218,7 @@ namespace com.clusterrr.Famicom
                 if (string.IsNullOrEmpty(remoteHost))
                 {
                     // Using local dumper
-                    var localDumper = new FamicomDumperConnection(port);
+                    var localDumper = new FamicomDumperLocal(port);
                     localDumper.Open();
                     Console.Write("Dumper initialization... ");
                     bool prgInit = localDumper.DumperInit();
@@ -298,13 +298,12 @@ namespace com.clusterrr.Famicom
                                 throw new ArgumentNullException("--cs-file", "Please specify C# script using --cs-file argument");
                             break;
                         case "server":
-                            StartServer(dumper as FamicomDumperConnection, tcpPort);
+                            StartServer(dumper as FamicomDumperLocal, tcpPort);
                             break;
                         default:
                             Console.WriteLine("Unknown command: " + command);
                             PrintHelp();
                             return 2;
-
                     }
 #if DEBUG
                     var timePassed = DateTime.Now - startTime;
@@ -950,13 +949,13 @@ namespace com.clusterrr.Famicom
         static void Bootloader(IFamicomDumperConnection dumper)
         {
             Console.WriteLine("Rebooting to bootloader...");
-            if (dumper is FamicomDumperConnection)
-                (dumper as FamicomDumperConnection).Bootloader();
+            if (dumper is FamicomDumperLocal)
+                (dumper as FamicomDumperLocal).Bootloader();
             else
                 throw new IOException("'bootloader' command for local dumper only");
         }
 
-        static void StartServer(FamicomDumperConnection dumper, int tcpPort)
+        static void StartServer(FamicomDumperLocal dumper, int tcpPort)
         {
             Console.WriteLine($"Listening port {tcpPort}, press Ctrl-C to stop");
             FamicomDumperService.StartServer(dumper, $"http://0.0.0.0:{tcpPort}");

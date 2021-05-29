@@ -132,14 +132,21 @@ message ReadFdsRequest {
 message ReadFdsResponse {
 	optional ErrorInfo error_info = 1;
 	// Array of Famicom Disk System blocks data
-	repeated bytes fds_blocks = 2;
+	repeated FdsBlock fds_blocks = 2;
 }
 
 message WriteFdsRequest {
 	// Block numbers to write (zero-based)
 	repeated uint32 block_numbers = 1;
 	// Array of Famicom Disk System blocks data
-	repeated bytes fds_blocks = 2;
+	repeated FdsBlock fds_blocks = 2;
+}
+
+message FdsBlock {
+	int32 block_type = 1;
+	bytes block_data = 2;
+	bool crc_ok = 3;
+	bool end_of_head_meet = 4;
 }
 
 message MirroringRawResponse {
