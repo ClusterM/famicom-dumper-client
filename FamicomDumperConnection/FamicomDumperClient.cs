@@ -14,14 +14,15 @@ namespace com.clusterrr.Famicom.DumperConnection
     public class FamicomDumperClient : IFamicomDumperConnection
     {
         private readonly Dumper.DumperClient client;
-        private GrpcChannel channel;
+        private readonly GrpcChannel channel;
 
         public FamicomDumperClient(string url)
         {
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-            var httpHandler = new HttpClientHandler();
-            httpHandler.ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            var httpHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
             channel = GrpcChannel.ForAddress(url,
                 new GrpcChannelOptions { HttpHandler = httpHandler });
             client = new Dumper.DumperClient(channel);
@@ -31,29 +32,23 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             if (channel != null)
                 channel.Dispose();
+            GC.SuppressFinalize(this);
         }
 
-        private void ThrowIfNotSuccess(ErrorInfo errorInfo)
+        private static void ThrowIfNotSuccess(ErrorInfo errorInfo)
         {
             if (errorInfo == null) return;
 
-            switch (errorInfo.ExceptionName)
+            throw errorInfo.ExceptionName switch
             {
-                case nameof(IOException):
-                    throw new IOException(errorInfo.ExceptionMessage);
-                case nameof(TimeoutException):
-                    throw new TimeoutException(errorInfo.ExceptionMessage);
-                case nameof(InvalidDataException):
-                    throw new InvalidDataException(errorInfo.ExceptionMessage);
-                case nameof(NotSupportedException):
-                    throw new NotSupportedException(errorInfo.ExceptionMessage);
-                case nameof(ArgumentException):
-                    throw new ArgumentException(errorInfo.ExceptionMessage);
-                case nameof(InvalidOperationException):
-                    throw new InvalidOperationException(errorInfo.ExceptionMessage);
-                default:
-                    throw new Exception($"{errorInfo.ExceptionName}: {errorInfo.ExceptionMessage}");
-            }
+                nameof(IOException) => new IOException(errorInfo.ExceptionMessage),
+                nameof(TimeoutException) => new TimeoutException(errorInfo.ExceptionMessage),
+                nameof(InvalidDataException) => new InvalidDataException(errorInfo.ExceptionMessage),
+                nameof(NotSupportedException) => new NotSupportedException(errorInfo.ExceptionMessage),
+                nameof(ArgumentException) => new ArgumentException(errorInfo.ExceptionMessage),
+                nameof(InvalidOperationException) => new InvalidOperationException(errorInfo.ExceptionMessage),
+                _ => new Exception($"{errorInfo.ExceptionName}: {errorInfo.ExceptionMessage}"),
+            };
         }
 
         /// <summary>

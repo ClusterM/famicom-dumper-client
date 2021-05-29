@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.Versioning;
 using System.Security;
 
@@ -426,7 +427,7 @@ namespace com.clusterrr.Famicom
 
         static void PrintHelp()
         {
-            Console.WriteLine($"Usage: famicom-dumper <command> [<options>] [- <cs_script_arguments>]");
+            Console.WriteLine("Usage: famicom-dumper <command> [<options>] [- <cs_script_arguments>]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-30}{1}", "list-mappers", "list available mappers to dump");
@@ -529,20 +530,37 @@ namespace com.clusterrr.Famicom
             }
             tree = CSharpSyntaxTree.ParseText(source);
 
-            // Compile
-            var cs = CSharpCompilation.Create("Script", new[] { tree },
-                new MetadataReference[]
+            // Loading assemblies
+            var domainAssemblys = AppDomain.CurrentDomain.GetAssemblies();
+            var metadataReferenceList = new List<MetadataReference>();
+            foreach (var assembl in domainAssemblys)
+            {
+                unsafe
                 {
-                    MetadataReference.CreateFromFile("netstandard.dll"),
-                    MetadataReference.CreateFromFile("System.dll"),
-                    MetadataReference.CreateFromFile("System.Console.dll"),
-                    MetadataReference.CreateFromFile("System.Data.dll"),
-                    MetadataReference.CreateFromFile("System.Core.dll"),
-                    MetadataReference.CreateFromFile("System.Runtime.dll"),
-                    MetadataReference.CreateFromFile("System.Collections.dll"),
-                    MetadataReference.CreateFromFile("FamicomDumperConnection.dll"),
-                    MetadataReference.CreateFromFile("NesContainers.dll"),
-                },
+                    byte* blob;
+                    int length;
+                    assembl.TryGetRawMetadata(out blob, out length);
+                    var moduleMetadata = ModuleMetadata.CreateFromMetadata((IntPtr)blob, length);
+                    var assemblyMetadata = AssemblyMetadata.Create(moduleMetadata);
+                    var metadataReference = assemblyMetadata.GetReference();
+                    metadataReferenceList.Add(metadataReference);
+                }
+            }
+            unsafe
+            {
+                // Add extra refs
+                byte* blob;
+                int length;
+                typeof(FamicomDumperClient).Assembly.TryGetRawMetadata(out blob, out length);
+                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
+                typeof(NesFile).Assembly.TryGetRawMetadata(out blob, out length);
+                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
+                typeof(System.Linq.Expressions.Expression).Assembly.TryGetRawMetadata(out blob, out length);
+                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
+            }
+
+            // Compile
+            var cs = CSharpCompilation.Create("Script", new[] { tree }, metadataReferenceList,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
             using var memoryStream = new MemoryStream();
