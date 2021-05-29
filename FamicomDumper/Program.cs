@@ -526,9 +526,13 @@ namespace com.clusterrr.Famicom
                 new MetadataReference[]
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "netstandard.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Console.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Data.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Core.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Runtime.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Collections.dll")),
                     MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location),
                     MetadataReference.CreateFromFile(Path.Combine(entryAssemblyDirectory, "FamicomDumperConnection.dll")),
                     MetadataReference.CreateFromFile(Path.Combine(entryAssemblyDirectory, "NesContainers.dll")),
