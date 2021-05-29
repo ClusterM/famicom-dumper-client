@@ -696,7 +696,7 @@ namespace com.clusterrr.Famicom
                             filenameRequired = true;
                             if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
-                            else if (string.IsNullOrEmpty(filename))
+                            if (string.IsNullOrEmpty(filename) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(filename);
@@ -705,16 +705,13 @@ namespace com.clusterrr.Famicom
                             mapperRequired = true;
                             if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
-                            else if (string.IsNullOrEmpty(filename))
-                                parameters.Add(parameterInfo.DefaultValue);
-                            else
-                                parameters.Add(!string.IsNullOrEmpty(mapperName) ? GetMapper(mapperName) : null);
+                            parameters.Add(GetMapper(mapperName));
                             break;
                         case "prgsize":
                             prgSizeRequired = true;
                             if ((prgSize < 0) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
-                            else if (prgSize < 0)
+                            if ((prgSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(prgSize);
@@ -723,7 +720,7 @@ namespace com.clusterrr.Famicom
                             chrSizeRequired = true;
                             if ((chrSize < 0) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
-                            else if (chrSize < 0)
+                            if ((chrSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(chrSize);
@@ -732,19 +729,19 @@ namespace com.clusterrr.Famicom
                             unifNameRequired = true;
                             if (string.IsNullOrEmpty(unifName) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
-                            else if (string.IsNullOrEmpty(unifName))
+                            if (string.IsNullOrEmpty(unifName) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
-                                parameters.Add(filename);
+                                parameters.Add(unifName);
                             break;
                         case "unifauthor":
                             unifAuthorRequired = true;
                             if (string.IsNullOrEmpty(unifAuthor) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
-                            else if (string.IsNullOrEmpty(unifAuthor))
+                            if (string.IsNullOrEmpty(unifAuthor) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
-                                parameters.Add(filename);
+                                parameters.Add(unifAuthor);
                             break;
                         case "battery":
                             batteryRequired = true;
@@ -767,12 +764,12 @@ namespace com.clusterrr.Famicom
                                     break;
                                 case nameof(IMapper):
                                     mapperRequired = true;
-                                    if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
+                                    if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
                                         Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
-                                    else if (string.IsNullOrEmpty(filename))
+                                    if (string.IsNullOrEmpty(mapperName) && parameterInfo.HasDefaultValue)
                                         parameters.Add(parameterInfo.DefaultValue);
                                     else
-                                        parameters.Add(!string.IsNullOrEmpty(mapperName) ? GetMapper(mapperName) : null);
+                                        parameters.Add(GetMapper(mapperName));
                                     break;
                                 default:
                                     throw new ArgumentException($"Unknown parameter: {signature}");
