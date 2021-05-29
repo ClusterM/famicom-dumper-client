@@ -41,27 +41,28 @@ namespace com.clusterrr.Famicom
 {
     class Program
     {
-        private static DateTime startTime;
         private static string[] MappersSearchDirectories = {
-            Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "mappers"),
+            Path.Combine(System.AppContext.BaseDirectory), "mappers"),
             Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
             "/usr/share/famicom-dumper/mappers"
         };
         private static string[] ScriptsSearchDirectories = {
-            Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "scripts"),
-            Path.Combine(Directory.GetCurrentDirectory(), "scripts"), 
+            Path.Combine(System.AppContext.BaseDirectory), "scripts"),
+            Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
             "/usr/share/famicom-dumper/scripts"
         };
-        private static string ScriptsCacheDirectory = ".dumpercache";
-        private const string ScriptStartMethod = "Run";
+
+        const string SCRIPTS_CACHE_DIRECTORY = ".dumpercache";
+        const string SCRIPT_START_METHOD = "Run";
+        const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
 
         static int Main(string[] args)
         {
             Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}");
-            Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ https://github.com/ClusterM/famicom-dumper-client");
+            Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine();
-            startTime = DateTime.Now;
+            var startTime = DateTime.Now;
             string port = "auto";
             string mapper = "0";
             string psize = null;
@@ -392,13 +393,8 @@ namespace com.clusterrr.Famicom
         [SupportedOSPlatform("windows")]
         public static void PlayErrorSoundWav()
         {
-            if (!IsRunningOnMono())
-            {
-                var errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
-                errorSound.PlaySync();
-            }
-            else
-                Console.Beep();
+            var errorSound = new SoundPlayer(Properties.Resources.ErrorSound);
+            errorSound.PlaySync();
         }
 
         public static void PlayErrorSoundBeep()
@@ -433,52 +429,52 @@ namespace com.clusterrr.Famicom
             Console.WriteLine($"Usage: {Path.GetFileName(Assembly.GetExecutingAssembly().Location)} <command> [<options>] [- <cs_script_arguments>]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
-            Console.WriteLine(" {0,-25}{1}", "list-mappers", "list available mappers to dump");
-            Console.WriteLine(" {0,-25}{1}", "dump", "dump cartridge");
-            Console.WriteLine(" {0,-25}{1}", "server", "start server for remote dumping");
-            Console.WriteLine(" {0,-25}{1}", "script", "execute C# script specified by --cs-file option");
-            Console.WriteLine(" {0,-25}{1}", "reset", "simulate reset (M2 goes to Z-state for a second)");
-            Console.WriteLine(" {0,-25}{1}", "dump-fds", "dump FDS card using RAM adapter and FDS drive");
-            Console.WriteLine(" {0,-25}{1}", "write-fds", "write FDS card using RAM adapter and FDS drive");
-            Console.WriteLine(" {0,-25}{1}", "dump-tiles", "dump CHR data to PNG file");
-            Console.WriteLine(" {0,-25}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
-            Console.WriteLine(" {0,-25}{1}", "write-prg-ram", "write PRG RAM");
-            Console.WriteLine(" {0,-25}{1}", "write-coolboy", "write COOLBOY cartridge");
-            Console.WriteLine(" {0,-25}{1}", "write-coolgirl", "write COOLGIRL cartridge");
-            Console.WriteLine(" {0,-25}{1}", "write-eeprom", "write EEPROM-based cartridge");
-            Console.WriteLine(" {0,-25}{1}", "test-prg-ram", "run PRG RAM test");
-            Console.WriteLine(" {0,-25}{1}", "test-chr-ram", "run CHR RAM test");
-            Console.WriteLine(" {0,-25}{1}", "test-battery", "test battery-backed PRG RAM");
-            Console.WriteLine(" {0,-25}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-25}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-25}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-25}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge and list them afterwards");
-            Console.WriteLine(" {0,-25}{1}", "read-crc-coolgirl", "show CRC checksum for COOLGIRL");
-            Console.WriteLine(" {0,-25}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
-            Console.WriteLine(" {0,-25}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
+            Console.WriteLine(" {0,-30}{1}", "list-mappers", "list available mappers to dump");
+            Console.WriteLine(" {0,-30}{1}", "dump", "dump cartridge");
+            Console.WriteLine(" {0,-30}{1}", "server", "start server for remote dumping");
+            Console.WriteLine(" {0,-30}{1}", "script", "execute C# script specified by --cs-file option");
+            Console.WriteLine(" {0,-30}{1}", "reset", "simulate reset (M2 goes to Z-state for a second)");
+            Console.WriteLine(" {0,-30}{1}", "dump-fds", "dump FDS card using RAM adapter and FDS drive");
+            Console.WriteLine(" {0,-30}{1}", "write-fds", "write FDS card using RAM adapter and FDS drive");
+            Console.WriteLine(" {0,-30}{1}", "dump-tiles", "dump CHR data to PNG file");
+            Console.WriteLine(" {0,-30}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
+            Console.WriteLine(" {0,-30}{1}", "write-prg-ram", "write PRG RAM");
+            Console.WriteLine(" {0,-30}{1}", "write-coolboy", "write COOLBOY cartridge");
+            Console.WriteLine(" {0,-30}{1}", "write-coolgirl", "write COOLGIRL cartridge");
+            Console.WriteLine(" {0,-30}{1}", "write-eeprom", "write EEPROM-based cartridge");
+            Console.WriteLine(" {0,-30}{1}", "test-prg-ram", "run PRG RAM test");
+            Console.WriteLine(" {0,-30}{1}", "test-chr-ram", "run CHR RAM test");
+            Console.WriteLine(" {0,-30}{1}", "test-battery", "test battery-backed PRG RAM");
+            Console.WriteLine(" {0,-30}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-30}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-30}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
+            Console.WriteLine(" {0,-30}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge and list them afterwards");
+            Console.WriteLine(" {0,-30}{1}", "read-crc-coolgirl", "show CRC checksum for COOLGIRL");
+            Console.WriteLine(" {0,-30}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
+            Console.WriteLine(" {0,-30}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
             Console.WriteLine();
             Console.WriteLine("Available options:");
-            Console.WriteLine(" {0,-25}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
-            Console.WriteLine(" {0,-25}{1}", "--tcp-port <port>", "TCP port for client/server communication, default - 26672");
-            Console.WriteLine(" {0,-25}{1}", "--host <host>", "enable network client and connect to specified host");
-            Console.WriteLine(" {0,-25}{1}", "--mappers <directory>", "directory to search mapper scripts");
-            Console.WriteLine(" {0,-25}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
-            Console.WriteLine(" {0,-25}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
-            Console.WriteLine(" {0,-25}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-25}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-25}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
-            Console.WriteLine(" {0,-25}{1}", "--cs-file <C#_file>", "execute C# script from file");
-            Console.WriteLine(" {0,-25}{1}", "--reset", "simulate reset first");
-            Console.WriteLine(" {0,-25}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
-            Console.WriteLine(" {0,-25}{1}", "--unif-author <name>", "author of dump for UNIF dumps");
-            Console.WriteLine(" {0,-25}{1}", "--fds-sides", "number of FDS sides to dump (default 1)");
-            Console.WriteLine(" {0,-25}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
-            Console.WriteLine(" {0,-25}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
-            Console.WriteLine(" {0,-25}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
-            Console.WriteLine(" {0,-25}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL");
-            Console.WriteLine(" {0,-25}{1}", "--sound", "play sound when done or error occured");
-            Console.WriteLine(" {0,-25}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
-            Console.WriteLine(" {0,-25}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
+            Console.WriteLine(" {0,-30}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
+            Console.WriteLine(" {0,-30}{1}", "--tcp-port <port>", "TCP port for client/server communication, default - 26672");
+            Console.WriteLine(" {0,-30}{1}", "--host <host>", "enable network client and connect to specified host");
+            Console.WriteLine(" {0,-30}{1}", "--mappers <directory>", "directory to search mapper scripts");
+            Console.WriteLine(" {0,-30}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
+            Console.WriteLine(" {0,-30}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
+            Console.WriteLine(" {0,-30}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
+            Console.WriteLine(" {0,-30}{1}", "--cs-file <C#_file>", "execute C# script from file");
+            Console.WriteLine(" {0,-30}{1}", "--reset", "simulate reset first");
+            Console.WriteLine(" {0,-30}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
+            Console.WriteLine(" {0,-30}{1}", "--unif-author <name>", "author of dump for UNIF dumps");
+            Console.WriteLine(" {0,-30}{1}", "--fds-sides", "number of FDS sides to dump (default 1)");
+            Console.WriteLine(" {0,-30}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
+            Console.WriteLine(" {0,-30}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
+            Console.WriteLine(" {0,-30}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
+            Console.WriteLine(" {0,-30}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL");
+            Console.WriteLine(" {0,-30}{1}", "--sound", "play sound when done or error occured");
+            Console.WriteLine(" {0,-30}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
+            Console.WriteLine(" {0,-30}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
         static public void Reset(IFamicomDumperConnection dumper)
@@ -492,7 +488,7 @@ namespace com.clusterrr.Famicom
         {
             int linesOffset = 0;
             var source = File.ReadAllText(path);
-            var cacheDirectory = Path.Combine(Path.GetDirectoryName(path), ScriptsCacheDirectory);
+            var cacheDirectory = Path.Combine(Path.GetDirectoryName(path), SCRIPTS_CACHE_DIRECTORY);
             var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
 
             // Try to load cached assembly
@@ -639,20 +635,20 @@ namespace com.clusterrr.Famicom
             try
             {
                 // Is it static method with string[] parameter?
-                var staticMethod = program.GetMethod(ScriptStartMethod, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
+                var staticMethod = program.GetMethod(SCRIPT_START_METHOD, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
                 if (staticMethod != null)
                 {
-                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                    Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
                     staticMethod.Invoke(program, new object[] { dumper, args });
                     return;
                 }
                 // Is it static method without string[] parameter?
-                staticMethod = program.GetMethod(ScriptStartMethod, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+                staticMethod = program.GetMethod(SCRIPT_START_METHOD, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
                 if (staticMethod != null)
                 {
                     if (args.Any())
-                        Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{ScriptStartMethod} declared without string[] parameter");
-                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                        Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{SCRIPT_START_METHOD} declared without string[] parameter");
+                    Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
                     staticMethod.Invoke(program, new object[] { dumper });
                     return;
                 }
@@ -660,27 +656,27 @@ namespace com.clusterrr.Famicom
                 // Let's try instance method, need to call constructor first
                 var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
                 if (constructor == null)
-                    throw new InvalidProgramException($"There is no static {ScriptStartMethod} method and no valid default constructor");
+                    throw new InvalidProgramException($"There is no static {SCRIPT_START_METHOD} method and no valid default constructor");
                 var obj = constructor.Invoke(new object[0]);
                 // Is it instance method with string[] parameter?
-                var instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
+                var instanceMethod = obj.GetType().GetMethod(SCRIPT_START_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
                 if (instanceMethod != null)
                 {
-                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                    Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
                     instanceMethod.Invoke(obj, new object[] { dumper, args });
                     return;
                 }
-                instanceMethod = obj.GetType().GetMethod(ScriptStartMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+                instanceMethod = obj.GetType().GetMethod(SCRIPT_START_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
                 if (instanceMethod != null)
                 {
                     if (args.Any())
-                        Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{ScriptStartMethod} declared without string[] parameter");
-                    Console.WriteLine($"Running {program.Name}.{ScriptStartMethod}()...");
+                        Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{SCRIPT_START_METHOD} declared without string[] parameter");
+                    Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
                     instanceMethod.Invoke(obj, new object[] { dumper });
                     return;
                 }
 
-                throw new InvalidProgramException($"There is no {ScriptStartMethod} method");
+                throw new InvalidProgramException($"There is no {SCRIPT_START_METHOD} method");
             }
             catch (TargetInvocationException ex)
             {
@@ -810,7 +806,7 @@ namespace com.clusterrr.Famicom
                 unifFile.Battery = battery;
                 if (!string.IsNullOrEmpty(unifAuthor))
                     unifFile.DumperName = unifAuthor;
-                unifFile.DumpingSoftware = "Famicom Dumper by Cluster / https://github.com/ClusterM/famicom-dumper-client";
+                unifFile.DumpingSoftware = $"Famicom Dumper by Cluster / {REPO_PATH}";
                 unifFile.Save(fileName);
             }
             Console.WriteLine("OK");
@@ -987,11 +983,6 @@ namespace com.clusterrr.Famicom
         {
             Console.WriteLine($"Listening port {tcpPort}, press Ctrl-C to stop");
             FamicomDumperService.StartServer(dumper, $"http://0.0.0.0:{tcpPort}");
-        }
-
-        private static bool IsRunningOnMono()
-        {
-            return Type.GetType("Mono.Runtime") != null;
         }
     }
 }
