@@ -61,6 +61,7 @@
     <Compile Remove="mappers\VRC6b.cs" />
     <Compile Remove="scripts\BatteryTest.cs" />
     <Compile Remove="scripts\ChrRamTest.cs" />
+    <Compile Remove="scripts\CoolgirlTests.cs" />
     <Compile Remove="scripts\DemoScript.cs" />
     <Compile Remove="scripts\DumpTiles.cs" />
     <Compile Remove="scripts\FdsSpeedMeasure.cs" />
@@ -209,6 +210,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="scripts\BatteryTest.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="scripts\CoolgirlTests.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>

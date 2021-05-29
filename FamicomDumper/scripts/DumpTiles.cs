@@ -30,7 +30,7 @@ using System.Drawing.Imaging;
 
 class DumpTiles
 {
-    void Run(IFamicomDumperConnection dumper, string fileName, IMapper mapper, int chrSize)
+    void Run(IFamicomDumperConnection dumper, string fileName, IMapper mapper, int chrSize = -1)
     {
         if (mapper.Number >= 0)
             Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");

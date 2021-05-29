@@ -80,7 +80,6 @@ namespace com.clusterrr.Famicom
             bool needCheck = false;
             bool writePBBs = false;
             List<int> badSectors = new();
-            int testCount = -1;
             int tcpPort = DEFAULT_GRPC_PORT;
             bool ignoreBadSectors = false;
             string remoteHost = null;
@@ -182,11 +181,6 @@ namespace com.clusterrr.Famicom
                         case "lock":
                             writePBBs = true;
                             break;
-                        case "testcount":
-                        case "test-count":
-                            testCount = int.Parse(value);
-                            i++;
-                            break;
                         case "badsectors":
                         case "bad-sectors":
                             foreach (var v in value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
@@ -277,24 +271,6 @@ namespace com.clusterrr.Famicom
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
                             WritePrgRam(dumper, filename, mapper);
-                            break;
-                        case "test-prg-coolgirl":
-                        case "test-prg-ram-coolgirl":
-                        case "test-sram-coolgirl":
-                            CoolgirlWriter.TestPrgRam(dumper);
-                            break;
-                        case "test-chr-coolgirl":
-                        case "test-chr-ram-coolgirl":
-                            CoolgirlWriter.TestChrRam(dumper, chrSize: ParseSize(csize));
-                            break;
-                        case "test-coolgirl":
-                            CoolgirlWriter.FullTest(dumper, testCount, chrSize: ParseSize(csize));
-                            break;
-                        case "test-bads-coolgirl":
-                            CoolgirlWriter.FindBads(dumper, silent);
-                            break;
-                        case "read-crc-coolgirl":
-                            CoolgirlWriter.ReadCrc(dumper);
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
@@ -429,11 +405,6 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-30}{1}", "write-prg-ram", "write PRG RAM");
             Console.WriteLine(" {0,-30}{1}", "write-coolboy", "write COOLBOY cartridge");
             Console.WriteLine(" {0,-30}{1}", "write-coolgirl", "write COOLGIRL cartridge");
-            Console.WriteLine(" {0,-30}{1}", "test-prg-ram-coolgirl", "run PRG RAM test for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-30}{1}", "test-chr-ram-coolgirl", "run CHR RAM test for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-30}{1}", "test-coolgirl", "run all RAM tests for COOLGIRL cartridge");
-            Console.WriteLine(" {0,-30}{1}", "test-bads-coolgirl", "find bad sectors on COOLGIRL cartridge and list them afterwards");
-            Console.WriteLine(" {0,-30}{1}", "read-crc-coolgirl", "show CRC checksum for COOLGIRL");
             Console.WriteLine(" {0,-30}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
             Console.WriteLine(" {0,-30}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
             Console.WriteLine();
@@ -614,7 +585,6 @@ namespace com.clusterrr.Famicom
             return result;
         }
 
-
         static void ListMappers()
         {
             var mappers = CompileAllMappers();
@@ -724,39 +694,57 @@ namespace com.clusterrr.Famicom
                             break;
                         case "filename":
                             filenameRequired = true;
-                            if (string.IsNullOrEmpty(filename))
+                            if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
-                            parameters.Add(filename);
+                            else if (string.IsNullOrEmpty(filename))
+                                parameters.Add(parameterInfo.DefaultValue);
+                            else
+                                parameters.Add(filename);
                             break;
                         case "mapper":
                             mapperRequired = true;
-                            if (string.IsNullOrEmpty(filename))
+                            if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
-                            parameters.Add(!string.IsNullOrEmpty(mapperName) ? GetMapper(mapperName) : null);
+                            else if (string.IsNullOrEmpty(filename))
+                                parameters.Add(parameterInfo.DefaultValue);
+                            else
+                                parameters.Add(!string.IsNullOrEmpty(mapperName) ? GetMapper(mapperName) : null);
                             break;
                         case "prgsize":
                             prgSizeRequired = true;
-                            if (prgSize < 0)
+                            if ((prgSize < 0) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
-                            parameters.Add(prgSize);
+                            else if (prgSize < 0)
+                                parameters.Add(parameterInfo.DefaultValue);
+                            else
+                                parameters.Add(prgSize);
                             break;
                         case "chrsize":
                             chrSizeRequired = true;
-                            if (chrSize < 0)
+                            if ((chrSize < 0) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
-                            parameters.Add(chrSize);
+                            else if (chrSize < 0)
+                                parameters.Add(parameterInfo.DefaultValue);
+                            else
+                                parameters.Add(chrSize);
                             break;
                         case "unifname":
                             unifNameRequired = true;
-                            if (string.IsNullOrEmpty(unifName))
+                            if (string.IsNullOrEmpty(unifName) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
-                            parameters.Add(filename);
+                            else if (string.IsNullOrEmpty(unifName))
+                                parameters.Add(parameterInfo.DefaultValue);
+                            else
+                                parameters.Add(filename);
                             break;
                         case "unifauthor":
                             unifAuthorRequired = true;
-                            if (string.IsNullOrEmpty(unifAuthor))
+                            if (string.IsNullOrEmpty(unifAuthor) && !parameterInfo.HasDefaultValue)
                                 Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
-                            parameters.Add(filename);
+                            else if (string.IsNullOrEmpty(unifAuthor))
+                                parameters.Add(parameterInfo.DefaultValue);
+                            else
+                                parameters.Add(filename);
                             break;
                         case "battery":
                             batteryRequired = true;
@@ -779,9 +767,12 @@ namespace com.clusterrr.Famicom
                                     break;
                                 case nameof(IMapper):
                                     mapperRequired = true;
-                                    if (string.IsNullOrEmpty(filename))
+                                    if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
                                         Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
-                                    parameters.Add(!string.IsNullOrEmpty(mapperName) ? GetMapper(mapperName) : null);
+                                    else if (string.IsNullOrEmpty(filename))
+                                        parameters.Add(parameterInfo.DefaultValue);
+                                    else
+                                        parameters.Add(!string.IsNullOrEmpty(mapperName) ? GetMapper(mapperName) : null);
                                     break;
                                 default:
                                     throw new ArgumentException($"Unknown parameter: {signature}");
