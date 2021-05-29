@@ -56,6 +56,7 @@ namespace com.clusterrr.Famicom
         const string SCRIPTS_CACHE_DIRECTORY = ".dumpercache";
         const string SCRIPT_START_METHOD = "Run";
         const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
+        const int DEFAULT_GRPC_PORT = 26673;
 
         static int Main(string[] args)
         {
@@ -80,7 +81,7 @@ namespace com.clusterrr.Famicom
             bool writePBBs = false;
             List<int> badSectors = new();
             int testCount = -1;
-            int tcpPort = 26673;
+            int tcpPort = DEFAULT_GRPC_PORT;
             bool ignoreBadSectors = false;
             string remoteHost = null;
             byte fdsSides = 1;
@@ -432,7 +433,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-30}{1}", "list-mappers", "list available mappers to dump");
             Console.WriteLine(" {0,-30}{1}", "dump", "dump cartridge");
-            Console.WriteLine(" {0,-30}{1}", "server", "start server for remote dumping");
+            Console.WriteLine(" {0,-30}{1}", "server", "start gRPC server");
             Console.WriteLine(" {0,-30}{1}", "script", "execute C# script specified by --cs-file option");
             Console.WriteLine(" {0,-30}{1}", "reset", "simulate reset (M2 goes to Z-state for a second)");
             Console.WriteLine(" {0,-30}{1}", "dump-fds", "dump FDS card using RAM adapter and FDS drive");
@@ -456,10 +457,10 @@ namespace com.clusterrr.Famicom
             Console.WriteLine();
             Console.WriteLine("Available options:");
             Console.WriteLine(" {0,-30}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
-            Console.WriteLine(" {0,-30}{1}", "--tcp-port <port>", "TCP port for client/server communication, default - 26672");
-            Console.WriteLine(" {0,-30}{1}", "--host <host>", "enable network client and connect to specified host");
+            Console.WriteLine(" {0,-30}{1}", "--tcp-port <port>", $"TCP port for gRPC communication, default - {DEFAULT_GRPC_PORT}");
+            Console.WriteLine(" {0,-30}{1}", "--host <host>", "enable gRPC client and connect to specified host");
             Console.WriteLine(" {0,-30}{1}", "--mappers <directory>", "directory to search mapper scripts");
-            Console.WriteLine(" {0,-30}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default is 0 (NROM)");
+            Console.WriteLine(" {0,-30}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default - 0 (NROM)");
             Console.WriteLine(" {0,-30}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
             Console.WriteLine(" {0,-30}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
@@ -744,16 +745,6 @@ namespace com.clusterrr.Famicom
             return (NesFile.MirroringType)method.Invoke(mapper, new object[] { dumper });
         }
 
-        static byte GetSubmapper(IMapper mapper)
-        {
-            var method = mapper.GetType().GetMethod(
-                    "get_Submapper", BindingFlags.Instance | BindingFlags.Public,
-                    null, CallingConventions.Any, Array.Empty<Type>(),
-                    Array.Empty<ParameterModifier>());
-            if (method == null) return 0;
-            return (byte)method.Invoke(mapper, Array.Empty<object>());
-        }
-
         static void Dump(IFamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
         {
             var mapper = GetMapper(mapperName);
@@ -780,15 +771,14 @@ namespace com.clusterrr.Famicom
             }
             NesFile.MirroringType mirroring;
             // TODO: move GetMapper to IMapper, so it will not be optional
-            //mirroring = mapper.GetMirroring(dumper);
-            mirroring = GetMirroring(dumper, mapper);
+            mirroring = mapper.GetMirroring(dumper);
             Console.WriteLine($"Mirroring: {mirroring}");
             Console.Write($"Saving to {fileName}... ");
             if (mapper.Number >= 0)
             {
                 // TODO: add RAM and NV-RAM settings for NES 2.0
                 var nesFile = new NesFile();
-                var submapper = GetSubmapper(mapper);
+                var submapper = mapper.Submapper;
                 nesFile.Version = (mapper.Number > 255 || submapper != 0)
                     ? NesFile.iNesVersion.NES20
                     : NesFile.iNesVersion.iNES;

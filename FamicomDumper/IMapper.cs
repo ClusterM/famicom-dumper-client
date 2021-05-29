@@ -1,4 +1,5 @@
-﻿using com.clusterrr.Famicom.DumperConnection;
+﻿using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.DumperConnection;
 using System.Collections.Generic;
 
 namespace com.clusterrr.Famicom
@@ -18,7 +19,7 @@ namespace com.clusterrr.Famicom
         /// <summary>
         /// Number of submapper (0 if none)
         /// </summary>
-        //byte Submapper { get; }
+        byte Submapper { get; }
 
         /// <summary>
         /// Name of the mapper to store in UNIF container (null if none)
@@ -62,6 +63,6 @@ namespace com.clusterrr.Famicom
         /// </summary>
         /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
         /// <returns></returns>
-        //NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
+        NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
     }
 }
