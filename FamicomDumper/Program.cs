@@ -537,9 +537,7 @@ namespace com.clusterrr.Famicom
             {
                 unsafe
                 {
-                    byte* blob;
-                    int length;
-                    assembl.TryGetRawMetadata(out blob, out length);
+                    assembl.TryGetRawMetadata(out byte* blob, out int length);
                     var moduleMetadata = ModuleMetadata.CreateFromMetadata((IntPtr)blob, length);
                     var assemblyMetadata = AssemblyMetadata.Create(moduleMetadata);
                     var metadataReference = assemblyMetadata.GetReference();
@@ -549,9 +547,7 @@ namespace com.clusterrr.Famicom
             unsafe
             {
                 // Add extra refs
-                byte* blob;
-                int length;
-                typeof(FamicomDumperClient).Assembly.TryGetRawMetadata(out blob, out length);
+                typeof(FamicomDumperClient).Assembly.TryGetRawMetadata(out byte* blob, out int length);
                 metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
                 typeof(NesFile).Assembly.TryGetRawMetadata(out blob, out length);
                 metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());

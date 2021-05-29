@@ -16,11 +16,10 @@ namespace com.clusterrr.Famicom.DumperConnection
         const ushort DefaultMaxReadPacketSize = 1024;
         const ushort DefaultMaxWritePacketSize = 1024;
         const byte Magic = 0x46;
-        string[] DeviceNames = new string[] { "Famicom Dumper/Programmer", "Famicom Dumper/Writer" };
+        readonly string[] DeviceNames = new string[] { "Famicom Dumper/Programmer", "Famicom Dumper/Writer" };
 
         public string PortName { get; set; }
         public byte ProtocolVersion { get; private set; } = 0;
-        public bool Verbose { get; set; } = false;
         public uint Timeout
         {
             get
@@ -176,10 +175,12 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         private static SerialPort OpenPort(string name, int timeout)
         {
-            var sPort = new SerialPort();
-            sPort.PortName = name;
-            sPort.WriteTimeout = timeout;
-            sPort.ReadTimeout = timeout;
+            var sPort = new SerialPort
+            {
+                PortName = name,
+                WriteTimeout = timeout,
+                ReadTimeout = timeout
+            };
             if (!name.Contains("ttyACM"))
             {
                 // Not supported by ACM devices
@@ -241,7 +242,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                     // Port still not detected, using Windows FTDI driver to determine serial number
                     try
                     {
-                        FTDI myFtdiDevice = new FTDI();
+                        FTDI myFtdiDevice = new();
                         uint ftdiDeviceCount = 0;
                         FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
                         // FTDI serial number autodetect
@@ -329,7 +330,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 // Using Windows FTDI driver
                 FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
                 // Create new instance of the FTDI device class
-                FTDI myFtdiDevice = new FTDI();
+                FTDI myFtdiDevice = new();
                 // Open first device in our list by serial number
                 ftStatus = myFtdiDevice.OpenBySerialNumber(portName);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
@@ -436,8 +437,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                     inbyte >>= 1;
                 }
             }
-            buffer[buffer.Length - 1] = crc;
-            //foreach (var b in buffer) Console.Write(", 0x{0:X2}", b);
+            buffer[^1] = crc;
             if (serialPort != null)
                 serialPort.Write(buffer, 0, buffer.Length);
             if (d2xxPort != null)
@@ -454,7 +454,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             int commRecvPos = 0;
             DumperCommand commRecvCommand = 0;
             int commRecvLength = 0;
-            List<byte> recvBuffer = new List<byte>();
+            List<byte> recvBuffer = new();
             while (true)
             {
                 var data = ReadPort();
@@ -514,7 +514,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
         }
 
-        byte CRC(IEnumerable<byte> data)
+        static byte CRC(IEnumerable<byte> data)
         {
             byte commRecvCrc = 0;
             foreach (var b in data)
@@ -539,8 +539,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns></returns>
         public bool DumperInit()
         {
-            if (Verbose)
-                Console.Write("Dumper initialization... ");
             bool result = false;
             var oldTimeout = Timeout;
             try
@@ -562,16 +560,16 @@ namespace com.clusterrr.Famicom.DumperConnection
                 {
                     try
                     {
-                        SendCommand(DumperCommand.PRG_INIT, new byte[0]);
-                        var recv = RecvCommand();
-                        if (recv.Command == DumperCommand.STARTED)
+                        SendCommand(DumperCommand.PRG_INIT, Array.Empty<byte>());
+                        var (Command, Data) = RecvCommand();
+                        if (Command == DumperCommand.STARTED)
                         {
-                            if (recv.Data.Length >= 1)
-                                ProtocolVersion = recv.Data[0];
-                            if (recv.Data.Length >= 3)
-                                MaxReadPacketSize = (ushort)(recv.Data[1] | (recv.Data[2] << 8));
-                            if (recv.Data.Length >= 5)
-                                MaxWritePacketSize = (ushort)(recv.Data[3] | (recv.Data[4] << 8));
+                            if (Data.Length >= 1)
+                                ProtocolVersion = Data[0];
+                            if (Data.Length >= 3)
+                                MaxReadPacketSize = (ushort)(Data[1] | (Data[2] << 8));
+                            if (Data.Length >= 5)
+                                MaxWritePacketSize = (ushort)(Data[3] | (Data[4] << 8));
                             result = true;
                         }
                     }
@@ -582,9 +580,19 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 Timeout = oldTimeout;
             }
-            if (Verbose)
-                Console.WriteLine(result ? "OK" : "failed");
             return result;
+        }
+
+
+        /// <summary>
+        /// Simulate reset (M2 goes to Z-state for a second)
+        /// </summary>
+        public void Reset()
+        {
+            SendCommand(DumperCommand.RESET, Array.Empty<byte>());
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.RESET_ACK)
+                throw new IOException($"Invalid data received: {Command}");
         }
 
         /// <summary>
@@ -602,30 +610,12 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns>Data from CPU (PRG) bus</returns>
         public byte[] ReadCpu(ushort address, int length)
         {
-            if (Verbose)
-            {
-                if (length > 1)
-                    Console.Write($"Reading 0x{address:X4}-0x{address + length - 1:X4} @ CPU... ");
-                else
-                    Console.Write($"Reading 0x{address:X4} @ CPU... ");
-            }
             var result = new List<byte>();
             while (length > 0)
             {
                 result.AddRange(ReadCpuBlock(address, Math.Min(MaxReadPacketSize, length)));
                 address += MaxReadPacketSize;
                 length -= MaxReadPacketSize;
-            }
-            if (Verbose)
-            {
-                if (result.Count <= 32)
-                {
-                    foreach (var b in result)
-                        Console.Write($"{b:X2} ");
-                    Console.WriteLine();
-                }
-                else if (Verbose)
-                    Console.WriteLine("OK");
             }
             return result.ToArray();
         }
@@ -638,10 +628,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.PRG_READ_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.PRG_READ_RESULT)
-                throw new IOException($"Invalid data received: {recv.Command}");
-            return recv.Data;
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.PRG_READ_RESULT)
+                throw new IOException($"Invalid data received: {Command}");
+            return Data;
         }
 
         /// <summary>
@@ -652,25 +642,16 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns>Checksum</returns>
         public ushort ReadCpuCrc(ushort address, int length)
         {
-            if (Verbose)
-            {
-                if (length > 1)
-                    Console.Write($"Reading CRC of 0x{address:X4}-0x{address + length - 1:X4} @ CPU... ");
-                else
-                    Console.Write($"Reading CRC of 0x{address:X4} @ CPU... ");
-            }
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.PRG_CRC_READ_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.PRG_READ_RESULT)
-                throw new IOException($"Invalid data received: {recv.Command}");
-            var crc = (ushort)(recv.Data[0] | (recv.Data[1] << 8));
-            if (Verbose)
-                Console.WriteLine($"{crc:X4}");
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.PRG_READ_RESULT)
+                throw new IOException($"Invalid data received: {Command}");
+            var crc = (ushort)(Data[0] | (Data[1] << 8));
             return crc;
         }
 
@@ -681,23 +662,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="data">Data to write, address will be incremented after each byte</param>
         public void WriteCpu(ushort address, params byte[] data)
         {
-            if (Verbose)
-            {
-                if (data.Length <= 32)
-                {
-                    Console.Write($"Writing ");
-                    foreach (var b in data)
-                        Console.Write($"0x{b:X2} ");
-                    if (data.Length > 1)
-                        Console.Write($"=> 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU... ");
-                    else
-                        Console.Write($"=> 0x{address:X4} @ CPU... ");
-                }
-                else
-                {
-                    Console.Write($"Writing to 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU... ");
-                }
-            }
             int wlength = data.Length;
             int pos = 0;
             while (wlength > 0)
@@ -709,8 +673,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 pos += wdata.Length;
                 wlength -= wdata.Length;
             }
-            if (Verbose)
-                Console.WriteLine("OK");
             return;
         }
 
@@ -724,9 +686,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.PRG_WRITE_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.PRG_WRITE_DONE)
-                throw new IOException($"Invalid data received: {recv.Command}");
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
         }
 
         /// <summary>
@@ -734,14 +696,14 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// </summary>
         public void EraseFlashSector()
         {
-            SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, new byte[0]);
-            var recv = RecvCommand();
-            if (recv.Command == DumperCommand.FLASH_ERASE_ERROR)
-                throw new IOException($"Flash erase error (0x{recv.Data[0]:X2})");
-            else if (recv.Command == DumperCommand.FLASH_ERASE_TIMEOUT)
+            SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, Array.Empty<byte>());
+            var (Command, Data) = RecvCommand();
+            if (Command == DumperCommand.FLASH_ERASE_ERROR)
+                throw new IOException($"Flash erase error (0x{Data[0]:X2})");
+            else if (Command == DumperCommand.FLASH_ERASE_TIMEOUT)
                 throw new TimeoutException($"Flash erase timeout");
-            else if (recv.Command != DumperCommand.PRG_WRITE_DONE)
-                throw new IOException($"Invalid data received: {recv.Command}");
+            else if (Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
         }
 
         /// <summary>
@@ -751,23 +713,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="data">Data to write, address will be incremented after each byte</param>
         public void WriteFlash(ushort address, byte[] data)
         {
-            if (Verbose)
-            {
-                if (data.Length <= 32)
-                {
-                    Console.Write($"Writing ");
-                    foreach (var b in data)
-                        Console.Write($"0x{b:X2} ");
-                    if (data.Length > 1)
-                        Console.Write($"=> 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU flash... ");
-                    else
-                        Console.Write($"=> 0x{address:X4} @ CPU flash... ");
-                }
-                else
-                {
-                    Console.Write($"Writing to 0x{address:X4}-0x{address + data.Length - 1:X4} @ CPU flash... ");
-                }
-            }
             int wlength = data.Length;
             int pos = 0;
             while (wlength > 0)
@@ -780,8 +725,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 pos += wdata.Length;
                 wlength -= wdata.Length;
             }
-            if (Verbose)
-                Console.WriteLine("OK");
         }
 
         private void WriteCpuFlashBlock(ushort address, byte[] data)
@@ -794,13 +737,13 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.FLASH_WRITE_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command == DumperCommand.FLASH_WRITE_ERROR)
+            var (Command, Data) = RecvCommand();
+            if (Command == DumperCommand.FLASH_WRITE_ERROR)
                 throw new IOException($"Flash write error");
-            else if (recv.Command == DumperCommand.FLASH_WRITE_TIMEOUT)
+            else if (Command == DumperCommand.FLASH_WRITE_TIMEOUT)
                 throw new IOException($"Flash write timeout");
-            else if (recv.Command != DumperCommand.PRG_WRITE_DONE)
-                throw new IOException($"Invalid data received: {recv.Command}");
+            else if (Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
         }
 
         /// <summary>
@@ -818,30 +761,12 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns>Data from PPU (CHR) bus</returns>
         public byte[] ReadPpu(ushort address, int length)
         {
-            if (Verbose)
-            {
-                if (length > 1)
-                    Console.Write($"Reading 0x{address:X4}-0x{address + length - 1:X4} @ PPU... ");
-                else
-                    Console.Write($"Reading 0x{address:X4} @ PPU... ");
-            }
             var result = new List<byte>();
             while (length > 0)
             {
                 result.AddRange(ReadPpuBlock(address, Math.Min(MaxReadPacketSize, length)));
                 address += MaxReadPacketSize;
                 length -= MaxReadPacketSize;
-            }
-            if (Verbose)
-            {
-                if (result.Count <= 32)
-                {
-                    foreach (var b in result)
-                        Console.Write($"{b:X2} ");
-                    Console.WriteLine();
-                }
-                else if (Verbose)
-                    Console.WriteLine("OK");
             }
             return result.ToArray();
         }
@@ -854,10 +779,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.CHR_READ_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.CHR_READ_RESULT)
-                throw new IOException($"Invalid data received: {recv.Command}");
-            return recv.Data;
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.CHR_READ_RESULT)
+                throw new IOException($"Invalid data received: {Command}");
+            return Data;
         }
 
         /// <summary>
@@ -868,25 +793,16 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns>Checksum</returns>
         public ushort ReadPpuCrc(ushort address, int length)
         {
-            if (Verbose)
-            {
-                if (length > 1)
-                    Console.Write($"Reading CRC of 0x{address:X4}-0x{address + length - 1:X4} @ PPU... ");
-                else
-                    Console.Write($"Reading CRC of 0x{address:X4} @ PPU... ");
-            }
             var buffer = new byte[4];
             buffer[0] = (byte)(address & 0xFF);
             buffer[1] = (byte)((address >> 8) & 0xFF);
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.CHR_CRC_READ_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.CHR_READ_RESULT)
-                throw new IOException($"Invalid data received: {recv.Command}");
-            var crc = (ushort)(recv.Data[0] | (recv.Data[1] << 8));
-            if (Verbose)
-                Console.WriteLine($"{crc:X4}");
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.CHR_READ_RESULT)
+                throw new IOException($"Invalid data received: {Command}");
+            var crc = (ushort)(Data[0] | (Data[1] << 8));
             return crc;
         }
 
@@ -897,23 +813,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="data">Data to write, address will be incremented after each byte</param>
         public void WritePpu(ushort address, params byte[] data)
         {
-            if (Verbose)
-            {
-                if (data.Length <= 32)
-                {
-                    Console.Write($"Writing ");
-                    foreach (var b in data)
-                        Console.Write($"0x{b:X2} ");
-                    if (data.Length > 1)
-                        Console.Write($"=> 0x{address:X4}-0x{address + data.Length - 1:X4} @ PPU... ");
-                    else
-                        Console.Write($"=> 0x{address:X4} @ CPU... ");
-                }
-                else
-                {
-                    Console.Write($"Writing to 0x{address:X4}-0x{address + data.Length - 1:X4} @ PPU... ");
-                }
-            }
             int wlength = data.Length;
             int pos = 0;
             while (wlength > 0)
@@ -925,8 +824,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 pos += wdata.Length;
                 wlength -= wdata.Length;
             }
-            if (Verbose)
-                Console.WriteLine("OK");
             return;
         }
 
@@ -940,9 +837,9 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.CHR_WRITE_REQUEST, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.CHR_WRITE_DONE)
-                throw new IOException($"Invalid data received: {recv.Command}");
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.CHR_WRITE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
         }
 
         /// <summary>
@@ -955,8 +852,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             if (ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
-            if (Verbose)
-                Console.Write($"Reading FDS block(s) {startBlock}-{((maxBlockCount < byte.MaxValue) ? $"{startBlock + maxBlockCount - 1}" : "*")}... ");
             var blocks = new List<IFdsBlock>();
             var buffer = new byte[2];
             buffer[0] = startBlock;
@@ -966,12 +861,12 @@ namespace com.clusterrr.Famicom.DumperConnection
             int currentBlock = startBlock;
             while (receiving)
             {
-                var recv = RecvCommand();
-                switch (recv.Command)
+                var (Command, Data) = RecvCommand();
+                switch (Command)
                 {
                     case DumperCommand.FDS_READ_RESULT_BLOCK:
                         {
-                            var data = recv.Data.Take(recv.Data.Length - 2).ToArray();
+                            var data = Data.Take(Data.Length - 2).ToArray();
                             IFdsBlock newBlock;
                             if (currentBlock == 0)
                                 newBlock = FdsBlockDiskInfo.FromBytes(data);
@@ -981,8 +876,8 @@ namespace com.clusterrr.Famicom.DumperConnection
                                 newBlock = FdsBlockFileHeader.FromBytes(data);
                             else
                                 newBlock = FdsBlockFileData.FromBytes(data);
-                            newBlock.CrcOk = recv.Data[recv.Data.Length - 2] != 0;
-                            newBlock.EndOfHeadMeet = recv.Data[recv.Data.Length - 1] != 0;
+                            newBlock.CrcOk = Data[^2] != 0;
+                            newBlock.EndOfHeadMeet = Data[^1] != 0;
                             blocks.Add(newBlock);
                             currentBlock++;
                         }
@@ -1003,11 +898,9 @@ namespace com.clusterrr.Famicom.DumperConnection
                     case DumperCommand.FDS_BLOCK_CRC_ERROR:
                         throw new IOException("Block CRC error");
                     default:
-                        throw new IOException($"Invalid data received: {recv.Command}");
+                        throw new IOException($"Invalid data received: {Command}");
                 }
             }
-            if (Verbose)
-                Console.WriteLine("OK");
             return blocks.ToArray();
         }
 
@@ -1022,8 +915,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
             if (blockNumbers.Length != blocks.Length)
                 throw new ArgumentException("blockNumbers.Length != blocks.Length");
-            if (Verbose)
-                Console.Write($"Writing FDS block(s) {string.Join(", ", blockNumbers)}... ");
             var buffer = new byte[1 + blocks.Length + blocks.Length * 2 + blocks.Sum(e => e.Length)];
             buffer[0] = (byte)(blocks.Length);
             for (int i = 0; i < blocks.Length; i++)
@@ -1042,12 +933,10 @@ namespace com.clusterrr.Famicom.DumperConnection
                 pos += block.Length;
             }
             SendCommand(DumperCommand.FDS_WRITE_REQUEST, buffer);
-            var recv = RecvCommand();
-            switch (recv.Command)
+            var (Command, Data) = RecvCommand();
+            switch (Command)
             {
                 case DumperCommand.FDS_WRITE_DONE:
-                    if (Verbose)
-                        Console.WriteLine("OK");
                     return;
                 case DumperCommand.FDS_NOT_CONNECTED:
                     throw new IOException("RAM adapter IO error, is it connected?");
@@ -1066,7 +955,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 case DumperCommand.FDS_READ_RESULT_END:
                     throw new IOException("Unexpected end of data");
                 default:
-                    throw new IOException($"Invalid data received: {recv.Command}");
+                    throw new IOException($"Invalid data received: {Command}");
             }
         }
 
@@ -1100,20 +989,12 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns>Values of CIRAM A10 pin for $2000-$23FF, $2400-$27FF, $2800-$2BFF and $2C00-$2FFF</returns>
         public bool[] GetMirroringRaw()
         {
-            if (Verbose)
-                Console.Write("Reading mirroring... ");
-            SendCommand(DumperCommand.MIRRORING_REQUEST, new byte[0]);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.MIRRORING_RESULT)
-                throw new IOException($"Invalid data received: {recv.Command}");
-            var mirroringRaw = recv.Data;
-            if (Verbose)
-            {
-                foreach (var b in mirroringRaw)
-                    Console.Write($"{b} ");
-                Console.WriteLine();
-            }
-            return mirroringRaw.Select(v => v != 0 ? true : false).ToArray();
+            SendCommand(DumperCommand.MIRRORING_REQUEST, Array.Empty<byte>());
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.MIRRORING_RESULT)
+                throw new IOException($"Invalid data received: {Command}");
+            var mirroringRaw = Data;
+            return mirroringRaw.Select(v => v != 0).ToArray();
         }
 
         /// <summary>
@@ -1158,34 +1039,20 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[0] = (byte)(pageSize & 0xFF);
             buffer[1] = (byte)((pageSize >> 8) & 0xFF);
             SendCommand(DumperCommand.SET_FLASH_BUFFER_SIZE, buffer);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.SET_VALUE_DONE)
-                throw new IOException($"Invalid data received: {recv.Command}");
-        }
-
-        /// <summary>
-        /// Simulate reset (M2 goes to Z-state for a second)
-        /// </summary>
-        public void Reset()
-        {
-            if (Verbose)
-                Console.Write("Reset... ");
-            SendCommand(DumperCommand.RESET, new byte[0]);
-            var recv = RecvCommand();
-            if (recv.Command != DumperCommand.RESET_ACK)
-                throw new IOException($"Invalid data received: {recv.Command}");
-            if (Verbose)
-                Console.WriteLine("OK");
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.SET_VALUE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
         }
 
         public void Bootloader()
         {
-            SendCommand(DumperCommand.BOOTLOADER, new byte[0]);
+            SendCommand(DumperCommand.BOOTLOADER, Array.Empty<byte>());
         }
 
         public void Dispose()
         {
             Close();
+            GC.SuppressFinalize(this);
         }
     }
 }

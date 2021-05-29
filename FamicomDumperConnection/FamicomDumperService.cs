@@ -22,8 +22,6 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public static void StartServer(IFamicomDumperConnection dumper, string url)
         {
-            if (dumper is FamicomDumperConnection)
-                (dumper as FamicomDumperConnection).Verbose = true;
             FamicomDumperService.dumper = dumper;
             Host.CreateDefaultBuilder()
                 .ConfigureWebHostDefaults(webBuilder =>
@@ -51,6 +49,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -69,6 +68,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -87,6 +87,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -105,6 +106,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -123,6 +125,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -137,10 +140,13 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                Console.Write("Reset... ");
                 dumper.Reset();
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -155,15 +161,27 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new ReadResponse();
             try
             {
+                if (request.Length > 1)
+                    Console.Write($"Reading 0x{request.Address:X4}-0x{request.Address + request.Length - 1:X4} @ CPU... ");
+                else
+                    Console.Write($"Reading 0x{request.Address:X4} @ CPU... ");
                 byte[] data;
                 if (request.HasLength)
                     data = dumper.ReadCpu((ushort)request.Address, (ushort)request.Length);
                 else
                     data = new byte[] { dumper.ReadCpu((ushort)request.Address) };
+                if (data.Length <= 32)
+                {
+                    foreach (var b in data)
+                        Console.Write($"{b:X2} ");
+                    Console.WriteLine();
+                }
+                else Console.WriteLine("OK");
                 result.Data = ByteString.CopyFrom(data);
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -178,15 +196,27 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new ReadResponse();
             try
             {
+                if (request.Length > 1)
+                    Console.Write($"Reading 0x{request.Address:X4}-0x{request.Address + request.Length - 1:X4} @ PPU... ");
+                else
+                    Console.Write($"Reading 0x{request.Address:X4} @ PPU... ");
                 byte[] data;
                 if (request.HasLength)
                     data = dumper.ReadPpu((ushort)request.Address, (ushort)request.Length);
                 else
                     data = new byte[] { dumper.ReadPpu((ushort)request.Address) };
+                if (data.Length <= 32)
+                {
+                    foreach (var b in data)
+                        Console.Write($"{b:X2} ");
+                    Console.WriteLine();
+                }
+                else Console.WriteLine("OK");
                 result.Data = ByteString.CopyFrom(data);
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -201,10 +231,26 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                if (request.Data.Length <= 32)
+                {
+                    Console.Write($"Writing ");
+                    foreach (var b in request.Data)
+                        Console.Write($"0x{b:X2} ");
+                    if (request.Data.Length > 1)
+                        Console.Write($"=> 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ CPU... ");
+                    else
+                        Console.Write($"=> 0x{request.Address:X4} @ CPU... ");
+                }
+                else
+                {
+                    Console.Write($"Writing to 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ CPU... ");
+                }
                 dumper.WriteCpu((ushort)request.Address, request.Data.ToByteArray());
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -219,10 +265,26 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                if (request.Data.Length <= 32)
+                {
+                    Console.Write($"Writing ");
+                    foreach (var b in request.Data)
+                        Console.Write($"0x{b:X2} ");
+                    if (request.Data.Length > 1)
+                        Console.Write($"=> 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ PPU... ");
+                    else
+                        Console.Write($"=> 0x{request.Address:X4} @ PPU... ");
+                }
+                else
+                {
+                    Console.Write($"Writing to 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ PPU... ");
+                }
                 dumper.WritePpu((ushort)request.Address, request.Data.ToByteArray());
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -237,10 +299,16 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new ReadCrcResponse();
             try
             {
+                if (request.Length > 1)
+                    Console.Write($"Reading CRC of 0x{request.Address:X4}-0x{request.Address + request.Length - 1:X4} @ CPU... ");
+                else
+                    Console.Write($"Reading CRC of 0x{request.Address:X4} @ CPU... ");
                 result.Crc = dumper.ReadCpuCrc((ushort)request.Address, (ushort)request.Length);
+                Console.WriteLine($"{result.Crc:X4}");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -255,10 +323,16 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new ReadCrcResponse();
             try
             {
+                if (request.Length > 1)
+                    Console.Write($"Reading CRC of 0x{request.Address:X4}-0x{request.Address + request.Length - 1:X4} @ PPU... ");
+                else
+                    Console.Write($"Reading CRC of 0x{request.Address:X4} @ PPU... ");
                 result.Crc = dumper.ReadPpuCrc((ushort)request.Address, (ushort)request.Length);
+                Console.WriteLine($"{result.Crc:X4}");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -273,10 +347,26 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                if (request.Data.Length <= 32)
+                {
+                    Console.Write($"Writing ");
+                    foreach (var b in request.Data)
+                        Console.Write($"0x{b:X2} ");
+                    if (request.Data.Length > 1)
+                        Console.Write($"=> 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ flash... ");
+                    else
+                        Console.Write($"=> 0x{request.Address:X4} @ flash... ");
+                }
+                else
+                {
+                    Console.Write($"Writing to 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ flash... ");
+                }
                 dumper.WriteFlash((ushort)request.Address, request.Data.ToByteArray());
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -291,6 +381,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new ReadFdsResponse();
             try
             {
+                Console.Write($"Reading FDS block(s) {request.StartBlock}-{((request.MaxBlockCount < byte.MaxValue) ? $"{request.StartBlock + request.MaxBlockCount - 1}" : "*")}... ");
                 IFdsBlock[] blocks;
                 if (request.HasMaxBlockCount)
                     blocks = dumper.ReadFdsBlocks((byte)request.StartBlock, (byte)request.MaxBlockCount);
@@ -298,9 +389,11 @@ namespace com.clusterrr.Famicom.DumperConnection
                     blocks = dumper.ReadFdsBlocks((byte)request.StartBlock);
                 var blocksRaw = blocks.Select(block => ByteString.CopyFrom(block.ToBytes()));
                 result.FdsBlocks.AddRange(blocksRaw);
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -315,12 +408,15 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                Console.Write($"Writing FDS block(s) {string.Join(", ", request.BlockNumbers)}... ");
                 dumper.WriteFdsBlocks(
                     request.BlockNumbers.Select(b => (byte)b).ToArray(),
                     request.FdsBlocks.Select(block => block.ToByteArray()).ToArray());
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -335,10 +431,15 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new MirroringRawResponse();
             try
             {
+                Console.Write("Reading mirroring... ");
                 result.Mirroring.AddRange(dumper.GetMirroringRaw());
+                foreach (var b in result.Mirroring)
+                    Console.Write($"{b} ");
+                Console.WriteLine();
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -353,10 +454,14 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new MirroringResponse();
             try
             {
-                result.Mirroring = (MirroringResponse.Types.Mirroring)dumper.GetMirroring();
+                Console.Write("Reading mirroring... ");
+                var mirroring = dumper.GetMirroring();
+                Console.WriteLine(mirroring);
+                result.Mirroring = (MirroringResponse.Types.Mirroring)mirroring;
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -371,10 +476,13 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                Console.Write($"Setting maximum number of bytes in multi program mode to {request.PageSize}... ");
                 dumper.SetMaximumNumberOfBytesInMultiProgram((uint)request.PageSize);
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -389,10 +497,13 @@ namespace com.clusterrr.Famicom.DumperConnection
             var result = new EmptyResponse();
             try
             {
+                Console.Write("Erasing flash sector... ");
                 dumper.EraseFlashSector();
+                Console.WriteLine("OK");
             }
             catch (Exception ex)
             {
+                PrintError(ex);
                 result.ErrorInfo = new ErrorInfo()
                 {
                     ExceptionName = ex.GetType().ToString(),
@@ -400,6 +511,15 @@ namespace com.clusterrr.Famicom.DumperConnection
                 };
             }
             return Task.FromResult(result);
+        }
+
+        private static void PrintError(Exception ex)
+        {
+            Console.WriteLine($"ERROR {ex.GetType()}: " + ex.Message
+#if DEBUG
+                    + ex.StackTrace
+#endif
+                    );
         }
     }
 }
