@@ -4,7 +4,9 @@ This is the client for the Famicom Dumper/Programmer hardware:
 - [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project
 - [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - Arduino MEGA2560 Shield
 
-This application developed to run on Windows with .NET Framework 4.8 and Linux with Mono 6.6.0 or greater.
+## Requirements
+
+This application developed using .NET 5.0, so it can be run on Windows (x86, x64, arm), Linux (x64, arm) and OSX (x64). You need either install the [.NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0) framework or use the self-contained version.
 
 
 ## Features
@@ -12,12 +14,13 @@ This application developed to run on Windows with .NET Framework 4.8 and Linux w
 It can be used to:
 - Dump Famicom/NES cartridges using C# scripts to describe any mapper, also it's bundled with scripts for some popular mappers
 - Reverse engineer unknown mappers using C# scripts
-- Read/write battery backed PRG RAM to transfer game saves
+- Read/write battery-backed PRG RAM to transfer game saves
 - Read/write Famicom Disk System cards
-- (Re)write ultra cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both COOLBOY (with $600x registers) and COOLBOY2 aka MINDKIDS (with $500x registers)
+- (Re)write ultra-cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both COOLBOY (with $600x registers) and COOLBOY2 aka MINDKIDS (with $500x registers)
 - (Re)write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges
 - Test hardware in cartridges
 - Do everything described above over the network
+- Access dumper from your C#, C++, Dart, Go, Java, Kotlin, Node, Objective-C, PHP, Python, Ruby, etc. code using gRPC
 
 
 ## Usage
@@ -29,7 +32,7 @@ Usage: **famicom-dumper \<command\> [options]**
 Available commands:
 - **list-mappers** - list available mappers to dump
 - **dump** - dump cartridge
-- **server** - start server for remote dumping
+- **server** - start gRPC server
 - **script** - execute C# script specified by --cs-file option
 - **reset** - simulate reset (M2 goes to Z-state for a second)
 - **dump-fds** - dump FDS card using RAM adapter and FDS drive
@@ -53,10 +56,10 @@ Available commands:
 
 Available options:
 - **--port** <*com*> - serial port of dumper or serial number of FTDI device, default - **auto**
-- **--tcp-port** <*port*> - TCP port for client/server communication, default - **26672**
-- **--host** <*host*> - enable network client and connect to specified host
+- **--tcp-port** <*port*> - TCP port for gRPC communication, default - **26673**
+- **--host** <*host*> - enable gRPC client and connect to the specified host
 - **--mappers** <*directory*> - directory to search mapper scripts
-- **--mapper** <*mapper*> - number, name or path to C# script of mapper for dumping, default is 0 (NROM)
+- **--mapper** <*mapper*> - number, name or path to C# script of mapper for dumping, default - **0 (NROM)**
 - **--file** <*output.nes*> - output/input filename (.nes, .fds, .png or .sav)
 - **--prg-size** <*size*> - size of PRG memory to dump, you can use "K" or "M" suffixes
 - **--chr-size** <*size*> - size of CHR memory to dump, you can use "K" or "M" suffixes
@@ -76,7 +79,14 @@ Available options:
 
 
 ## Mapper script files
-Mapper files are stored in "mappers" subdirectory. When you specify a mapper number or name, the application compiles the scripts in that directory to find a matching one.
+Mapper script files are stored in the "mappers" directory. By default it's:
+- <*application_directory*>/mappers
+- <*current_directory*>/mappers
+- /usr/share/famicom-dumper/mappers (on *nix systems)
+
+Also you can specify it using **--mappers** option.
+
+When you specify a mapper number or name, the application compiles the scripts to find a matching one.
 
 Mapper scripts are written in C# language. Each script must contain class (any name allowed) that impliments [IMapper](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumper/IMapper.cs) interface.
 ```C#
@@ -304,7 +314,7 @@ Check "mappers" directory for examples.
 
 ## Other scripts
 
-You can run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain class (any name allowed) that contains **void Run(IFamicomDumperConnection dumper)** method. This method will be executed if --csfile option is specified. Also you can use [NesFile](https://github.com/ClusterM/famicom-dumper-client/blob/master/NesContainers/NesFile.cs) and [UnifFile](https://github.com/ClusterM/famicom-dumper-client/blob/master/NesContainers/UnifFile.cs) containers.
+You can run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain class (any name allowed) that contains **void Run(IFamicomDumperConnection dumper)** method. This method will be executed if --csfile option is specified. Also you can use [NesFile](https://github.com/ClusterM/nes-containers/blob/master/NesFile.cs) and [UnifFile](https://github.com/ClusterM/nes-containers/blob/master/UnifFile.cs) containers.
 
 You can run script alone like this:
 ```
@@ -318,9 +328,9 @@ famicom-dumper dump --mapper MMC3 --file game.nes --csfile DemoScript.cs
 So you can write your own code to interact with dumper object and read/write data from/to cartridge. This dumper object can be even on another PC (read below)! Check "scripts" directory for example scripts.
 
 
-## Remoting
+## gRPC
 
-You can start this application as server on one PC:
+You can start this application as gRPC server on one PC:
 ```
 famicom-dumper server --port COM14
 ```
@@ -331,6 +341,8 @@ famicom-dumper dump --mapper CNROM --file game.nes --host example.com
 ```
 
 It's useful if you want to reverse engineer cartridge of your remote friend. You can use all commands and scripts to interact with remote dumper just like it's connected locally.
+
+Also you can use gRPC to access dumper from other applications or your own code written in C#, C++, Dart, Go, Java, Kotlin, Node, Objective-C, PHP, Python, Ruby, etc. languages. Use [Dumper.proto](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumperConnection/Dumper.proto) to automatically generate client code.
 
 
 ## Examples
@@ -496,7 +508,7 @@ Start server on TCP port 9999 and let other person to dump cartridge over networ
 >famicom-dumper server --tcp-port 9999
 Autodetected virtual serial port: COM13
 Dumper initialization... OK
-Listening port 9999, press any key to stop
+Listening port 9999, press Ctrl-C to stop
 ~~~~
 
 Connect to remote dumper using TCP port 9999 and execute C# script:
