@@ -55,7 +55,7 @@ Available commands:
 - **info-coolgirl** - show information about COOLGIRL's flash memory
 
 Available options:
-- **--port** <*com*> - serial port of dumper or serial number of FTDI device, default - **auto**
+- **--port** <*com*> - serial port of dumper or serial number of dumper device, default - **auto**
 - **--tcp-port** <*port*> - TCP port for gRPC communication, default - **26673**
 - **--host** <*host*> - enable gRPC client and connect to the specified host
 - **--mappers** <*directory*> - directory to search mapper scripts
