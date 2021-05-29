@@ -1,8 +1,52 @@
-﻿using System;
-using System.Drawing;
+﻿/* Tiles dumper script
+ *
+ * Copyright notice for this file:
+ *  Copyright (C) 2021 Cluster
+ *  http://clusterrr.com
+ *  clusterrr@clusterrr.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
 
-namespace com.clusterrr.Famicom
+/*
+ * Usage: famicom-dumper script --cs-script DumpTiles.cs --mapper <mapper> --file <output_file.png> --chr-size <size>
+ */
+
+using System.Drawing;
+using System.Drawing.Imaging;
+
+class DumpTiles
 {
+    void Run(IFamicomDumperConnection dumper, string fileName, IMapper mapper, int chrSize)
+    {
+        if (mapper.Number >= 0)
+            Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
+        else
+            Console.WriteLine($"Using mapper: {mapper.Name}");
+        Console.WriteLine("Dumping...");
+        List<byte> chr = new();
+        chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
+        Console.WriteLine($"CHR memory size: {chrSize / 1024}K");
+        mapper.DumpChr(dumper, chr, chrSize);
+        var tiles = new TilesExtractor(chr.ToArray());
+        var allTiles = tiles.GetAllTiles();
+        Console.WriteLine($"Saving to {fileName}...");
+        allTiles.Save(fileName, ImageFormat.Png);
+    }
+
     public class TilesExtractor
     {
         private readonly byte[] data;

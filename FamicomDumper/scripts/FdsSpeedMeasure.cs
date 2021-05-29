@@ -34,7 +34,7 @@ class FdsSpeedMeasure
             bool ramAdapterPresent = true;
             dumper.WriteCpu(0x4023, 0x01); // enable disk registers
             dumper.WriteCpu(0x4026, 0x00);
-            dumper.WriteCpu(0x4025, /*0b00100110*/ 0x26); // reset
+            dumper.WriteCpu(0x4025, 0b00100110); // reset
             dumper.WriteCpu(0x0000, 0xFF); // to prevent open bus read
             var ext = dumper.ReadCpu(0x4033);
             if (ext != 0x00) ramAdapterPresent = false;
@@ -51,10 +51,10 @@ class FdsSpeedMeasure
             ext = dumper.ReadCpu(0x4033);
             if ((ext & 0x80) == 0) throw new IOException("Battery voltage is low or power supply is not connected");
 
-            Console.WriteLine("Measuring FDS drive speed, make sure that disk card is inserted and wait. Press ENTER to stop.");
+            Console.WriteLine("Measuring FDS drive speed, make sure that disk card is inserted and wait. Press any key to stop.");
             var cancellationTokenSource = new CancellationTokenSource();
             var task = SpeedMeasureLoop(dumper, cancellationTokenSource.Token);
-            Console.ReadLine();
+            Console.ReadKey();
             cancellationTokenSource.Cancel();
             task.GetAwaiter().GetResult();
         }

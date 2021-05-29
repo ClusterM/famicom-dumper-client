@@ -59,8 +59,12 @@
     <Compile Remove="mappers\VRC4b4d.cs" />
     <Compile Remove="mappers\VRC6a.cs" />
     <Compile Remove="mappers\VRC6b.cs" />
+    <Compile Remove="scripts\BatteryTest.cs" />
+    <Compile Remove="scripts\ChrRamTest.cs" />
     <Compile Remove="scripts\DemoScript.cs" />
+    <Compile Remove="scripts\DumpTiles.cs" />
     <Compile Remove="scripts\FdsSpeedMeasure.cs" />
+    <Compile Remove="scripts\PrgRamTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -193,6 +197,22 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="scripts\DemoScript.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="scripts\DumpTiles.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="scripts\ChrRamTest.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="scripts\BatteryTest.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="scripts\PrgRamTest.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
