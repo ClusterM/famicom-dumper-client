@@ -70,7 +70,6 @@ Available options:
 
 ## Mapper script files
 Mapper script files are stored in the "mappers" directory. By default it's:
-- <*application_directory*>/mappers
 - <*current_directory*>/mappers
 - /usr/share/famicom-dumper/mappers (on *nix systems)
 

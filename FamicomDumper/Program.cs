@@ -43,12 +43,12 @@ namespace com.clusterrr.Famicom
     public class Program
     {
         private static string[] MappersSearchDirectories = {
-            Path.Combine(AppContext.BaseDirectory, "mappers"),
+            //Path.Combine(AppContext.BaseDirectory, "mappers"),
             Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
             "/usr/share/famicom-dumper/mappers"
         };
         private static readonly string[] ScriptsSearchDirectories = {
-            Path.Combine(AppContext.BaseDirectory, "scripts"),
+            //Path.Combine(AppContext.BaseDirectory, "scripts"),
             Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
             "/usr/share/famicom-dumper/scripts"
         };
