@@ -8,6 +8,7 @@ using Google.Protobuf;
 using System.Linq;
 using System.Net.Http;
 using Grpc.Net.Client;
+using System.Text.RegularExpressions;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
@@ -38,8 +39,8 @@ namespace com.clusterrr.Famicom.DumperConnection
         private static void ThrowIfNotSuccess(ErrorInfo errorInfo)
         {
             if (errorInfo == null) return;
-
-            throw errorInfo.ExceptionName switch
+            var enBase = Regex.Replace(errorInfo.ExceptionName, @".*\.", "");
+            throw enBase switch
             {
                 nameof(IOException) => new IOException(errorInfo.ExceptionMessage),
                 nameof(TimeoutException) => new TimeoutException(errorInfo.ExceptionMessage),
