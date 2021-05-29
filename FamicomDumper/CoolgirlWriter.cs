@@ -258,7 +258,7 @@ namespace com.clusterrr.Famicom
 
             var writeStartTime = DateTime.Now;
             var lastSectorTime = DateTime.Now;
-            var timeEstimated = new TimeSpan();
+            TimeSpan timeEstimated;
             var badSectors = new List<int>();
 
             for (int bank = 0; bank < banks; bank += 4)

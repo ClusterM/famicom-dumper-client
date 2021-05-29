@@ -48,7 +48,7 @@ namespace com.clusterrr.Famicom
                         var blockIDs = new List<byte>();
                         var blocksToWrite = new List<IFdsBlock>();
 
-                        for (byte i = blocksWrited; i < blocks.Count(); i++)
+                        for (byte i = blocksWrited; i < blocks.Length; i++)
                         {
                             if (totalSize + blocks[i].Length + 3 <= dumper.MaxWritePacketSize)
                             {

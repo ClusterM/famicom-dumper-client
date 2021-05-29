@@ -42,12 +42,12 @@ namespace com.clusterrr.Famicom
     class Program
     {
         private static string[] MappersSearchDirectories = {
-            Path.Combine(System.AppContext.BaseDirectory), "mappers"),
+            Path.Combine(AppContext.BaseDirectory, "mappers"),
             Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
             "/usr/share/famicom-dumper/mappers"
         };
-        private static string[] ScriptsSearchDirectories = {
-            Path.Combine(System.AppContext.BaseDirectory), "scripts"),
+        private static readonly string[] ScriptsSearchDirectories = {
+            Path.Combine(AppContext.BaseDirectory, "scripts"),
             Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
             "/usr/share/famicom-dumper/scripts"
         };
@@ -70,14 +70,14 @@ namespace com.clusterrr.Famicom
             string filename = null;
             bool battery = false;
             string csFile = null;
-            string[] csArgs = new string[0];
+            string[] csArgs = Array.Empty<string>();
             string unifName = null;
             string unifAuthor = null;
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
             bool writePBBs = false;
-            List<int> badSectors = new List<int>();
+            List<int> badSectors = new();
             int testCount = -1;
             int tcpPort = 26673;
             bool ignoreBadSectors = false;
@@ -103,7 +103,7 @@ namespace com.clusterrr.Famicom
                         csArgs = args.Skip(i + 1).ToArray();
                         break;
                     }
-                    while (param.StartsWith("-") || param.StartsWith("—")) param = param.Substring(1);
+                    while (param.StartsWith("-") || param.StartsWith("—")) param = param[1..];
                     string value = i < args.Length - 1 ? args[i + 1] : "";
                     switch (param.ToLower())
                     {
@@ -267,13 +267,13 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-fds":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
                             FDS.WriteFDS(dumper, filename, needCheck);
                             break;
                         case "write-prg-ram":
                         case "write-sram":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
                             WritePrgRam(dumper, filename, mapper);
                             break;
                         case "test-prg-ram":
@@ -311,12 +311,12 @@ namespace com.clusterrr.Famicom
                         case "write-coolboy-direct":
                         case "write-coolboy-gpio": // for backward compatibility
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
                             CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
                             CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "info-coolboy":
@@ -330,7 +330,7 @@ namespace com.clusterrr.Famicom
                             break;
                         case "script":
                             if (string.IsNullOrEmpty(csFile))
-                                throw new ArgumentNullException("Please specify C# script using --cs-file argument");
+                                throw new ArgumentNullException("--cs-file", "Please specify C# script using --cs-file argument");
                             break;
                         case "server":
                             StartServer(dumper as FamicomDumperConnection, tcpPort);
@@ -426,7 +426,7 @@ namespace com.clusterrr.Famicom
 
         static void PrintHelp()
         {
-            Console.WriteLine($"Usage: {Path.GetFileName(Assembly.GetExecutingAssembly().Location)} <command> [<options>] [- <cs_script_arguments>]");
+            Console.WriteLine($"Usage: famicom-dumper <command> [<options>] [- <cs_script_arguments>]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-30}{1}", "list-mappers", "list available mappers to dump");
@@ -530,48 +530,42 @@ namespace com.clusterrr.Famicom
             tree = CSharpSyntaxTree.ParseText(source);
 
             // Compile
-            var dotNetAssemblyDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            var entryAssemblyDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             var cs = CSharpCompilation.Create("Script", new[] { tree },
                 new MetadataReference[]
                 {
-                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "netstandard.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Console.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Data.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Core.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Runtime.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotNetAssemblyDirectory, "System.Collections.dll")),
-                    MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location),
-                    MetadataReference.CreateFromFile(Path.Combine(entryAssemblyDirectory, "FamicomDumperConnection.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(entryAssemblyDirectory, "NesContainers.dll")),
+                    MetadataReference.CreateFromFile("netstandard.dll"),
+                    MetadataReference.CreateFromFile("System.dll"),
+                    MetadataReference.CreateFromFile("System.Console.dll"),
+                    MetadataReference.CreateFromFile("System.Data.dll"),
+                    MetadataReference.CreateFromFile("System.Core.dll"),
+                    MetadataReference.CreateFromFile("System.Runtime.dll"),
+                    MetadataReference.CreateFromFile("System.Collections.dll"),
+                    MetadataReference.CreateFromFile("FamicomDumperConnection.dll"),
+                    MetadataReference.CreateFromFile("NesContainers.dll"),
                 },
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
-            using (var memoryStream = new MemoryStream())
+            using var memoryStream = new MemoryStream();
+            EmitResult result = cs.Emit(memoryStream);
+            foreach (Diagnostic d in result.Diagnostics.Where(d => d.Severity != DiagnosticSeverity.Hidden))
             {
-                EmitResult result = cs.Emit(memoryStream);
-                foreach (Diagnostic d in result.Diagnostics.Where(d => d.Severity != DiagnosticSeverity.Hidden))
-                {
-                    Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition.Line - linesOffset + 1}, {d.Location.GetLineSpan().StartLinePosition.Character + 1}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
-                }
-                if (result.Success)
-                {
-                    var rawAssembly = memoryStream.ToArray();
-                    Assembly assembly = Assembly.Load(rawAssembly);
-                    // Save compiled assembly to cache (at least try)
-                    try
-                    {
-                        if (!Directory.Exists(cacheDirectory))
-                            Directory.CreateDirectory(cacheDirectory);
-                        File.WriteAllBytes(cacheFile, rawAssembly);
-                    }
-                    catch { }
-                    return assembly;
-                }
-                else throw new InvalidProgramException();
+                Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition.Line - linesOffset + 1}, {d.Location.GetLineSpan().StartLinePosition.Character + 1}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
             }
+            if (result.Success)
+            {
+                var rawAssembly = memoryStream.ToArray();
+                Assembly assembly = Assembly.Load(rawAssembly);
+                // Save compiled assembly to cache (at least try)
+                try
+                {
+                    if (!Directory.Exists(cacheDirectory))
+                        Directory.CreateDirectory(cacheDirectory);
+                    File.WriteAllBytes(cacheFile, rawAssembly);
+                }
+                catch { }
+                return assembly;
+            }
+            else throw new InvalidProgramException();
         }
 
         static IMapper CompileMapper(string path)
@@ -581,10 +575,10 @@ namespace com.clusterrr.Famicom
             if (!programs.Any())
                 throw new InvalidProgramException("There is no assemblies");
             Type program = programs.First();
-            var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
+            var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
             if (constructor == null)
                 throw new InvalidProgramException("There is no valid default constructor");
-            var mapper = constructor.Invoke(new object[0]);
+            var mapper = constructor.Invoke(Array.Empty<object>());
             if (!(mapper is IMapper))
                 throw new InvalidProgramException("Class doesn't implement IMapper interface");
             return mapper as IMapper;
@@ -635,7 +629,7 @@ namespace com.clusterrr.Famicom
             try
             {
                 // Is it static method with string[] parameter?
-                var staticMethod = program.GetMethod(SCRIPT_START_METHOD, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
+                var staticMethod = program.GetMethod(SCRIPT_START_METHOD, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, Array.Empty<ParameterModifier>());
                 if (staticMethod != null)
                 {
                     Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
@@ -643,7 +637,7 @@ namespace com.clusterrr.Famicom
                     return;
                 }
                 // Is it static method without string[] parameter?
-                staticMethod = program.GetMethod(SCRIPT_START_METHOD, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+                staticMethod = program.GetMethod(SCRIPT_START_METHOD, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, Array.Empty<ParameterModifier>());
                 if (staticMethod != null)
                 {
                     if (args.Any())
@@ -654,19 +648,19 @@ namespace com.clusterrr.Famicom
                 }
 
                 // Let's try instance method, need to call constructor first
-                var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, new Type[0], new ParameterModifier[0]);
+                var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                 if (constructor == null)
                     throw new InvalidProgramException($"There is no static {SCRIPT_START_METHOD} method and no valid default constructor");
-                var obj = constructor.Invoke(new object[0]);
+                var obj = constructor.Invoke(Array.Empty<object>());
                 // Is it instance method with string[] parameter?
-                var instanceMethod = obj.GetType().GetMethod(SCRIPT_START_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, new ParameterModifier[0]);
+                var instanceMethod = obj.GetType().GetMethod(SCRIPT_START_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection), typeof(string[]) }, Array.Empty<ParameterModifier>());
                 if (instanceMethod != null)
                 {
                     Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
                     instanceMethod.Invoke(obj, new object[] { dumper, args });
                     return;
                 }
-                instanceMethod = obj.GetType().GetMethod(SCRIPT_START_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, new ParameterModifier[0]);
+                instanceMethod = obj.GetType().GetMethod(SCRIPT_START_METHOD, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { typeof(FamicomDumperConnection) }, Array.Empty<ParameterModifier>());
                 if (instanceMethod != null)
                 {
                     if (args.Any())
@@ -720,7 +714,7 @@ namespace com.clusterrr.Famicom
             var mapperList = CompileAllMappers()
                 .Where(m => m.Value.Name.ToLower() == mapperName.ToLower()
                 || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
-            if (mapperList.Count() == 0) throw new KeyNotFoundException("Can't find mapper");
+            if (!mapperList.Any()) throw new KeyNotFoundException("Can't find mapper");
             var mapper = mapperList.First();
             Console.WriteLine($"Using {Path.GetFileName(mapper.Key)} as mapper file");
             return mapper.Value;
@@ -731,7 +725,7 @@ namespace com.clusterrr.Famicom
             var method = mapper.GetType().GetMethod(
                 "GetMirroring", BindingFlags.Instance | BindingFlags.Public,
                 null, CallingConventions.Any, new Type[] { typeof(IFamicomDumperConnection) },
-                new ParameterModifier[0]);
+                Array.Empty<ParameterModifier>());
             if (method == null) return dumper.GetMirroring();
             return (NesFile.MirroringType)method.Invoke(mapper, new object[] { dumper });
         }
@@ -740,10 +734,10 @@ namespace com.clusterrr.Famicom
         {
             var method = mapper.GetType().GetMethod(
                     "get_Submapper", BindingFlags.Instance | BindingFlags.Public,
-                    null, CallingConventions.Any, new Type[] { },
-                    new ParameterModifier[0]);
+                    null, CallingConventions.Any, Array.Empty<Type>(),
+                    Array.Empty<ParameterModifier>());
             if (method == null) return 0;
-            return (byte)method.Invoke(mapper, new object[] { });
+            return (byte)method.Invoke(mapper, Array.Empty<object>());
         }
 
         static void Dump(IFamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
@@ -754,8 +748,8 @@ namespace com.clusterrr.Famicom
             else
                 Console.WriteLine($"Using mapper: {mapper.Name}");
             Console.WriteLine("Dumping...");
-            List<byte> prg = new List<byte>();
-            List<byte> chr = new List<byte>();
+            List<byte> prg = new();
+            List<byte> chr = new();
             prgSize = prgSize >= 0 ? prgSize : mapper.DefaultPrgSize;
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
             if (prgSize > 0)
@@ -770,7 +764,7 @@ namespace com.clusterrr.Famicom
                 mapper.DumpChr(dumper, chr, chrSize);
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
-            NesFile.MirroringType mirroring = NesFile.MirroringType.Unknown;
+            NesFile.MirroringType mirroring;
             // TODO: move GetMapper to IMapper, so it will not be optional
             //mirroring = mapper.GetMirroring(dumper);
             mirroring = GetMirroring(dumper, mapper);
@@ -794,9 +788,11 @@ namespace com.clusterrr.Famicom
             }
             else
             {
-                var unifFile = new UnifFile();
-                unifFile.Version = 4;
-                unifFile.Mapper = mapper.UnifName;
+                var unifFile = new UnifFile
+                {
+                    Version = 4,
+                    Mapper = mapper.UnifName
+                };
                 if (unifName != null)
                     unifFile.GameName = unifName;
                 unifFile.Fields["PRG0"] = prg.ToArray();
@@ -960,7 +956,7 @@ namespace com.clusterrr.Famicom
             else
                 Console.WriteLine($"Using mapper: {mapper.Name}");
             Console.WriteLine("Dumping...");
-            List<byte> chr = new List<byte>();
+            List<byte> chr = new();
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
             Console.WriteLine($"CHR memory size: {chrSize / 1024}K");
             mapper.DumpChr(dumper, chr, chrSize);
