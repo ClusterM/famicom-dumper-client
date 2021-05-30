@@ -39,6 +39,14 @@ namespace com.clusterrr.Famicom.DumperConnection
                 .Run();
         }
 
+        public override Task<InitResponse> Init(EmptyRequest request, ServerCallContext context)
+        {
+            Console.Write("Dumper initialization... ");
+            bool initResult = dumper.Init();
+            Console.WriteLine(initResult ? "OK" : "faied");
+            return Task.FromResult(new InitResponse() { Success = initResult });
+        }
+
         public override Task<ProtocolVersionResponse> GetProtocolVersion(EmptyRequest request, ServerCallContext context)
         {
             var result = new ProtocolVersionResponse();

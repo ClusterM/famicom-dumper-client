@@ -534,10 +534,10 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         /// <summary>
-        /// Init dumper (flush queud data, check connection, read version)
+        /// Init dumper (flush queud data, check connection)
         /// </summary>
         /// <returns></returns>
-        public bool DumperInit()
+        public bool Init()
         {
             bool result = false;
             var oldTimeout = Timeout;

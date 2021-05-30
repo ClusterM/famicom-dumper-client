@@ -51,6 +51,16 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         /// <summary>
+        /// Init dumper (flush queud data, check connection)
+        /// </summary>
+        /// <returns></returns>
+        public bool Init()
+        {
+            var r = client.Init(new EmptyRequest());
+            return r.Success;
+        }
+
+        /// <summary>
         /// Famicom Dumper serial protocol version (depends on firmware)
         /// </summary>
         public byte ProtocolVersion

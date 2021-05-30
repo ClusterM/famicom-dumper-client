@@ -214,16 +214,11 @@ namespace com.clusterrr.Famicom
                 }
 
                 IFamicomDumperConnection dumper;
-
                 if (string.IsNullOrEmpty(remoteHost))
                 {
                     // Using local dumper
                     var localDumper = new FamicomDumperLocal(port);
                     localDumper.Open();
-                    Console.Write("Dumper initialization... ");
-                    bool prgInit = localDumper.DumperInit();
-                    if (!prgInit) throw new IOException("Can't init dumper");
-                    Console.WriteLine("OK");
                     dumper = localDumper;
                 }
                 else
@@ -231,6 +226,12 @@ namespace com.clusterrr.Famicom
                     // Using remote dumper
                     dumper = new FamicomDumperClient($"http://{remoteHost}:{tcpPort}");
                 }
+
+                Console.Write("Dumper initialization... ");
+                bool initResult = dumper.Init();
+                if (!initResult) throw new IOException("Can't init dumper");
+                Console.WriteLine("OK");
+
                 try
                 {
                     if (reset)

@@ -144,8 +144,14 @@ Mapper scripts are written in C# language. Each script must contain class (any n
 
 FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
 ```C#
- public interface IFamicomDumperConnection : IDisposable
+    public interface IFamicomDumperConnection : IDisposable
     {
+        /// <summary>
+        /// Init dumper (flush queud data, check connection)
+        /// </summary>
+        /// <returns></returns>
+        public bool Init();
+
         /// <summary>
         /// Famicom Dumper serial protocol version (depends on firmware)
         /// </summary>

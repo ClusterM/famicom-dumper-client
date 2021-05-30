@@ -8,6 +8,9 @@ option objc_class_prefix = "FD";
 package RemoteDumper;
 
 service Dumper {
+	// Init dumper (flush queud data, check connection)
+	rpc Init (EmptyRequest) returns (InitResponse);
+
 	// Get Famicom Dumper serial protocol version (depends on firmware)
 	rpc GetProtocolVersion (EmptyRequest) returns (ProtocolVersionResponse);
 
@@ -71,6 +74,10 @@ message EmptyRequest{
 
 message EmptyResponse{
 	optional ErrorInfo error_info = 1;
+}
+
+message InitResponse {
+	bool success = 1;
 }
 
 message ProtocolVersionResponse {

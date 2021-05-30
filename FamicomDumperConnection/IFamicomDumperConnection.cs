@@ -7,6 +7,12 @@ namespace com.clusterrr.Famicom.DumperConnection
     public interface IFamicomDumperConnection : IDisposable
     {
         /// <summary>
+        /// Init dumper (flush queud data, check connection)
+        /// </summary>
+        /// <returns></returns>
+        public bool Init();
+
+        /// <summary>
         /// Famicom Dumper serial protocol version (depends on firmware)
         /// </summary>
         byte ProtocolVersion { get; }
