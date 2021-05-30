@@ -61,6 +61,16 @@ namespace com.clusterrr.Famicom.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 132668315034203063
+        ///.
+        /// </summary>
+        internal static string buildtime {
+            get {
+                return ResourceManager.GetString("buildtime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
         /// </summary>
         internal static System.IO.UnmanagedMemoryStream DoneSound {
@@ -79,7 +89,7 @@ namespace com.clusterrr.Famicom.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 82b8ead (dirty).
+        ///   Looks up a localized string similar to c1d1805 (dirty).
         /// </summary>
         internal static string gitCommit {
             get {

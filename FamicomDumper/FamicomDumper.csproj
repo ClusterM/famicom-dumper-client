@@ -70,6 +70,10 @@
 
   <ItemGroup>
     <None Remove="Dumper.proto" />
+    <None Remove="Resources\buildtime.txt" />
+    <None Remove="Resources\commit.txt" />
+    <None Remove="Resources\done.wav" />
+    <None Remove="Resources\error.wav" />
   </ItemGroup>
 
   <ItemGroup>
@@ -239,6 +243,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\buildtime.txt" />
+    <Resource Include="Resources\commit.txt" />
+    <Resource Include="Resources\done.wav" />
+    <Resource Include="Resources\error.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -254,7 +265,7 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="echo. &gt; NUL 2&gt; &quot;$(ProjectDir)Resources\commit.txt&quot;&#xD;&#xA;&#xD;&#xA;git --version &amp;&amp; (&#xD;&#xA;  for /f %25%25i in ('git rev-parse --short HEAD') do (&#xD;&#xA;    git diff-index --quiet HEAD -- &amp;&amp; (&#xD;&#xA;      echo|set /p=&quot;%25%25i&quot; &gt;&gt; &quot;$(ProjectDir)Resources\commit.txt&quot;&#xD;&#xA;      SET ERRORLEVEL=0&#xD;&#xA;    ) || (&#xD;&#xA;      echo|set /p=&quot;%25%25i (dirty)&quot; &gt;&gt; &quot;$(ProjectDir)Resources\commit.txt&quot;&#xD;&#xA;    )&#xD;&#xA;  )&#xD;&#xA;) || SET ERRORLEVEL=0" />
+    <Exec Command="echo. &gt; NUL 2&gt; &quot;$(ProjectDir)Resources\commit.txt&quot;&#xD;&#xA;&#xD;&#xA;git --version &amp;&amp; (&#xD;&#xA;  for /f %25%25i in ('git rev-parse --short HEAD') do (&#xD;&#xA;    git diff-index --quiet HEAD -- &amp;&amp; (&#xD;&#xA;      echo|set /p=&quot;%25%25i&quot; &gt;&gt; &quot;$(ProjectDir)Resources\commit.txt&quot;&#xD;&#xA;      SET ERRORLEVEL=0&#xD;&#xA;    ) || (&#xD;&#xA;      echo|set /p=&quot;%25%25i (dirty)&quot; &gt;&gt; &quot;$(ProjectDir)Resources\commit.txt&quot;&#xD;&#xA;    )&#xD;&#xA;  )&#xD;&#xA;) || SET ERRORLEVEL=0&#xD;&#xA;&#xD;&#xA;powershell [Math]::Round((Get-Date).ToFileTimeUTC()) &gt;&quot;$(ProjectDir)Resources\buildtime.txt&quot;" />
   </Target>
 
 </Project>

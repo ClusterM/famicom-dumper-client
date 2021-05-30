@@ -57,13 +57,17 @@ namespace com.clusterrr.Famicom
         private const string SCRIPT_START_METHOD = "Run";
         private const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
         private const int DEFAULT_GRPC_PORT = 26673;
+        private static DateTime BUILD_TIME = DateTime.FromFileTimeUtc(long.Parse(Properties.Resources.buildtime));
 
         static int Main(string[] args)
         {
             Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}");
             Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
+#if DEBUG
+            Console.WriteLine($"  Debug version, build time: {BUILD_TIME.ToLocalTime()}");
+#endif
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
-            Console.WriteLine();
+            Console.WriteLine("");
             var startTime = DateTime.Now;
             string port = "auto";
             string mapperName = null;
@@ -447,16 +451,22 @@ namespace com.clusterrr.Famicom
             var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
 
             // Try to load cached assembly
-            if (File.Exists(cacheFile) && (new FileInfo(cacheFile).LastWriteTime >= new FileInfo(path).LastWriteTime))
+            ;
+            if (File.Exists(cacheFile))
             {
-                try
+                var cacheCompileTime = new FileInfo(cacheFile).LastWriteTime;
+                if ((cacheCompileTime >= new FileInfo(path).LastWriteTime) // recompile if script was changed
+                    && (cacheCompileTime >= BUILD_TIME.ToLocalTime())) // recompile if our app is newer
                 {
-                    var rawAssembly = File.ReadAllBytes(cacheFile);
-                    return Assembly.Load(rawAssembly);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Can't load cached compiled script file: {ex.Message}");
+                    try
+                    {
+                        var rawAssembly = File.ReadAllBytes(cacheFile);
+                        return Assembly.Load(rawAssembly);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Can't load cached compiled script file: {ex.Message}");
+                    }
                 }
             }
 
