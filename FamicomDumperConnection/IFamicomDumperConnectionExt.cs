@@ -33,6 +33,22 @@ namespace com.clusterrr.Famicom.DumperConnection
         uint Timeout { get; set; }
 
         /// <summary>
+        /// Read CRC16 checksum of data at CPU (PRG) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <param name="length">Number of bytes to read</param>
+        /// <returns>Checksum</returns>
+        ushort ReadCpuCrc(ushort address, int length);
+
+        /// <summary>
+        /// Read CRC16 checksum of data at PPU (CHR) bus
+        /// </summary>
+        /// <param name="address">Address to read from</param>
+        /// <param name="length">Number of bytes to read</param>
+        /// <returns>Checksum</returns>
+        ushort ReadPpuCrc(ushort address, int length);
+
+        /// <summary>
         /// Erase COOLBOY/GOOLGIRL current flash sector
         /// </summary>
         void EraseFlashSector();

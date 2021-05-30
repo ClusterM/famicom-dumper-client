@@ -27,14 +27,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         byte[] ReadCpu(ushort address, int length);
 
         /// <summary>
-        /// Read CRC16 checksum of data at CPU (PRG) bus
-        /// </summary>
-        /// <param name="address">Address to read from</param>
-        /// <param name="length">Number of bytes to read</param>
-        /// <returns>Checksum</returns>
-        ushort ReadCpuCrc(ushort address, int length);
-
-        /// <summary>
         /// Read single byte from PPU (CHR) bus
         /// </summary>
         /// <param name="address">Address to read from</param>
@@ -49,14 +41,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <returns>Data from PPU (CHR) bus</returns>
         byte[] ReadPpu(ushort address, int length);
 
-        /// <summary>
-        /// Read CRC16 checksum of data at PPU (CHR) bus
-        /// </summary>
-        /// <param name="address">Address to read from</param>
-        /// <param name="length">Number of bytes to read</param>
-        /// <returns>Checksum</returns>
-        ushort ReadPpuCrc(ushort address, int length);
- 
         /// <summary>
         /// Write data to CPU (PRG) bus
         /// </summary>
