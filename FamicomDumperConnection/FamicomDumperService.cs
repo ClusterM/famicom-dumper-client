@@ -1,5 +1,4 @@
-﻿using com.clusterrr.Famicom.Containers;
-using Google.Protobuf;
+﻿using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -382,19 +381,18 @@ namespace com.clusterrr.Famicom.DumperConnection
             try
             {
                 Console.Write($"Reading FDS block(s) {request.StartBlock}-{((request.MaxBlockCount < byte.MaxValue) ? $"{request.StartBlock + request.MaxBlockCount - 1}" : "*")}... ");
-                IFdsBlock[] blocks;
+                (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] blocks;
                 if (request.HasMaxBlockCount)
                     blocks = dumper.ReadFdsBlocks((byte)request.StartBlock, (byte)request.MaxBlockCount);
                 else
                     blocks = dumper.ReadFdsBlocks((byte)request.StartBlock);
-                result.FdsBlocks.AddRange(blocks.Select(block => new FdsBlock()
+                result.FdsBlocks.AddRange(blocks.Select(block => new ReceivedFdsBlock()
                 {
-                    BlockType = block.ValidTypeID,
-                    BlockData = ByteString.CopyFrom(block.ToBytes()),
+                    BlockData = ByteString.CopyFrom(block.Data),
                     CrcOk = block.CrcOk,
                     EndOfHeadMeet = block.EndOfHeadMeet
                 }));
-                Console.WriteLine("OK");
+                Console.WriteLine($"received {blocks.Length} blocks");
             }
             catch (Exception ex)
             {
@@ -416,7 +414,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 Console.Write($"Writing FDS block(s) {string.Join(", ", request.BlockNumbers)}... ");
                 dumper.WriteFdsBlocks(
                     request.BlockNumbers.Select(b => (byte)b).ToArray(),
-                    request.FdsBlocks.Select(block => block.BlockData.ToByteArray()).ToArray());
+                    request.BlocksData.Select(block => block.ToByteArray()).ToArray());
                 Console.WriteLine("OK");
             }
             catch (Exception ex)

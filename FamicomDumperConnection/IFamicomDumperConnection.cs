@@ -109,7 +109,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="startBlock">First block number to read (zero-based)</param>
         /// <param name="maxBlockCount">Maximum number of blocks to read</param>
         /// <returns>Array of Famicom Disk System blocks</returns>
-        IFdsBlock[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
+        public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
 
         /// <summary>
         /// Write blocks to Famicom Disk System card
@@ -117,26 +117,13 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
         /// <param name="blocks">Raw blocks data</param>
         void WriteFdsBlocks(byte[] blockNumbers, byte[][] blocks);
-        /// <summary>
-        /// Write blocks to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="blocks">Blocks data</param>
-        void WriteFdsBlocks(byte[] blockNumbers, IEnumerable<IFdsBlock> blocks);
 
         /// <summary>
         /// Write single block to Famicom Disk System card
         /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+        /// <param name="blockNumbers">Block number to write (zero-based)</param>
         /// <param name="block">Block data</param>
         void WriteFdsBlocks(byte blockNumber, byte[] block);
-
-        /// <summary>
-        /// Write single block to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="block">Block data</param>
-        void WriteFdsBlocks(byte blockNumber, IFdsBlock block);
 
         /// <summary>
         /// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)

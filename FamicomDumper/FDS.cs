@@ -61,7 +61,7 @@ namespace com.clusterrr.Famicom
                         if (!blocksToWrite.Any())
                             throw new OutOfMemoryException("Dumper has not enoght memory to write such big block");
                         Console.Write($"Writing block(s): {string.Join(", ", blockIDs)}... ");
-                        dumper.WriteFdsBlocks(blockIDs.ToArray(), blocksToWrite.ToArray());
+                        dumper.WriteFdsBlocks(blockIDs.ToArray(), blocksToWrite.Select(b => b.ToBytes()).ToArray());
                         Console.WriteLine("OK");
                         blocksWrited += (byte)blocksToWrite.Count;
                     }
@@ -200,57 +200,30 @@ namespace com.clusterrr.Famicom
 
         private static IEnumerable<IFdsBlock> DumpSlow(IFamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
         {
-            var blocks = new List<IFdsBlock>();
+            var result = new List<IFdsBlock>();
             byte blockNumber = 0;
+            byte fileAmount = 0;
+            byte visibleBlockAmount = 0;
             while (true)
             {
                 switch (blockNumber)
                 {
                     case 0:
-                        Console.Write("Reading disk info block... ");
+                        Console.Write("Reading block #0 (disk info block)... ");
                         break;
                     case 1:
-                        Console.Write("Reading file amount block... ");
+                        Console.Write("Reading block #1 (file amount block)... ");
                         break;
                     default:
                         if ((blockNumber % 2) == 0)
-                            Console.Write($"Reading file #{(blockNumber - 2) / 2}/{(blocks[1] as FdsBlockFileAmount).FileAmount} header block... ");
+                            Console.Write($"Reading block #{blockNumber} (file #{(blockNumber - 2) / 2}/{(result[1] as FdsBlockFileAmount).FileAmount} header block)... ");
                         else
-                            Console.Write($"Reading file #{(blockNumber - 2) / 2}/{(blocks[1] as FdsBlockFileAmount).FileAmount} data block... ");
+                            Console.Write($"Reading block #{blockNumber} (file #{(blockNumber - 2) / 2}/{(result[1] as FdsBlockFileAmount).FileAmount} data block)... ");
                         break;
                 }
                 var fdsData = dumper.ReadFdsBlocks(blockNumber, 1);
-                if (fdsData.Length == 0)
-                {
-                    if (blocks.Count > 2 && blocks.Count >= 2 + (blocks[1] as FdsBlockFileAmount).FileAmount * 2)
-                    {
-                        Console.WriteLine("Invalid block, it's not hidden file, aboritng");
-                        break;
-                    }
-                    throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2})");
-                }
-                var block = fdsData[0];
-                if (!block.IsValid)
-                {
-                    switch (blockNumber)
-                    {
-                        case 0:
-                            throw new IOException($"Invalid disk info block");
-                        case 1:
-                            throw new IOException($"Invalid file amount block");
-                    }
-                    if (blocks.Count >= 2 + (blocks[1] as FdsBlockFileAmount).FileAmount * 2)
-                    {
-                        Console.WriteLine("Invalid block, it's not hidden file, abortitng");
-                        break;
-                    }
-                    else
-                    {
-                        // Fatal error if bad block ID on non-hidden file
-                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2}) type");
-                    }
-                }
-                if (!block.CrcOk)
+                if (fdsData.Length == 0) throw new IOException($"Can't read block #{blockNumber}");
+                if (!fdsData[0].CrcOk)
                 {
                     switch (blockNumber)
                     {
@@ -259,19 +232,48 @@ namespace com.clusterrr.Famicom
                         case 1:
                             throw new IOException($"Invalid CRC on file amount block");
                     }
-                    if (blocks.Count < 2 + (blocks[1] as FdsBlockFileAmount).FileAmount * 2)
-                    {
-                        // Fatal error if bad CRC on non-hidden file
-                        throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2})");
-                    }
+                    // Fatal error if bad CRC on non-hidden file
+                    if (result.Count < visibleBlockAmount)
+                        throw new IOException($"Invalid CRC on block");
                     else
-                    {
-                        Console.WriteLine("Invalid CRC, it's not hidden file, abortitng");
                         break;
-                    }
                 }
-                blocks.AddRange(fdsData);
+                IFdsBlock block;
+                switch (blockNumber)
+                {
+                    case 0:
+                        block = FdsBlockDiskInfo.FromBytes(fdsData[0].Data);
+                        break;
+                    case 1:
+                        block = FdsBlockFileAmount.FromBytes(fdsData[0].Data);
+                        fileAmount = (block as FdsBlockFileAmount).FileAmount;
+                        visibleBlockAmount = (byte)(2 + fileAmount * 2);
+                        break;
+                    default:
+                        if ((blockNumber % 2) == 0)
+                            block = FdsBlockFileHeader.FromBytes(fdsData[0].Data);
+                        else
+                            block = FdsBlockFileData.FromBytes(fdsData[0].Data);
+                        break;
+                }
+                if (!block.IsValid)
+                {
+                    switch (block.GetType().Name)
+                    {
+                        case nameof(FdsBlockDiskInfo):
+                            throw new IOException($"Invalid disk info block");
+                        case nameof(FdsBlockFileAmount):
+                            throw new IOException($"Invalid file amount block");
+                    }
+                    // Fatal error if bad block ID on non-hidden file
+                    if (result.Count < visibleBlockAmount)
+                        throw new IOException($"Invalid block");
+                    else
+                        break;
+                }
+                result.Add(block);
                 Console.WriteLine($"OK");
+
                 // Some info
                 if (printDiskInfo)
                 {
@@ -281,7 +283,7 @@ namespace com.clusterrr.Famicom
                             PrintDiskHeaderInfo(block as FdsBlockDiskInfo);
                             break;
                         case 1:
-                            Console.WriteLine($"Number of non-hidden files: {(block as FdsBlockFileAmount).FileAmount}");
+                            Console.WriteLine($"Number of non-hidden files: {fileAmount}");
                             break;
                         default:
                             if ((blockNumber % 2) == 0)
@@ -292,92 +294,87 @@ namespace com.clusterrr.Famicom
                             break;
                     }
                 }
-                // Abort if end of head meet
-                if (block.EndOfHeadMeet)
-                {
-                    Console.WriteLine("End of head meet, aborting");
-                    break;
-                }
                 // Abort if last file dumped
-                if (!dumpHiddenFiles && (blocks.Count >= 2) && (blocks.Count >= 2 + (blocks[1] as FdsBlockFileAmount).FileAmount * 2))
+                if (!dumpHiddenFiles && (result.Count >= 2) && (result.Count >= visibleBlockAmount))
                     break;
                 blockNumber++;
             }
             if (dumpHiddenFiles)
             {
-                Console.WriteLine($"Number of hidden files: {(blocks.Count - 2) / 2 - (blocks[1] as FdsBlockFileAmount).FileAmount}");
+                Console.WriteLine($"Number of hidden files: {(result.Count - 2) / 2 - (result[1] as FdsBlockFileAmount).FileAmount}");
             }
-            return blocks;
+            return result;
         }
 
-        private static IEnumerable<IFdsBlock> DumpFast(IFamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
+        private static IFdsBlock[] DumpFast(IFamicomDumperConnection dumper, bool dumpHiddenFiles = false, bool printDiskInfo = false)
         {
             Console.Write($"Reading disk... ");
             var blocks = dumper.ReadFdsBlocks().ToArray();
+            Console.WriteLine($"Done");
+            List<IFdsBlock> result = new();
             if (blocks.Length == 0)
                 throw new IOException("Invalid disk info block");
-            if (!blocks[0].IsValid)
-                throw new IOException($"Invalid disk info block type");
             if (!blocks[0].CrcOk)
                 throw new IOException($"Invalid CRC on disk info block");
+            var fdsBlockDiskInfo = FdsBlockDiskInfo.FromBytes(blocks[0].Data);
+            if (!fdsBlockDiskInfo.IsValid)
+                throw new IOException($"Invalid disk info block type");
             if (printDiskInfo)
-                PrintDiskHeaderInfo(blocks[0] as FdsBlockDiskInfo);
+                PrintDiskHeaderInfo(fdsBlockDiskInfo);
+            result.Add(fdsBlockDiskInfo);
             if (blocks.Length == 1)
                 throw new IOException("Invalid file amount block");
-            if (!blocks[1].IsValid)
-                throw new IOException($"Invalid file amount block type");
             if (!blocks[1].CrcOk)
                 throw new IOException($"Invalid CRC on file amount block");
-            Console.WriteLine($"Done");
-            var fileAmount = (blocks[1] as FdsBlockFileAmount).FileAmount;
+            var fdsBlockFileAmount = FdsBlockFileAmount.FromBytes(blocks[1].Data);
+            if (!fdsBlockFileAmount.IsValid)
+                throw new IOException($"Invalid file amount block type");
+            var fileAmount = fdsBlockFileAmount.FileAmount;
+            byte visibleBlockAmount = (byte)(2 + fileAmount * 2);
             if (printDiskInfo)
                 Console.WriteLine($"Number of non-hidden files: {fileAmount}");
+            result.Add(fdsBlockFileAmount);
 
             // Check files and print info
-            int validBlocks = 2 + fileAmount * 2;
-            for (int blockNumber = 2; blockNumber < (dumpHiddenFiles ? blocks.Length : (2 + fileAmount * 2)); blockNumber++)
+            for (int blockNumber = 2; blockNumber < (dumpHiddenFiles ? blocks.Length : visibleBlockAmount); blockNumber++)
             {
-                var block = blocks[blockNumber];
-                if (!block.IsValid)
+                if (!blocks[blockNumber].CrcOk)
                 {
-                    if (blocks.Length < 2 + fileAmount * 2)
-                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2}) type");
-                    else
+                    if (blocks.Length < visibleBlockAmount)
                     {
-                        if (printDiskInfo)
-                            Console.WriteLine($"Invalid block #{blockNumber}, it's not hidden file, aboritng");
-                        validBlocks = blockNumber;
-                        break;
-                    }
-                }
-                if (!block.CrcOk)
-                {
-                    if (blocks.Length < 2 + fileAmount * 2)
                         throw new IOException($"Invalid CRC on block #{blockNumber} (file #{(blockNumber - 2) / 2})");
+                    }
                     else
                     {
                         if (printDiskInfo)
                             Console.WriteLine($"Invalid CRC on block #{blockNumber}, it's not hidden file, aboritng");
-                        validBlocks = blockNumber;
                         break;
                     }
                 }
-                if ((blockNumber % 2) == 0)
+                IFdsBlock block = (blockNumber % 2 == 0)
+                    ? FdsBlockFileHeader.FromBytes(blocks[blockNumber].Data)
+                    : FdsBlockFileData.FromBytes(blocks[blockNumber].Data);
+                if (!block.IsValid)
                 {
-                    if (printDiskInfo)
-                    {
-                        Console.WriteLine($"File #{(blockNumber - 2) / 2}/{fileAmount}:");
-                        PrintFileHeaderInfo(block as FdsBlockFileHeader);
-                    }
+                    if (blocks.Length < visibleBlockAmount)
+                        throw new IOException($"Invalid block #{blockNumber} (file #{(blockNumber - 2) / 2}) type");
+                    else
+                        break;
                 }
+                if (block is FdsBlockFileHeader && printDiskInfo)
+                {
+                    Console.WriteLine($"File #{(blockNumber - 2) / 2}/{fileAmount}:");
+                    PrintFileHeaderInfo(block as FdsBlockFileHeader);
+                }
+                result.Add(block);
             }
-            if (blocks.Length < 2 + fileAmount * 2)
+            if (blocks.Length < visibleBlockAmount)
                 throw new IOException($"Only {(blocks.Length - 2) / 2} of {fileAmount} valid files received");
             if (dumpHiddenFiles && printDiskInfo)
             {
                 Console.WriteLine($"Number of hidden files: {(blocks.Length - 2) / 2 - fileAmount}");
             }
-            return blocks.Take(validBlocks);
+            return result.ToArray();
         }
 
         public static void PrintDiskHeaderInfo(FdsBlockDiskInfo header)

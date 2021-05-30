@@ -1,13 +1,11 @@
 ﻿using com.clusterrr.Famicom.Containers;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using RemoteDumper;
-using System.IO;
 using Google.Protobuf;
+using Grpc.Net.Client;
+using RemoteDumper;
+using System;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
-using Grpc.Net.Client;
 using System.Text.RegularExpressions;
 
 namespace com.clusterrr.Famicom.DumperConnection
@@ -276,7 +274,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <param name="startBlock">First block number to read (zero-based)</param>
         /// <param name="maxBlockCount">Maximum number of blocks to read</param>
         /// <returns>Array of Famicom Disk System blocks</returns>
-        public IFdsBlock[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue)
+        public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue)
         {
             var r = client.ReadFdsBlocks(new ReadFdsRequest()
             {
@@ -284,19 +282,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 MaxBlockCount = maxBlockCount
             });
             ThrowIfNotSuccess(r.ErrorInfo);
-            return r.FdsBlocks.Select(block => {
-                IFdsBlock parsedBlock = block.BlockType switch
-                {
-                    1 => FdsBlockDiskInfo.FromBytes(block.BlockData.ToByteArray()),
-                    2 => FdsBlockFileAmount.FromBytes(block.BlockData.ToByteArray()),
-                    3 => FdsBlockFileHeader.FromBytes(block.BlockData.ToByteArray()),
-                    4 => FdsBlockFileData.FromBytes(block.BlockData.ToByteArray()),
-                    _ => throw new InvalidDataException("Invalid FDS block type"),
-                };
-                parsedBlock.CrcOk = block.CrcOk;
-                parsedBlock.EndOfHeadMeet = block.EndOfHeadMeet;
-                return parsedBlock;
-            }).ToArray();
+            return r.FdsBlocks.Select(block => (block.BlockData.ToByteArray(), block.CrcOk, block.EndOfHeadMeet)).ToArray();
         }
 
         /// <summary>
@@ -308,29 +294,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             var request = new WriteFdsRequest();
             request.BlockNumbers.AddRange(blockNumbers.Select(b => (uint)b));
-            request.FdsBlocks.AddRange(blocks.Select(block => new FdsBlock()
-            {
-                BlockType = block[0],
-                BlockData = ByteString.CopyFrom(block[0])
-            }));
-            var r = client.WriteFdsBlocks(request);
-            ThrowIfNotSuccess(r.ErrorInfo);
-        }
-
-        /// <summary>
-        /// Write blocks to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="blocks">Blocks data</param>
-        public void WriteFdsBlocks(byte[] blockNumbers, IEnumerable<IFdsBlock> blocks)
-        {
-            var request = new WriteFdsRequest();
-            request.BlockNumbers.AddRange(blockNumbers.Select(b => (uint)b));
-            request.FdsBlocks.AddRange(blocks.Select(block => new FdsBlock()
-            {
-                BlockType = block.ValidTypeID,
-                BlockData = ByteString.CopyFrom(block.ToBytes())
-            }));
+            request.BlocksData.AddRange(blocks.Select(block => ByteString.CopyFrom(block)));
             var r = client.WriteFdsBlocks(request);
             ThrowIfNotSuccess(r.ErrorInfo);
         }
@@ -344,29 +308,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             var request = new WriteFdsRequest();
             request.BlockNumbers.Add(blockNumber);
-            request.FdsBlocks.Add(new FdsBlock()
-            {
-                BlockType = block[0],
-                BlockData = ByteString.CopyFrom(block)
-            });
-            var r = client.WriteFdsBlocks(request);
-            ThrowIfNotSuccess(r.ErrorInfo);
-        }
-
-        /// <summary>
-        /// Write single block to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="block">Block data</param>
-        public void WriteFdsBlocks(byte blockNumber, IFdsBlock block)
-        {
-            var request = new WriteFdsRequest();
-            request.BlockNumbers.Add(blockNumber);
-            request.FdsBlocks.Add(new FdsBlock()
-            {
-                BlockType = block.ValidTypeID,
-                BlockData = ByteString.CopyFrom(block.ToBytes())
-            });
+            request.BlocksData.Add(ByteString.CopyFrom(block));
             var r = client.WriteFdsBlocks(request);
             ThrowIfNotSuccess(r.ErrorInfo);
         }

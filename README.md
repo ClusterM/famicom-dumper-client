@@ -144,7 +144,7 @@ Mapper scripts are written in C# language. Each script must contain class (any n
 
 FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
 ```C#
-    public interface IFamicomDumperConnection : IDisposable
+ public interface IFamicomDumperConnection : IDisposable
     {
         /// <summary>
         /// Famicom Dumper serial protocol version (depends on firmware)
@@ -249,7 +249,7 @@ FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com
         /// <param name="startBlock">First block number to read (zero-based)</param>
         /// <param name="maxBlockCount">Maximum number of blocks to read</param>
         /// <returns>Array of Famicom Disk System blocks</returns>
-        IFdsBlock[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
+        public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
 
         /// <summary>
         /// Write blocks to Famicom Disk System card
@@ -257,26 +257,13 @@ FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com
         /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
         /// <param name="blocks">Raw blocks data</param>
         void WriteFdsBlocks(byte[] blockNumbers, byte[][] blocks);
-        /// <summary>
-        /// Write blocks to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="blocks">Blocks data</param>
-        void WriteFdsBlocks(byte[] blockNumbers, IEnumerable<IFdsBlock> blocks);
 
         /// <summary>
         /// Write single block to Famicom Disk System card
         /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+        /// <param name="blockNumbers">Block number to write (zero-based)</param>
         /// <param name="block">Block data</param>
         void WriteFdsBlocks(byte blockNumber, byte[] block);
-
-        /// <summary>
-        /// Write single block to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="block">Block data</param>
-        void WriteFdsBlocks(byte blockNumber, IFdsBlock block);
 
         /// <summary>
         /// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)
