@@ -279,19 +279,23 @@ namespace com.clusterrr.Famicom.DumperConnection
                 if (portName == null)
                 {
                     // Port still not detected, let's try Linux methods
-                    var devices = GetLinuxUsbDevices();
-                    var dumpers = devices.Where(d =>
+                    try
                     {
-                        var productFile = Path.Combine(d, "product");
-                        return File.Exists(productFile) && DeviceNames.Contains(File.ReadAllText(productFile).Trim());
-                    });
-                    if (dumpers.Any())
-                    {
-                        portName = LinuxDeviceToPort(dumpers.First());
-                        if (string.IsNullOrEmpty(portName))
-                            throw new IOException($"Can't detect device path");
-                        Console.WriteLine($"Autodetected USB device path: {portName}");
+                        var devices = GetLinuxUsbDevices();
+                        var dumpers = devices.Where(d =>
+                        {
+                            var productFile = Path.Combine(d, "product");
+                            return File.Exists(productFile) && DeviceNames.Contains(File.ReadAllText(productFile).Trim());
+                        });
+                        if (dumpers.Any())
+                        {
+                            portName = LinuxDeviceToPort(dumpers.First());
+                            if (string.IsNullOrEmpty(portName))
+                                throw new IOException($"Can't detect device path");
+                            Console.WriteLine($"Autodetected USB device path: {portName}");
+                        }
                     }
+                    catch { }
                 }
 
                 if (portName == null)
