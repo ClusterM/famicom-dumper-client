@@ -1,49 +1,52 @@
 ﻿class DemoScript // Class name doesn't matter
 {
-    // But method signature must be like this. Also you can make this method static.
-    void Run(IFamicomDumperConnection dumper, string[] args)
+    /* 
+     * Main method name must be "Run". You can specify those parameters in any order:
+     * 
+     *  IFamicomDumperConnection dumper - dumper object used to access dumper
+     *  string filename                 - filename specified by --file argument
+     *  IMapper mapper                  - mapper object compiled from mapper script specified by --mapper argument
+     *  int prgSize                     - PRG size specified by --prg-size argument (parsed)
+     *  int chrSize                     - CHR size specified by --chr-size argument (parsed)
+     *  string unifName                 - string specified by --unif-name argument
+     *  string unifAuthor               - string specified by --unif-author argument
+     *  bool battery                    - true if --battery argument is specified
+     *  string[] args                   - additional command line arguments
+     * 
+     * You can specify additional arguments this way: >famicom-dumper script --csfile DemoScript.cs - argument1 argument2 argument3
+     * 
+     * Always define default value if parameter is optional.
+     * The only exception is the "mapper" parameter, the "NROM" mapper will be used by default.
+     * Also "args" will be a zero-length array if additional arguments are not specified
+     * 
+     */
+    void Run(IFamicomDumperConnection dumper, string[] args, IMapper mapper, int prgSize = 128 * 1024, int chrSize = -1)
     {
-        // You can parse additional command line arguments if need
-        // Specify arguments this way: >FamicomDumper.exe script --csfile DemoScript.cs - argument1 argument2 argument3
+        if (mapper.Number >= 0)
+            Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
+        else
+            Console.WriteLine($"Using mapper: {mapper.Name}");
+
+        if (chrSize < 0)
+        {
+            // Oh no, CHR size is not specified! Lets use mapper's default
+            chrSize = mapper.DefaultChrSize;
+        }
+
+        Console.WriteLine($"PRG size: {prgSize}");
+        Console.WriteLine($"CHR size: {chrSize}");
+
         if (args.Any())
-            Console.WriteLine("Command line arguments: " + string.Join(", ", args));
+            Console.WriteLine("Additional command line arguments: " + string.Join(", ", args));
 
-        Console.WriteLine("Please insert MMC3 cartridge and press enter");
-        Console.ReadLine();
+        // You can use other methods
+        Reset(dumper);
+    }
 
-        Console.WriteLine("Let's check - how many PRG banks on this MMC3 cartridge");
-        byte[] firstBank = null;
-        for (var bank = 0; ; bank = bank == 0 ? 1 : bank * 2)
-        {
-            if (bank > 256) throw new InvalidDataException("Bank number out of range, did you actually insert the MMC3 cartridge?");
-            Console.Write($"Reading PRG bank #{bank}... ");
-            dumper.WriteCpu(0x8000, 6, (byte)bank);
-            var data = dumper.ReadCpu(0x8000, 0x2000);
-            Console.WriteLine("OK");
-            if (bank == 0)
-                firstBank = data;
-            else if (Enumerable.SequenceEqual(data, firstBank))
-            {
-                Console.WriteLine($"There are {bank} PRG banks on this cartridge, {bank * 0x2000 / 1024} KBytes in total");
-                break;
-            }
-        }
-
-        Console.WriteLine("Let's check - how many CHR banks on this MMC3 cartridge");
-        for (var bank = 0; ; bank = bank == 0 ? 1 : bank * 2)
-        {
-            if (bank > 256) throw new InvalidDataException("Bank number out of range, did you actually insert the MMC3 cartridge?");
-            Console.Write($"Reading CHR bank #{bank}... ");
-            dumper.WriteCpu(0x8000, 2, (byte)bank);
-            var data = dumper.ReadPpu(0x1000, 0x0400);
-            Console.WriteLine("OK");
-            if (bank == 0)
-                firstBank = data;
-            else if (Enumerable.SequenceEqual(data, firstBank))
-            {
-                Console.WriteLine($"There are {bank} CHR banks on this cartridge, {bank * 0x0400 / 1024} KBytes in total");
-                break;
-            }
-        }
+    void Reset(IFamicomDumperConnection dumper)
+    {
+        Console.Write("Reset... ");
+        dumper.Reset();
+        Console.WriteLine("OK");
     }
 }
