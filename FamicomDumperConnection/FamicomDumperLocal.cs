@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
-    public class FamicomDumperLocal : IDisposable, IFamicomDumperConnection
+    public class FamicomDumperLocal : IDisposable, IFamicomDumperConnectionExt
     {
         const int PortBaudRate = 250000;
         const ushort DefaultMaxReadPacketSize = 1024;

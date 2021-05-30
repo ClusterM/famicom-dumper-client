@@ -11,7 +11,7 @@ namespace com.clusterrr.Famicom
     {
         const int BANK_SIZE = 0x4000;
 
-        public static byte DetectVersion(IFamicomDumperConnection dumper)
+        public static byte DetectVersion(IFamicomDumperConnectionExt dumper)
         {
             byte version;
             Console.Write("Detecting COOLBOY version... ");
@@ -43,7 +43,7 @@ namespace com.clusterrr.Famicom
             return version;
         }
 
-        public static void PrintFlashInfo(IFamicomDumperConnection dumper)
+        public static void PrintFlashInfo(IFamicomDumperConnectionExt dumper)
         {
             Program.Reset(dumper);
             var version = DetectVersion(dumper);
@@ -65,7 +65,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(IFamicomDumperConnection dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -256,7 +256,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        public static void PPBClear(IFamicomDumperConnection dumper, ushort coolboyReg)
+        public static void PPBClear(IFamicomDumperConnectionExt dumper, ushort coolboyReg)
         {
             // Sector 0
             int bank = 0;

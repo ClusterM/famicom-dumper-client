@@ -213,7 +213,7 @@ namespace com.clusterrr.Famicom
                     return 0;
                 }
 
-                IFamicomDumperConnection dumper;
+                IFamicomDumperConnectionExt dumper;
                 if (string.IsNullOrEmpty(remoteHost))
                 {
                     // Using local dumper
@@ -432,7 +432,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-30}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
         }
 
-        static public void Reset(IFamicomDumperConnection dumper)
+        static public void Reset(IFamicomDumperConnectionExt dumper)
         {
             Console.Write("Reset... ");
             dumper.Reset();
@@ -502,7 +502,7 @@ namespace com.clusterrr.Famicom
             {
                 // Add extra refs
                 // FamicomDumperConnection.dll
-                typeof(IFamicomDumperConnection).Assembly.TryGetRawMetadata(out byte* blob, out int length);
+                typeof(IFamicomDumperConnectionExt).Assembly.TryGetRawMetadata(out byte* blob, out int length);
                 metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
                 // NesContainers.dll
                 typeof(NesFile).Assembly.TryGetRawMetadata(out blob, out length);
@@ -624,7 +624,7 @@ namespace com.clusterrr.Famicom
             return mapper.Value;
         }
 
-        static void CompileAndExecute(string scriptPath, IFamicomDumperConnection dumper, string filename, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery, string[] args)
+        static void CompileAndExecute(string scriptPath, IFamicomDumperConnectionExt dumper, string filename, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery, string[] args)
         {
             if (!File.Exists(scriptPath))
             {
@@ -807,7 +807,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        static void Dump(IFamicomDumperConnection dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
+        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -874,7 +874,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        static void ReadPrgRam(IFamicomDumperConnection dumper, string fileName, string mapperName)
+        static void ReadPrgRam(IFamicomDumperConnectionExt dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -892,7 +892,7 @@ namespace com.clusterrr.Famicom
             Reset(dumper);
         }
 
-        static void WritePrgRam(IFamicomDumperConnection dumper, string fileName, string mapperName)
+        static void WritePrgRam(IFamicomDumperConnectionExt dumper, string fileName, string mapperName)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -908,7 +908,7 @@ namespace com.clusterrr.Famicom
             Reset(dumper);
         }
 
-        static void TestPrgRam(IFamicomDumperConnection dumper, string mapperName, int count = -1)
+        static void TestPrgRam(IFamicomDumperConnectionExt dumper, string mapperName, int count = -1)
         {
             var mapper = GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -947,7 +947,7 @@ namespace com.clusterrr.Famicom
             }
         }
 
-        static void Bootloader(IFamicomDumperConnection dumper)
+        static void Bootloader(IFamicomDumperConnectionExt dumper)
         {
             Console.WriteLine("Rebooting to bootloader...");
             if (dumper is FamicomDumperLocal)

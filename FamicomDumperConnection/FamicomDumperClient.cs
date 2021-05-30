@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
-    public class FamicomDumperClient : IFamicomDumperConnection
+    public class FamicomDumperClient : IDisposable, IFamicomDumperConnectionExt
     {
         private readonly Dumper.DumperClient client;
         private readonly GrpcChannel channel;

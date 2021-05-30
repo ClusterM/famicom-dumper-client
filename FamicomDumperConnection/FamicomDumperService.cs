@@ -17,9 +17,9 @@ namespace com.clusterrr.Famicom.DumperConnection
 {
     public class FamicomDumperService : Dumper.DumperBase
     {
-        private static IFamicomDumperConnection dumper;
+        private static IFamicomDumperConnectionExt dumper;
 
-        public static void StartServer(IFamicomDumperConnection dumper, string url)
+        public static void StartServer(IFamicomDumperConnectionExt dumper, string url)
         {
             FamicomDumperService.dumper = dumper;
             Host.CreateDefaultBuilder()

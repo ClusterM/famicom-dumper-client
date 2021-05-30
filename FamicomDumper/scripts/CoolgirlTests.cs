@@ -71,7 +71,9 @@ class CoolgirlTests
 
     public static void TestPrgRam(IFamicomDumperConnection dumper, int count = -1)
     {
-        Program.Reset(dumper);
+        Console.Write("Reset... ");
+        dumper.Reset();
+        Console.WriteLine("OK");
         dumper.WriteCpu(0x5007, 0x01); // enable PRG RAM
         var rnd = new Random();
         while (count != 0)
@@ -116,7 +118,9 @@ class CoolgirlTests
     {
         if (chrSize < 0) chrSize = 256 * 1024; // default size
         Console.WriteLine($"Testing CHR RAM, size: {chrSize / 1024}KB");
-        Program.Reset(dumper);
+        Console.Write("Reset... ");
+        dumper.Reset();
+        Console.WriteLine("OK");
         dumper.WriteCpu(0x5007, 0x2); // enable CHR writing
         var rnd = new Random();
         var data = new byte[0x2000];
