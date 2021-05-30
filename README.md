@@ -77,7 +77,7 @@ Also you can specify it using **--mappers** option.
 
 When you specify a mapper number or name, the application compiles the scripts to find a matching one.
 
-Mapper scripts are written in C# language. Each script must contain class (any name allowed) that impliments [IMapper](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumper/IMapper.cs) interface.
+Mapper scripts are written in C# language. Each script must contain class (any name allowed) that impliments [IMapper](FamicomDumper/IMapper.cs) interface.
 ```C#
     public interface IMapper
     {
@@ -142,7 +142,7 @@ Mapper scripts are written in C# language. Each script must contain class (any n
     }
 ```
 
-FamicomDumperConnection implements [IFamicomDumperConnection](https://github.com/ClusterM/famicom-dumper-client/blob/master/FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
+FamicomDumperConnection implements [IFamicomDumperConnection](FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
 ```C#
     public interface IFamicomDumperConnection : IDisposable
     {
