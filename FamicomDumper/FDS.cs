@@ -18,7 +18,7 @@ namespace com.clusterrr.Famicom
             try
             {
                 dumper.Timeout = 30000;
-                CheckRAMAdapter(dumper);
+                //CheckRAMAdapter(dumper);
 
                 var rom = new FdsFile(fileName);
 

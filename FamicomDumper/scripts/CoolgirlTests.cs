@@ -27,7 +27,7 @@
 
 class CoolgirlTests
 {
-    void Run(IFamicomDumperConnection dumper, string[] args, int chrSize = -1)
+    void Run(IFamicomDumperConnection dumper, string[] args, int chrSize = 256 * 1024)
     {
         string testMode = "";
         int count = -1;
@@ -59,7 +59,7 @@ class CoolgirlTests
         Console.WriteLine("Usage: famicom-dumper script --cs-script CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]");
     }
 
-    public static void FullTest(IFamicomDumperConnection dumper, int count = -1, int chrSize = -1)
+    public static void FullTest(IFamicomDumperConnection dumper, int count, int chrSize)
     {
         while (count != 0)
         {
@@ -69,7 +69,7 @@ class CoolgirlTests
         }
     }
 
-    public static void TestPrgRam(IFamicomDumperConnection dumper, int count = -1)
+    public static void TestPrgRam(IFamicomDumperConnection dumper, int count)
     {
         Console.Write("Reset... ");
         dumper.Reset();
@@ -114,9 +114,8 @@ class CoolgirlTests
         }
     }
 
-    public static void TestChrRam(IFamicomDumperConnection dumper, int count = -1, int chrSize = -1)
+    public static void TestChrRam(IFamicomDumperConnection dumper, int count, int chrSize)
     {
-        if (chrSize < 0) chrSize = 256 * 1024; // default size
         Console.WriteLine($"Testing CHR RAM, size: {chrSize / 1024}KB");
         Console.Write("Reset... ");
         dumper.Reset();
