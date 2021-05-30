@@ -413,7 +413,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-30}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
             Console.WriteLine();
             Console.WriteLine("Available options:");
-            Console.WriteLine(" {0,-30}{1}", "--port <com>", "serial port of dumper or serial number of FTDI device, default - auto");
+            Console.WriteLine(" {0,-30}{1}", "--port <com>", "serial port of dumper or serial number of dumper device, default - auto");
             Console.WriteLine(" {0,-30}{1}", "--tcp-port <port>", $"TCP port for gRPC communication, default - {DEFAULT_GRPC_PORT}");
             Console.WriteLine(" {0,-30}{1}", "--host <host>", "enable gRPC client and connect to specified host");
             Console.WriteLine(" {0,-30}{1}", "--mappers <directory>", "directory to search mapper scripts");
