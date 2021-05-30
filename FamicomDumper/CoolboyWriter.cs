@@ -211,7 +211,6 @@ namespace com.clusterrr.Famicom
                         | ((bank & 7) << 1)); // 2, 1, 0 bits
                     dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
 
-                    var data = new byte[BANK_SIZE];
                     int pos = bank * BANK_SIZE;
                     if (pos % (128 * 1024) == 0)
                     {
@@ -219,19 +218,7 @@ namespace com.clusterrr.Famicom
                         timeEstimated = timeEstimated.Add(DateTime.Now - readStartTime);
                         lastSectorTime = DateTime.Now;
                     }
-                    Array.Copy(PRG, pos, data, 0, data.Length);
-                    ushort crc = 0;
-                    foreach (var a in data)
-                    {
-                        crc ^= a;
-                        for (int i = 0; i < 8; ++i)
-                        {
-                            if ((crc & 1) != 0)
-                                crc = (ushort)((crc >> 1) ^ 0xA001);
-                            else
-                                crc = (ushort)(crc >> 1);
-                        }
-                    }
+                    ushort crc = Crc16Calculator.CalculateCRC16(PRG, pos, BANK_SIZE);
                     var timePassed = DateTime.Now - readStartTime;
                     Console.Write($"Reading CRC of bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
                     var crcr = dumper.ReadCpuCrc(0x8000, BANK_SIZE);
