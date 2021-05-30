@@ -61,15 +61,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         void WriteFlash(ushort address, byte[] data);
 
         /// <summary>
-        /// Read Famicom Disk System blocks
-        /// </summary>
-        /// <param name="startBlock">First block number to read (zero-based)</param>
-        /// <param name="maxBlockCount">Maximum number of blocks to read</param>
-        /// <returns>Array of Famicom Disk System blocks</returns>
-        public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
-
-
-        /// <summary>
         /// Set maximum number of bytes in multi-byte flash program
         /// </summary>
         /// <param name="pageSize"></param>

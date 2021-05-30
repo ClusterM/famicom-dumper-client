@@ -56,6 +56,14 @@ namespace com.clusterrr.Famicom.DumperConnection
         void WritePpu(ushort address, params byte[] data);
 
         /// <summary>
+        /// Read Famicom Disk System blocks
+        /// </summary>
+        /// <param name="startBlock">First block number to read (zero-based)</param>
+        /// <param name="maxBlockCount">Maximum number of blocks to read</param>
+        /// <returns>Array of Famicom Disk System blocks</returns>
+        public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
+
+        /// <summary>
         /// Write blocks to Famicom Disk System card
         /// </summary>
         /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
