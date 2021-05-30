@@ -686,14 +686,14 @@ namespace com.clusterrr.Famicom
 
                 var parameterInfos = method.GetParameters();
                 List<object> parameters = new();
-                bool filenameRequired = false;
-                bool mapperRequired = false;
-                bool prgSizeRequired = false;
-                bool chrSizeRequired = false;
-                bool unifNameRequired = false;
-                bool unifAuthorRequired = false;
-                bool batteryRequired = false;
-                bool argsRequired = false;
+                bool filenameParamExists = false;
+                bool mapperParamExists = false;
+                bool prgSizeParamExists = false;
+                bool chrSizeParamExists = false;
+                bool unifNameParamExists = false;
+                bool unifAuthorParamExists = false;
+                bool batteryParamExists = false;
+                bool argsParamExists = false;
                 foreach (var parameterInfo in parameterInfos)
                 {
                     var signature = $"{parameterInfo.ParameterType.Name} {parameterInfo.Name}";
@@ -703,62 +703,62 @@ namespace com.clusterrr.Famicom
                             parameters.Add(dumper);
                             break;
                         case "filename":
-                            filenameRequired = true;
+                            filenameParamExists = true;
                             if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
-                                Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
                             if (string.IsNullOrEmpty(filename) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(filename);
                             break;
                         case "mapper":
-                            mapperRequired = true;
-                            if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
-                                Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
+                            mapperParamExists = true;
+                            //if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
+                            //    throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
                             parameters.Add(GetMapper(mapperName));
                             break;
                         case "prgsize":
-                            prgSizeRequired = true;
+                            prgSizeParamExists = true;
                             if ((prgSize < 0) && !parameterInfo.HasDefaultValue)
-                                Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
                             if ((prgSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(prgSize);
                             break;
                         case "chrsize":
-                            chrSizeRequired = true;
+                            chrSizeParamExists = true;
                             if ((chrSize < 0) && !parameterInfo.HasDefaultValue)
-                                Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
                             if ((chrSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(chrSize);
                             break;
                         case "unifname":
-                            unifNameRequired = true;
+                            unifNameParamExists = true;
                             if (string.IsNullOrEmpty(unifName) && !parameterInfo.HasDefaultValue)
-                                Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
                             if (string.IsNullOrEmpty(unifName) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(unifName);
                             break;
                         case "unifauthor":
-                            unifAuthorRequired = true;
+                            unifAuthorParamExists = true;
                             if (string.IsNullOrEmpty(unifAuthor) && !parameterInfo.HasDefaultValue)
-                                Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
                             if (string.IsNullOrEmpty(unifAuthor) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue);
                             else
                                 parameters.Add(unifAuthor);
                             break;
                         case "battery":
-                            batteryRequired = true;
+                            batteryParamExists = true;
                             parameters.Add(battery);
                             break;
                         case "args":
-                            argsRequired = true;
+                            argsParamExists = true;
                             parameters.Add(args);
                             break;
                         default:
@@ -769,13 +769,13 @@ namespace com.clusterrr.Famicom
                                     parameters.Add(dumper);
                                     break;
                                 case "String[]":
-                                    argsRequired = true;
+                                    argsParamExists = true;
                                     parameters.Add(args);
                                     break;
                                 case nameof(IMapper):
-                                    mapperRequired = true;
+                                    mapperParamExists = true;
                                     if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
-                                        Console.WriteLine($"WARNING: {program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
+                                        throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
                                     if (string.IsNullOrEmpty(mapperName) && parameterInfo.HasDefaultValue)
                                         parameters.Add(parameterInfo.DefaultValue);
                                     else
@@ -787,21 +787,21 @@ namespace com.clusterrr.Famicom
                             break;
                     }
                 }
-                if (!filenameRequired && !string.IsNullOrEmpty(filename))
+                if (!filenameParamExists && !string.IsNullOrEmpty(filename))
                     Console.WriteLine($"WARNING: --file argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string filename\" parameter");
-                if (!mapperRequired && !string.IsNullOrEmpty(mapperName))
+                if (!mapperParamExists && !string.IsNullOrEmpty(mapperName))
                     Console.WriteLine($"WARNING: --mapper argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"IMapper mapper\" parameter");
-                if (!prgSizeRequired && prgSize >= 0)
+                if (!prgSizeParamExists && prgSize >= 0)
                     Console.WriteLine($"WARNING: --prg-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int prgSize\" parameter");
-                if (!chrSizeRequired && chrSize >= 0)
+                if (!chrSizeParamExists && chrSize >= 0)
                     Console.WriteLine($"WARNING: --chr-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int chrSize\" parameter");
-                if (!unifNameRequired && !string.IsNullOrEmpty(unifName))
+                if (!unifNameParamExists && !string.IsNullOrEmpty(unifName))
                     Console.WriteLine($"WARNING: --unif-name argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string unifName\" parameter");
-                if (!unifAuthorRequired && !string.IsNullOrEmpty(unifAuthor))
+                if (!unifAuthorParamExists && !string.IsNullOrEmpty(unifAuthor))
                     Console.WriteLine($"WARNING: --unif-author argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string unifAuthor\" parameter");
-                if (!batteryRequired && battery)
+                if (!batteryParamExists && battery)
                     Console.WriteLine($"WARNING: --battery argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"bool battery\" parameter");
-                if (!argsRequired && args.Any())
+                if (!argsParamExists && args.Any())
                     Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string[] args\" parameter");
 
                 // Start it!
