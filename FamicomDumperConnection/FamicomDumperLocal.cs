@@ -951,7 +951,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// Write single block to Famicom Disk System card
         /// </summary>
         /// <param name="blockNumbers">Block number to write (zero-based)</param>
-        /// <param name="block">Block data</param>
+        /// <param name="block">Raw block data</param>
         public void WriteFdsBlocks(byte blockNumber, byte[] block)
             => WriteFdsBlocks(new byte[] { blockNumber }, block);
  
