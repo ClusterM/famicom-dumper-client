@@ -2,9 +2,9 @@ name: Build test
 
 on:
   push:
-    branches: [ workflow-tests ]
+    branches: [ master ]
   pull_request:
-    branches: [ workflow-tests ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
