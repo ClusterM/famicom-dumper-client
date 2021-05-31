@@ -61,24 +61,16 @@ jobs:
     - name: Build
       env:
         SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
-        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
-      run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME/$APP_NAME
-    - name: Archive to .tar.gz
-      if: ${{ matrix.os != 'win' }}
+        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o ${{ env.OUTPUT_DIR }}/${{ vars.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
+    - name: Archive
       env:
+        CMD: ${{ matrix.os == 'win' && 'zip -r9' || 'tar -czvf' }}
+        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
         OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
-        MIME: application/tar+gzip
       run: |
-        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}
-        tar -czvf ../../$OUTPUT_FILE $APP_NAME
-    - name: Archive to .zip
-      if: ${{ matrix.os == 'win' }}
-      env:
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
-        MIME: application/zip
-      run: |
-        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}
-        zip -r9 ../../$OUTPUT_FILE $APP_NAME
+        cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
+        ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
     - name: Load Release URL File from release job
       uses: actions/download-artifact@v1
       with:
