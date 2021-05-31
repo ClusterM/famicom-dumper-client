@@ -5,32 +5,9 @@ on:
     branches: [ workflow-tests ]
   pull_request:
     branches: [ workflow-tests ]
-  workflow_dispatch:
 
 jobs:
-  create-release: 
-    runs-on: ubuntu-latest
-    steps:
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: true
-        prerelease: false
-    - name: Output Release URL File
-      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
-    - name: Save Release URL File for publish
-      uses: actions/upload-artifact@v1
-      with:
-        name: release_url
-        path: release_url.txt
-
-  publish:
-    needs: create-release
+  build:
     runs-on: ubuntu-latest
     env:
       APP_NAME: famicom-dumper
@@ -63,35 +40,3 @@ jobs:
         SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
         OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
       run: dotnet publish ${{ env.PROJECT_PATH }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
-    - name: Archive
-      env:
-        CMD: ${{ matrix.os == 'win' && 'zip -r9' || 'tar -czvf' }}
-        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
-      run: |
-        cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
-        ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
-    - name: Load Release URL File from release job
-      uses: actions/download-artifact@v1
-      with:
-        name: release_url
-    - name: Get Release File Name & Upload URL
-      id: get_release_info
-      env:
-        TAG_REF_NAME: ${{ github.ref }}
-        REPOSITORY_NAME: ${{ github.repository }}
-      run: |
-        echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
-        value=`cat release_url/release_url.txt`
-        echo ::set-output name=upload_url::$value
-    - name: Upload
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
-        MIME: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
-      with:
-        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-        asset_path: ${{ env.OUTPUT_FILE }}
-        asset_name: ${{ env.OUTPUT_FILE }}
-        asset_content_type: ${{ env.MIME }}
