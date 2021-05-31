@@ -112,4 +112,4 @@ jobs:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
         asset_path: ${{ env.OUTPUT_FILE }}
         asset_name: ${{ env.OUTPUT_FILE }}
-        asset_content_type: ${{ MIME }}
+        asset_content_type: ${{ env.MIME }}
