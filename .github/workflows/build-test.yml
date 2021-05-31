@@ -11,10 +11,15 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: famicom-dumper
+      PROJECT_PATH: FamicomDumper
+      OUTPUT_DIR: output
+      CONFIGURATION: Release
     strategy:
       matrix:
         arch: [win-x86, win-x64, win-arm, linux-x64, linux-arm, osx-x64]
-        
+        sc: [no-self-contained, self-contained]
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -24,6 +29,16 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
+    - name: Dump vars
+      if: ${{ matrix.sc == 'self-contained' }}
+      env:
+        SC_OPS: --self-contained true -p:PublishTrimmed=True
+        SC_NAME: -self-contained
+    - name: Dump vars
+      if: ${{ matrix.sc == 'no-self-contained' }}
+      env:
+        SC_OPS: --no-self-contained
     - name: Build
-      run: make build ARCH=${{ matrix.arch }}
+      run: dotnet publish {{ env.PROJECT_PATH }} -c {{ env.CONFIGURATION }} -r {{ matrix.arch }} -p:PublishSingleFile=true $(SC_OPS) -p:IncludeAllContentForSelfExtract=true -o {{ env.OUTPUT_DIR }}/{{ env.ARCH }}{{ env.SC_NAME }}/{{ env.APP_NAME }}
+
 
