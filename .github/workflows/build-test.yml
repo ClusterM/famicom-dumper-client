@@ -30,8 +30,10 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    #- name: Checkout submodules
+    #  uses: textbook/git-checkout-submodule-action@master      
     - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@master      
+      run: git submodule update --init --recursive
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
