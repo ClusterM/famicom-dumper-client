@@ -28,6 +28,7 @@ jobs:
       PROJECT_PATH: FamicomDumper
       OUTPUT_DIR: output
       CONFIGURATION: Release
+      OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -40,15 +41,12 @@ jobs:
     - name: Build
       env:
         SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
-        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
       run: dotnet publish ${{ env.PROJECT_PATH }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
     - name: Simple test
       if: |
         (matrix.host == 'ubuntu-latest' && matrix.os == 'linux' && matrix.arch != 'arm') 
         || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch != 'arm')
         || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch != 'arm')
-      env:
-        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
       run: |
         cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
         ./famicom-dumper list-mappers
