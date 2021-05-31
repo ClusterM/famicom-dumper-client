@@ -4,21 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
-
+  create-release: 
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@master      
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 5.0.x
-    - name: Build and archive
-      run: make release
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -29,123 +17,77 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: true
         prerelease: false
-    - name: Upload win-x86
-      id: upload-release-asset-win-x86
+    - name: Output Release URL File
+      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+    - name: Save Release URL File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_url
+        path: release_url.txt
+
+  publish:
+    needs: create-release
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: famicom-dumper
+      PROJECT_PATH: FamicomDumper
+      OUTPUT_DIR: output
+      CONFIGURATION: Release
+    strategy:
+      matrix:
+        os: [win, linux, osx]
+        arch: [x86, x64, arm]
+        sc: [no-self-contained, self-contained]
+        exclude:
+          - os: linux
+            arch: x86
+          - os: osx
+            arch: x86
+          - os: osx
+            arch: arm          
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@master      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Build
+      env:
+        SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
+        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
+    - name: Archive
+      env:
+        CMD: ${{ matrix.os == 'win' && 'zip -r9' || 'tar -czvf' }}
+        OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
+      run: |
+        cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
+        ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
+    - name: Load Release URL File from release job
+      uses: actions/download-artifact@v1
+      with:
+        name: release_url
+    - name: Get Release File Name & Upload URL
+      id: get_release_info
+      env:
+        TAG_REF_NAME: ${{ github.ref }}
+        REPOSITORY_NAME: ${{ github.repository }}
+      run: |
+        echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
+        value=`cat release_url/release_url.txt`
+        echo ::set-output name=upload_url::$value
+    - name: Upload
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
+        MIME: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-win-x86.zip
-        asset_name: famicom-dumper-win-x86.zip
-        asset_content_type: application/zip
-    - name: Upload win-x64
-      id: upload-release-asset-win-x64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-win-x64.zip
-        asset_name: famicom-dumper-win-x64.zip
-        asset_content_type: application/zip
-    - name: Upload win-arm
-      id: upload-release-asset-win-arm
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-win-arm.zip
-        asset_name: famicom-dumper-win-arm.zip
-        asset_content_type: application/zip
-    - name: Upload linux-x64
-      id: upload-release-asset-linux-x64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-linux-x64.tar.gz
-        asset_name: famicom-dumper-linux-x64.tar.gz
-        asset_content_type: application/tar+gzip
-    - name: Upload linux-arm
-      id: upload-release-asset-linux-arm
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-linux-arm.tar.gz
-        asset_name: famicom-dumper-linux-arm.tar.gz
-        asset_content_type: application/tar+gzip
-    - name: Upload osx-x64
-      id: upload-release-asset-osx-x64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-osx-x64.tar.gz
-        asset_name: famicom-dumper-osx-x64.tar.gz
-        asset_content_type: application/tar+gzip
-    - name: Upload win-x86-self-contained
-      id: upload-release-asset-win-x86-self-contained
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-win-x86-self-contained.zip
-        asset_name: famicom-dumper-win-x86-self-contained.zip
-        asset_content_type: application/zip
-    - name: Upload win-x64-self-contained
-      id: upload-release-asset-win-x64-self-contained
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-win-x64-self-contained.zip
-        asset_name: famicom-dumper-win-x64-self-contained.zip
-        asset_content_type: application/zip
-    - name: Upload win-arm-self-contained
-      id: upload-release-asset-win-arm-self-contained
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-win-arm-self-contained.zip
-        asset_name: famicom-dumper-win-arm-self-contained.zip
-        asset_content_type: application/zip
-    - name: Upload linux-x64-self-contained
-      id: upload-release-asset-linux-x64-self-contained
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-linux-x64-self-contained.tar.gz
-        asset_name: famicom-dumper-linux-x64-self-contained.tar.gz
-        asset_content_type: application/tar+gzip
-    - name: Upload linux-arm-self-contained
-      id: upload-release-asset-linux-arm-self-contained
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-linux-arm-self-contained.tar.gz
-        asset_name: famicom-dumper-linux-arm-self-contained.tar.gz
-        asset_content_type: application/tar+gzip
-    - name: Upload osx-x64-self-contained
-      id: upload-release-asset-osx-x64-self-contained
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release/famicom-dumper-osx-x64-self-contained.tar.gz
-        asset_name: famicom-dumper-osx-x64-self-contained.tar.gz
-        asset_content_type: application/tar+gzip
+        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+        asset_path: ${{ env.OUTPUT_FILE }}
+        asset_name: ${{ env.OUTPUT_FILE }}
+        asset_content_type: ${{ env.MIME }}
