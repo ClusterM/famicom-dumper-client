@@ -66,8 +66,7 @@ jobs:
     - name: Archive to .tar.gz
       if: ${{ matrix.os != 'win' }}
       env:
-        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.tar.gz
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
         MIME: application/tar+gzip
       run: |
         cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}
@@ -75,8 +74,7 @@ jobs:
     - name: Archive to .zip
       if: ${{ matrix.os == 'win' }}
       env:
-        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.zip
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
         MIME: application/zip
       run: |
         cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}
@@ -98,9 +96,7 @@ jobs:
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
-        EXT: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.${{ env.EXT }}
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
         MIME: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
       with:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
