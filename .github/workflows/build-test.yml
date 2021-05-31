@@ -58,34 +58,28 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
-    - name: Dump vars if self-contained
-      if: ${{ matrix.sc == 'self-contained' }}
-      env:
-        SC_OPS: --self-contained true -p:PublishTrimmed=True
-        SC_NAME: -self-contained
-      run: echo sc_name $SC_NAME
-    - name: Dump vars if no-self-contained
-      if: ${{ matrix.sc == 'no-self-contained' }}
-      env:
-        SC_OPS: --no-self-contained
-      run: echo SC_OPS $SC_OPS
     - name: Build
+      env:
+        SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
+        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
       run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME/$APP_NAME
     - name: Archive to .tar.gz
       if: ${{ matrix.os != 'win' }}
       env:
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}$SC_NAME.tar.gz
+        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.tar.gz
         MIME: application/tar+gzip
       run: |
-        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME
+        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}
         tar -czvf ../../$OUTPUT_FILE $APP_NAME
     - name: Archive to .zip
       if: ${{ matrix.os == 'win' }}
       env:
-        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}$SC_NAME.zip
+        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.zip
         MIME: application/zip
       run: |
-        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME
+        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}
         zip -r9 ../../$OUTPUT_FILE $APP_NAME
     - name: Load Release URL File from release job
       uses: actions/download-artifact@v1
@@ -100,14 +94,14 @@ jobs:
         echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
         value=`cat release_url/release_url.txt`
         echo ::set-output name=upload_url::$value
-    - name: test
-      run: |
-        echo OUTPUT_FILE1 ${{ env.OUTPUT_FILE }}
-        echo OUTPUT_FILE2 $OUTPUT_FILE
     - name: Upload
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
+        EXT: ${{ matrix.os == 'win' && 'zip || 'tar.gz' }}
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.${{ env.EXT }}
+        MIME: ${{ matrix.os == 'win' && 'zip || 'tar.gz' }}
       with:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
         asset_path: ${{ env.OUTPUT_FILE }}
