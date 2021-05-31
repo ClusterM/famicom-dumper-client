@@ -41,6 +41,6 @@ jobs:
         SC_OPS: --no-self-contained
       run: echo SC_OPS $SC_OPS
     - name: Build
-      run: echo dotnet publish $PROJECT_PATH -c $CONFIGURATION -r {{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/{{ matrix.arch }}$SC_NAME/$APP_NAME
-
-
+      env:
+        ARCH: ${{ matrix.arch }}
+      run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r $ARCH -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/$ARCH$SC_NAME/$APP_NAME
