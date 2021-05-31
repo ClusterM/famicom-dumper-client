@@ -21,4 +21,4 @@ jobs:
       with:
         dotnet-version: 5.0.x
     - name: Build
-      run: make clean build-all
+      run: make clean build ARCH=linux-arm
