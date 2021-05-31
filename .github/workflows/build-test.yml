@@ -99,9 +99,9 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SC_NAME: ${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}
-        EXT: ${{ matrix.os == 'win' && 'zip || 'tar.gz' }}
+        EXT: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
         OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ env.SC_NAME }}.${{ env.EXT }}
-        MIME: ${{ matrix.os == 'win' && 'zip || 'tar.gz' }}
+        MIME: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
       with:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
         asset_path: ${{ env.OUTPUT_FILE }}
