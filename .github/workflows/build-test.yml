@@ -48,13 +48,15 @@ jobs:
         SC_OPS: --no-self-contained
       run: echo SC_OPS $SC_OPS
     - name: Build
-      env:
-        OS: ${{ matrix.os }}
-        ARCH: ${{ matrix.arch }}
-      run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r $OS-$ARCH -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/$OS-$ARCH$SC_NAME/$APP_NAME
+      run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME/$APP_NAME
     - name: Archive to .tar.gz
       if: ${{ matrix.os != 'win' }}
-      run: cd $OUTPUT_DIR/$OS-$ARCH$SC_NAME && tar -czvf ../famicom-dumper-$ARCH$SC_NAME.tar.gz $APP_NAME
+      env:
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}$SC_NAME.tar.gz
+      run: cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME && tar -czvf ../../$OUTPUT_FILE $APP_NAME
     - name: Archive to .zip
       if: ${{ matrix.os == 'win' }}
-      run: cd $OUTPUT_DIR/$OS-$ARCH$SC_NAME && zip -r9 ../famicom-dumper-$ARCH$SC_NAME.tar.gz $APP_NAME
+      env:
+        OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}$SC_NAME.zip
+      run: cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME && zip -r9 ../../$OUTPUT_FILE $APP_NAME
+
