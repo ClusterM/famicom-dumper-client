@@ -17,8 +17,16 @@ jobs:
       CONFIGURATION: Release
     strategy:
       matrix:
-        arch: [win-x86, win-x64, win-arm, linux-x64, linux-arm, osx-x64]
+        os: [win, linux, osx]
+        arch: [x86, x64, arm]
         sc: [no-self-contained, self-contained]
+        exclude:
+          - os: linux
+            arch: x86
+          - os: osx
+            arch: x86
+          - os: osx
+            arch: arm          
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -28,18 +36,19 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
-    - name: Dump vars
+    - name: Dump vars if self-contained
       if: ${{ matrix.sc == 'self-contained' }}
       env:
         SC_OPS: --self-contained true -p:PublishTrimmed=True
         SC_NAME: -self-contained
       run: echo sc_name $SC_NAME
-    - name: Dump vars
+    - name: Dump vars if no-self-contained
       if: ${{ matrix.sc == 'no-self-contained' }}
       env:
         SC_OPS: --no-self-contained
       run: echo SC_OPS $SC_OPS
     - name: Build
       env:
+        OS: ${{ matrix.os }}
         ARCH: ${{ matrix.arch }}
-      run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r $ARCH -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/$ARCH$SC_NAME/$APP_NAME
+      run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r $OS-$ARCH -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/$OS-$ARCH$SC_NAME/$APP_NAME
