@@ -53,10 +53,13 @@ jobs:
       if: ${{ matrix.os != 'win' }}
       env:
         OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}$SC_NAME.tar.gz
-      run: cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME && tar -czvf ../../$OUTPUT_FILE $APP_NAME
+      run: |
+        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME
+        tar -czvf ../../$OUTPUT_FILE $APP_NAME
     - name: Archive to .zip
       if: ${{ matrix.os == 'win' }}
       env:
         OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}$SC_NAME.zip
-      run: cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME && zip -r9 ../../$OUTPUT_FILE $APP_NAME
-
+      run: |
+        cd $OUTPUT_DIR/${{ matrix.os }}-${{ matrix.arch }}$SC_NAME
+        zip -r9 ../../$OUTPUT_FILE $APP_NAME
