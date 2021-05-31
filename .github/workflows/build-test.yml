@@ -47,7 +47,6 @@ jobs:
         || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch != 'arm')
         || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch != 'arm')
       env:
-        SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
         OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
       run: |
         cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
