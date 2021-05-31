@@ -106,6 +106,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-        asset_path: ${{ env.OUTPUT_FILE }}
-        asset_name: ${{ env.OUTPUT_FILE }}
-        asset_content_type: ${{ env.MIME }}
+        asset_path: ${{ OUTPUT_FILE }}
+        asset_name: ${{ OUTPUT_FILE }}
+        asset_content_type: ${{ MIME }}
