@@ -1,4 +1,5 @@
 # Client (PC-software) for Famicom Dumper/Programmer
+[![Build test](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml/badge.svg)](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml)
 
 This is the client for the Famicom Dumper/Programmer hardware:
 - [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project
@@ -27,7 +28,7 @@ It can be used to:
 
 It's a command-line application.
 
-Usage: **famicom-dumper \<command\> [options]**
+Usage: `famicom-dumper \<command\> [options]`
 
 Available commands:
 - **list-mappers** - list available mappers to dump
@@ -79,156 +80,156 @@ When you specify a mapper number or name, the application compiles the scripts t
 
 Mapper scripts are written in C# language. Each script must contain class (any name allowed) that impliments [IMapper](FamicomDumper/IMapper.cs) interface.
 ```C#
-    public interface IMapper
-    {
-        /// <summary>
-        /// Name of the mapper
-        /// </summary>
-        string Name { get; }
+public interface IMapper
+{
+    /// <summary>
+    /// Name of the mapper
+    /// </summary>
+    string Name { get; }
 
-        /// <summary>
-        /// Number of the mapper to spore in the iNES header (-1 if none)
-        /// </summary>
-        int Number { get; }
+    /// <summary>
+    /// Number of the mapper to spore in the iNES header (-1 if none)
+    /// </summary>
+    int Number { get; }
 
-        /// <summary>
-        /// Number of submapper (0 if none)
-        /// </summary>
-        byte Submapper { get; }
+    /// <summary>
+    /// Number of submapper (0 if none)
+    /// </summary>
+    byte Submapper { get; }
 
-        /// <summary>
-        /// Name of the mapper to store in UNIF container (null if none)
-        /// </summary>
-        string UnifName { get; }
+    /// <summary>
+    /// Name of the mapper to store in UNIF container (null if none)
+    /// </summary>
+    string UnifName { get; }
 
-        /// <summary>
-        /// Default PRG size to dump (in bytes)
-        /// </summary>
-        int DefaultPrgSize { get; }
+    /// <summary>
+    /// Default PRG size to dump (in bytes)
+    /// </summary>
+    int DefaultPrgSize { get; }
 
-        /// <summary>
-        /// Default CHR size to dump (in bytes)
-        /// </summary>
-        int DefaultChrSize { get; }
+    /// <summary>
+    /// Default CHR size to dump (in bytes)
+    /// </summary>
+    int DefaultChrSize { get; }
 
-        /// <summary>
-        /// This method will be called to dump PRG
-        /// </summary>
-        /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
-        /// <param name="data">This list must be filled with dumped PRG data</param>
-        /// <param name="size">Size of PRG to dump requested by user (in bytes)</param>
-        void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size = 0);
+    /// <summary>
+    /// This method will be called to dump PRG
+    /// </summary>
+    /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
+    /// <param name="data">This list must be filled with dumped PRG data</param>
+    /// <param name="size">Size of PRG to dump requested by user (in bytes)</param>
+    void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size = 0);
 
-        /// <summary>
-        /// This method will be called to dump CHR
-        /// </summary>
-        /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
-        /// <param name="data">This list must be filled with dumped CHR data</param>
-        /// <param name="size">Size of CHR to dump requested by user (in bytes)</param>
-        void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size = 0);
+    /// <summary>
+    /// This method will be called to dump CHR
+    /// </summary>
+    /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
+    /// <param name="data">This list must be filled with dumped CHR data</param>
+    /// <param name="size">Size of CHR to dump requested by user (in bytes)</param>
+    void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size = 0);
 
-        /// <summary>
-        /// This method will be called to enable PRG RAM
-        /// </summary>
-        /// <param name="dumper"></param>
-        void EnablePrgRam(IFamicomDumperConnection dumper);
+    /// <summary>
+    /// This method will be called to enable PRG RAM
+    /// </summary>
+    /// <param name="dumper"></param>
+    void EnablePrgRam(IFamicomDumperConnection dumper);
 
-        /// <summary>
-        /// This method must return mirroring type, it can call dumper.GetMirroring() if it's fixed
-        /// </summary>
-        /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
-        /// <returns></returns>
-        NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
-    }
+    /// <summary>
+    /// This method must return mirroring type, it can call dumper.GetMirroring() if it's fixed
+    /// </summary>
+    /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
+    /// <returns></returns>
+    NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
+}
 ```
 
 FamicomDumperConnection implements [IFamicomDumperConnection](FamicomDumperConnection/IFamicomDumperConnection.cs) interface:
 ```C#
-    public interface IFamicomDumperConnection : IDisposable
-    {
-        /// <summary>
-        /// Simulate reset (M2 goes to Z-state for a second)
-        /// </summary>
-        void Reset();
+public interface IFamicomDumperConnection : IDisposable
+{
+    /// <summary>
+    /// Simulate reset (M2 goes to Z-state for a second)
+    /// </summary>
+    void Reset();
 
-        /// <summary>
-        /// Read single byte from CPU (PRG) bus
-        /// </summary>
-        /// <param name="address">Address to read from</param>
-        /// <returns>Data from CPU (PRG) bus</returns>
-        byte ReadCpu(ushort address);
-        
-        /// <summary>
-        /// Read data from CPU (PRG) bus
-        /// </summary>
-        /// <param name="address">Address to read from</param>
-        /// <param name="length">Number of bytes to read</param>
-        /// <returns>Data from CPU (PRG) bus</returns>
-        byte[] ReadCpu(ushort address, int length);
+    /// <summary>
+    /// Read single byte from CPU (PRG) bus
+    /// </summary>
+    /// <param name="address">Address to read from</param>
+    /// <returns>Data from CPU (PRG) bus</returns>
+    byte ReadCpu(ushort address);
 
-        /// <summary>
-        /// Read single byte from PPU (CHR) bus
-        /// </summary>
-        /// <param name="address">Address to read from</param>
-        /// <returns>Data from PPU (CHR) bus</returns>
-        byte ReadPpu(ushort address);
+    /// <summary>
+    /// Read data from CPU (PRG) bus
+    /// </summary>
+    /// <param name="address">Address to read from</param>
+    /// <param name="length">Number of bytes to read</param>
+    /// <returns>Data from CPU (PRG) bus</returns>
+    byte[] ReadCpu(ushort address, int length);
 
-        /// <summary>
-        /// Read data from PPU (CHR) bus
-        /// </summary>
-        /// <param name="address">Address to read from</param>
-        /// <param name="length">Number of bytes to read</param>
-        /// <returns>Data from PPU (CHR) bus</returns>
-        byte[] ReadPpu(ushort address, int length);
+    /// <summary>
+    /// Read single byte from PPU (CHR) bus
+    /// </summary>
+    /// <param name="address">Address to read from</param>
+    /// <returns>Data from PPU (CHR) bus</returns>
+    byte ReadPpu(ushort address);
 
-        /// <summary>
-        /// Write data to CPU (PRG) bus
-        /// </summary>
-        /// <param name="address">Address to write to</param>
-        /// <param name="data">Data to write, address will be incremented after each byte</param>
-        void WriteCpu(ushort address, params byte[] data);
+    /// <summary>
+    /// Read data from PPU (CHR) bus
+    /// </summary>
+    /// <param name="address">Address to read from</param>
+    /// <param name="length">Number of bytes to read</param>
+    /// <returns>Data from PPU (CHR) bus</returns>
+    byte[] ReadPpu(ushort address, int length);
 
-        /// <summary>
-        /// Write data to PPU (CHR) bus
-        /// </summary>
-        /// <param name="address">Address to write to</param>
-        /// <param name="data">Data to write, address will be incremented after each byte</param>
-        void WritePpu(ushort address, params byte[] data);
+    /// <summary>
+    /// Write data to CPU (PRG) bus
+    /// </summary>
+    /// <param name="address">Address to write to</param>
+    /// <param name="data">Data to write, address will be incremented after each byte</param>
+    void WriteCpu(ushort address, params byte[] data);
 
-        /// <summary>
-        /// Read Famicom Disk System blocks
-        /// </summary>
-        /// <param name="startBlock">First block number to read (zero-based)</param>
-        /// <param name="maxBlockCount">Maximum number of blocks to read</param>
-        /// <returns>Array of Famicom Disk System blocks</returns>
-        public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
+    /// <summary>
+    /// Write data to PPU (CHR) bus
+    /// </summary>
+    /// <param name="address">Address to write to</param>
+    /// <param name="data">Data to write, address will be incremented after each byte</param>
+    void WritePpu(ushort address, params byte[] data);
 
-        /// <summary>
-        /// Write blocks to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
-        /// <param name="blocks">Raw blocks data</param>
-        void WriteFdsBlocks(byte[] blockNumbers, byte[][] blocks);
+    /// <summary>
+    /// Read Famicom Disk System blocks
+    /// </summary>
+    /// <param name="startBlock">First block number to read (zero-based)</param>
+    /// <param name="maxBlockCount">Maximum number of blocks to read</param>
+    /// <returns>Array of Famicom Disk System blocks</returns>
+    (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
 
-        /// <summary>
-        /// Write single block to Famicom Disk System card
-        /// </summary>
-        /// <param name="blockNumbers">Block number to write (zero-based)</param>
-        /// <param name="block">Raw block data</param>
-        void WriteFdsBlocks(byte blockNumber, byte[] block);
+    /// <summary>
+    /// Write blocks to Famicom Disk System card
+    /// </summary>
+    /// <param name="blockNumbers">Block numbers to write (zero-based)</param>
+    /// <param name="blocks">Raw blocks data</param>
+    void WriteFdsBlocks(byte[] blockNumbers, byte[][] blocks);
 
-        /// <summary>
-        /// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)
-        /// </summary>
-        /// <returns>Values of CIRAM A10 pin for $2000-$23FF, $2400-$27FF, $2800-$2BFF and $2C00-$2FFF</returns>
-        bool[] GetMirroringRaw();
+    /// <summary>
+    /// Write single block to Famicom Disk System card
+    /// </summary>
+    /// <param name="blockNumbers">Block number to write (zero-based)</param>
+    /// <param name="block">Raw block data</param>
+    void WriteFdsBlocks(byte blockNumber, byte[] block);
 
-        /// <summary>
-        /// Read decoded current mirroring mode
-        /// </summary>
-        /// <returns>Current mirroring</returns>
-        NesFile.MirroringType GetMirroring();
-    }
+    /// <summary>
+    /// Read raw mirroring values (CIRAM A10 pin states for different states of PPU A10 and A11)
+    /// </summary>
+    /// <returns>Values of CIRAM A10 pin for $2000-$23FF, $2400-$27FF, $2800-$2BFF and $2C00-$2FFF</returns>
+    bool[] GetMirroringRaw();
+
+    /// <summary>
+    /// Read decoded current mirroring mode
+    /// </summary>
+    /// <returns>Current mirroring</returns>
+    NesFile.MirroringType GetMirroring();
+}
 ```
 
 Check "mappers" directory for examples.
@@ -236,15 +237,67 @@ Check "mappers" directory for examples.
 
 ## Other scripts
 
-You can run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain class (any name allowed) that contains **void Run(IFamicomDumperConnection dumper)** method. This method will be executed if --csfile option is specified. Also you can use [NesFile](https://github.com/ClusterM/nes-containers/blob/master/NesFile.cs) and [UnifFile](https://github.com/ClusterM/nes-containers/blob/master/UnifFile.cs) containers.
+You can create and run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain class (any name allowed) that contains **Run** method. You can specify those parameters in any order:
+
+*  `IFamicomDumperConnection dumper` - dumper object used to access dumper
+*  `string filename`                 - filename specified by --file argument
+*  `IMapper mapper`                  - mapper object compiled from mapper script specified by --mapper argument
+*  `int prgSize`                     - PRG size specified by --prg-size argument (parsed)
+*  `int chrSize`                     - CHR size specified by --chr-size argument (parsed)
+*  `string unifName`                 - string specified by --unif-name argument
+*  `string unifAuthor`               - string specified by --unif-author argument
+*  `bool battery`                    - true if --battery argument is specified
+*  `string[] args`                   - additional command line arguments
+
+You can specify additional arguments this way: >famicom-dumper script --cs-file DemoScript.cs - argument1 argument2 argument3
+
+Always define default value if parameter is optional. The only exception is the "**mapper**" parameter, the "NROM" mapper will be used by default. Also **args** will be a zero-length array if additional arguments are not specified.
+
+Example:
+```C#
+class DemoScript // Class name doesn't matter
+{
+    void Run(IFamicomDumperConnection dumper, string[] args, IMapper mapper, int prgSize = 128 * 1024, int chrSize = -1)
+    {
+        if (mapper.Number >= 0)
+            Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
+        else
+            Console.WriteLine($"Using mapper: {mapper.Name}");
+
+        if (chrSize < 0)
+        {
+            // Oh no, CHR size is not specified! Lets use mapper's default
+            chrSize = mapper.DefaultChrSize;
+        }
+
+        Console.WriteLine($"PRG size: {prgSize}");
+        Console.WriteLine($"CHR size: {chrSize}");
+
+        if (args.Any())
+            Console.WriteLine("Additional command line arguments: " + string.Join(", ", args));
+
+        // You can use other methods
+        Reset(dumper);
+    }
+
+    void Reset(IFamicomDumperConnection dumper)
+    {
+        Console.Write("Reset... ");
+        dumper.Reset();
+        Console.WriteLine("OK");
+    }
+}
+```
+     
+Script will be compiled and **Run** method will be executed if **--cs-file** option is specified. Also you can use [NesFile](https://github.com/ClusterM/nes-containers/blob/master/NesFile.cs) and [UnifFile](https://github.com/ClusterM/nes-containers/blob/master/UnifFile.cs) containers.
 
 You can run script alone like this:
 ```
-famicom-dumper script --csfile DemoScript.cs
+famicom-dumper script --cs-file DemoScript.cs
 ```
 Or execute it before main action like this:
 ```
-famicom-dumper dump --mapper MMC3 --file game.nes --csfile DemoScript.cs
+famicom-dumper dump --mapper MMC3 --file game.nes --cs-file DemoScript.cs
 ```
 
 So you can write your own code to interact with dumper object and read/write data from/to cartridge. This dumper object can be even on another PC (read below)! Check "scripts" directory for example scripts.
@@ -257,7 +310,7 @@ You can start this application as gRPC server on one PC:
 famicom-dumper server --port COM14
 ```
 
-And dump cartridge over network using another PC:
+And dump cartridge over the network using another PC:
 ```
 famicom-dumper dump --mapper CNROM --file game.nes --host example.com
 ```
@@ -300,7 +353,7 @@ Saving to game.nes... OK
 
 Dump 32K of PRG and 8K of CHR as simple NROM cartridge but execute C# script first:
 ~~~~
->famicom-dumper dump --port COM14 --mapper 0 --prg-size 32K --chr-size 8K --file game.nes --csfile init.cs"
+>famicom-dumper dump --port COM14 --mapper 0 --prg-size 32K --chr-size 8K --file game.nes --cs-file init.cs"
 Dumper initialization... OK
 Compiling init.cs...
 Running init.Run()...
@@ -393,7 +446,7 @@ Number of non-hidden files: 15
 Please remove disk card... OK
 Please set disk card, side #2...
 ...
-Saing to game.fds... OK
+Saving to game.fds... OK
 ~~~~
 
 Write Famicom Disk System card and verify written data:
@@ -435,7 +488,7 @@ Listening port 9999, press Ctrl-C to stop
 
 Connect to remote dumper using TCP port 9999 and execute C# script:
 ~~~~
-famicom-dumper script --csfile DemoScript.cs --host clusterrr.com --tcp-port 9999
+famicom-dumper script --cs-file DemoScript.cs --host clusterrr.com --tcp-port 9999
 Dumper initialization... OK
 Compiling DemoScript.cs...
 Running DemoScript.Run()...
