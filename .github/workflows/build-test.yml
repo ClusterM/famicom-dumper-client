@@ -52,3 +52,9 @@ jobs:
         OS: ${{ matrix.os }}
         ARCH: ${{ matrix.arch }}
       run: dotnet publish $PROJECT_PATH -c $CONFIGURATION -r $OS-$ARCH -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o $OUTPUT_DIR/$OS-$ARCH$SC_NAME/$APP_NAME
+    - name: Archive to .tar.gz
+      if: ${{ matrix.os != 'win' }}
+      run: cd $OUTPUT_DIR/$OS-$ARCH$SC_NAME && tar -czvf ../famicom-dumper-$ARCH$SC_NAME.tar.gz $APP_NAME
+    - name: Archive to .zip
+      if: ${{ matrix.os == 'win' }}
+      run: cd $OUTPUT_DIR/$OS-$ARCH$SC_NAME && zip -r9 ../famicom-dumper-$ARCH$SC_NAME.tar.gz $APP_NAME
