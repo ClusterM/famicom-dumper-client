@@ -268,4 +268,8 @@
     <Exec Command="make -C .. commit buildtime&#xD;&#xA;" />
   </Target>
 
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
 </Project>

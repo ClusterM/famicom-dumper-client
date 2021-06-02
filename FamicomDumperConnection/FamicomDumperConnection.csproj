@@ -26,4 +26,8 @@
     <Protobuf Include="Dumper.proto" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
 </Project>
