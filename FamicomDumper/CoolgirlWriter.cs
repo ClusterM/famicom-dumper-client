@@ -57,7 +57,6 @@ namespace com.clusterrr.Famicom
             Console.WriteLine($"Maximum number of bytes in multi-byte program: {cfi.MaximumNumberOfBytesInMultiProgram}");
             if (dumper.ProtocolVersion >= 3)
                 dumper.SetMaximumNumberOfBytesInMultiProgram(cfi.MaximumNumberOfBytesInMultiProgram);
-            FlashHelper.LockBitsCheckPrint(dumper);
             if (PRG.Length > cfi.DeviceSize)
                 throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
             try
