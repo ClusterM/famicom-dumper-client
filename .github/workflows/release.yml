@@ -60,11 +60,19 @@ jobs:
       env:
         SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
       run: dotnet publish ${{ env.PROJECT_PATH }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
+    - name: Simple test
+      if: |
+        (matrix.host == 'ubuntu-latest' && matrix.os == 'linux' && matrix.arch != 'arm') 
+        || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch != 'arm')
+        || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch != 'arm')
+      working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
+      run: |
+        ./famicom-dumper list-mappers
     - name: Archive
+      working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
       env:
         CMD: ${{ matrix.os == 'win' && 'zip -r9' || 'tar -czvf' }}
       run: |
-        cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
         ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
     - name: Load Release URL File from release job
       uses: actions/download-artifact@v1

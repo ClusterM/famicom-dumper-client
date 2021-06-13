@@ -47,6 +47,11 @@ jobs:
         (matrix.host == 'ubuntu-latest' && matrix.os == 'linux' && matrix.arch != 'arm') 
         || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch != 'arm')
         || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch != 'arm')
+      working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
       run: |
-        cd ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
         ./famicom-dumper list-mappers
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.OUTPUT_SUBDIR }}
+        path: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
