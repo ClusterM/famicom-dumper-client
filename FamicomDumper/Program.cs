@@ -37,6 +37,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.Versioning;
 using System.Security;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace com.clusterrr.Famicom
 {
@@ -521,6 +523,12 @@ namespace com.clusterrr.Famicom
                 typeof(System.Drawing.Bitmap).Assembly.TryGetRawMetadata(out blob, out length);
                 metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
                 typeof(ImageFormat).Assembly.TryGetRawMetadata(out blob, out length);
+                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
+                // for JSON
+                typeof(JsonSerializer).Assembly.TryGetRawMetadata(out blob, out length);
+                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
+                // for Regex
+                typeof(Regex).Assembly.TryGetRawMetadata(out blob, out length);
                 metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
                 // wtf is it?
                 typeof(System.Linq.Expressions.Expression).Assembly.TryGetRawMetadata(out blob, out length);
