@@ -22,7 +22,7 @@
 
     public int DefaultPrgSize
     {
-        get { return 1024 * 1024 * 64; }
+        get { return 1024 * 1024 * 128; }
     }
 
     public int DefaultChrSize
