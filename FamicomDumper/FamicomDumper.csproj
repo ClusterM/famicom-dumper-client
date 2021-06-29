@@ -59,6 +59,7 @@
     <Compile Remove="mappers\VRC4b4d.cs" />
     <Compile Remove="mappers\VRC6a.cs" />
     <Compile Remove="mappers\VRC6b.cs" />
+    <Compile Remove="mappers\VRC7.cs" />
     <Compile Remove="scripts\BatteryTest.cs" />
     <Compile Remove="scripts\ChrRamTest.cs" />
     <Compile Remove="scripts\CoolgirlTests.cs" />
@@ -198,6 +199,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\VRC6b.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\VRC7.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
