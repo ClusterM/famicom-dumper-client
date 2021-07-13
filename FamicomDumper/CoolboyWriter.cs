@@ -47,7 +47,7 @@ namespace com.clusterrr.Famicom
         {
             Program.Reset(dumper);
             var version = DetectVersion(dumper);
-            var CoolboyReg = (UInt16)(version == 2 ? 0x5000 : 0x6000);
+            var CoolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             int bank = 0;
             byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
                 | (((bank >> 9) & 0x03) << 4) // 10, 9 bits
