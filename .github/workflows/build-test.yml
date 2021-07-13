@@ -49,6 +49,7 @@ jobs:
         || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch != 'arm')
       working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
       run: |
+        ./famicom-dumper --help
         ./famicom-dumper list-mappers
     - name: Upload artifact
       if: |
