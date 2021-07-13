@@ -29,6 +29,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -395,7 +396,7 @@ namespace com.clusterrr.Famicom
 
         static void PrintHelp()
         {
-            Console.WriteLine("Usage: famicom-dumper <command> [<options>] [- <cs_script_arguments>]");
+            Console.WriteLine($"Usage: {Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName)} <command> [<options>] [- <cs_script_arguments>]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-30}{1}", "list-mappers", "list available mappers to dump");
