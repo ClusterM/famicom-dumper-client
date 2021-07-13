@@ -8,8 +8,8 @@ SELF_CONTAINED?=0
 ARCH?=win-x64
 
 COMMIT=$(shell git rev-parse --short HEAD)
-COMMIT_RESOURCE=FamicomDumper/Resources/commit.txt
-BUILDTIME_RESOURCE=FamicomDumper/Resources/buildtime.txt
+COMMIT_RESOURCE=$(PROJECT_PATH)/Resources/commit.txt
+BUILDTIME_RESOURCE=$(PROJECT_PATH)/Resources/buildtime.txt
 
 ifeq ($(SELF_CONTAINED),0)
 	SC_OPS=--no-self-contained
@@ -40,7 +40,5 @@ build:
 	dotnet publish $(PROJECT_PATH) -c $(CONFIGURATION) -r $(ARCH) -p:PublishSingleFile=true $(SC_OPS) -p:IncludeAllContentForSelfExtract=true -o $(OUTPUT_DIR)/$(ARCH)$(SC_NAME)/$(APP_NAME)
 
 archive:
-	cd $(OUTPUT_DIR)/$(ARCH)$(SC_NAME) &&	tar -czvf ../famicom-dumper-$(ARCH)$(SC_NAME).tar.gz $(APP_NAME)
-	cd $(OUTPUT_DIR)/$(ARCH)$(SC_NAME) &&	zip -r9 ../famicom-dumper-$(ARCH)$(SC_NAME).zip $(APP_NAME)
-
-
+	cd $(OUTPUT_DIR)/$(ARCH)$(SC_NAME) && tar -czvf ../$(APP_NAME)-$(ARCH)$(SC_NAME).tar.gz $(APP_NAME)
+	cd $(OUTPUT_DIR)/$(ARCH)$(SC_NAME) && zip -r9 ../$(APP_NAME)-$(ARCH)$(SC_NAME).zip $(APP_NAME)

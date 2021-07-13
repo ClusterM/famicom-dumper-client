@@ -45,12 +45,10 @@ namespace com.clusterrr.Famicom
     public class Program
     {
         private static string[] MappersSearchDirectories = {
-            //Path.Combine(AppContext.BaseDirectory, "mappers"),
             Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
             "/usr/share/famicom-dumper/mappers"
         };
         private static readonly string[] ScriptsSearchDirectories = {
-            //Path.Combine(AppContext.BaseDirectory, "scripts"),
             Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
             "/usr/share/famicom-dumper/scripts"
         };
@@ -59,7 +57,7 @@ namespace com.clusterrr.Famicom
         private const string SCRIPT_START_METHOD = "Run";
         private const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
         private const int DEFAULT_GRPC_PORT = 26673;
-        private static DateTime BUILD_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc).AddSeconds(long.Parse(Properties.Resources.buildtime.Trim()));
+        private static DateTime BUILD_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(long.Parse(Properties.Resources.buildtime.Trim()));
 
         static int Main(string[] args)
         {

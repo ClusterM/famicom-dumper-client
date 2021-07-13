@@ -275,6 +275,7 @@
 
   <PropertyGroup>
     <DebugType>embedded</DebugType>
+    <Product>Famicom Dumper Client</Product>
   </PropertyGroup>
 
 </Project>
