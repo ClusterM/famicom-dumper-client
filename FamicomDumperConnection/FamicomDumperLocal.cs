@@ -723,7 +723,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
                 Array.Copy(data, pos, wdata, 0, wdata.Length);
-                if (data.Select(b => b != 0xFF).Any()) // if there is any not FF byte
+                if (data.Where(b => b != 0xFF).Any()) // if there is any not FF byte
                     WriteCpuFlashBlock(address, wdata);
                 address += (ushort)wdata.Length;
                 pos += wdata.Length;

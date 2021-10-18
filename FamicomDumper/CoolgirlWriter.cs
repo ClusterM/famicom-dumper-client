@@ -75,6 +75,7 @@ namespace com.clusterrr.Famicom
             int totalErrorCount = 0;
             int currentErrorCount = 0;
             var newBadSectorsList = new List<int>();
+            bool sectorContainsData = false;
             for (int bank = 0; bank < banks; bank++)
             {
                 while (badSectors.Contains(bank / 4) || newBadSectorsList.Contains(bank / 4)) bank += 4; // bad sector :(
@@ -94,16 +95,18 @@ namespace com.clusterrr.Famicom
                         lastSectorTime = DateTime.Now;
                         Console.Write($"Erasing sector #{bank / 4}... ");
                         dumper.EraseFlashSector();
+                        sectorContainsData = false;
                         Console.WriteLine("OK");
                     }
                     Array.Copy(PRG, pos, data, 0, data.Length);
                     var timePassed = DateTime.Now - writeStartTime;
                     Console.Write($"Writing bank #{bank}/{banks} ({100 * bank / banks}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
                     dumper.WriteFlash(0x0000, data);
+                    sectorContainsData |= data.Where(b => b != 0xFF).Any();
                     Console.WriteLine("OK");
                     if ((bank % 4 == 3) || (bank == banks - 1)) // After last bank in sector
                     {
-                        if (writePBBs)
+                        if (writePBBs && sectorContainsData)
                             FlashHelper.PPBSet(dumper);
                         currentErrorCount = 0;
                     }
