@@ -44,12 +44,11 @@ jobs:
       run: dotnet publish ${{ env.PROJECT_PATH }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.os }}-${{ matrix.arch }} -p:PublishSingleFile=true $SC_OPS -p:IncludeAllContentForSelfExtract=true -o ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
     - name: Simple test
       if: |
-        (matrix.host == 'ubuntu-latest' && matrix.os == 'linux' && matrix.arch != 'arm') 
-        || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch != 'arm')
-        || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch != 'arm')
+        (matrix.host == 'ubuntu-latest' && matrix.os == 'linux' && matrix.arch == 'x64') 
+        || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch == 'x64')
+        || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch == 'x64')
       working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
       run: |
-        ./famicom-dumper --help
         ./famicom-dumper list-mappers
     - name: Upload artifact
       uses: actions/upload-artifact@v2
