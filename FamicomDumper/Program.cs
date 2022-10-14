@@ -91,6 +91,7 @@ namespace com.clusterrr.Famicom
             byte fdsSides = 1;
             bool fdsUseHeader = true;
             bool fdsDumpHiddenFiles = false;
+            bool coolboyGpioMode = false;
             try
             {
                 if (args.Length == 0 || args.Contains("help") || args.Contains("--help"))
@@ -205,6 +206,10 @@ namespace com.clusterrr.Famicom
                         case "ignore-bad-sectors":
                             ignoreBadSectors = true;
                             break;
+                        case "coolboygpio":
+                        case "coolboy-gpio":
+                            coolboyGpioMode = true;
+                            break;
                         default:
                             Console.WriteLine("Unknown option: " + param);
                             PrintHelp();
@@ -236,6 +241,19 @@ namespace com.clusterrr.Famicom
                 bool initResult = dumper.Init();
                 if (!initResult) throw new IOException("Can't init dumper");
                 Console.WriteLine("OK");
+#if DEBUG
+                Console.WriteLine($"Protocol version: {dumper.ProtocolVersion}");
+#endif
+                try
+                {
+                    Console.WriteLine($"Dumper hardware version: {dumper.HardwareVersion.Major}.{dumper.HardwareVersion.Minor}{((dumper.HardwareVersion.Build != 0) ? new string((char)dumper.HardwareVersion.Build, 1) : "")}");
+                }
+                catch { }
+                try
+                {
+                    Console.WriteLine($"Dumper firmware version: {dumper.FirmwareVersion.Major}.{dumper.FirmwareVersion.Minor}{((dumper.FirmwareVersion.Build != 0) ? new string((char)dumper.FirmwareVersion.Build, 1) : "")}");
+                }
+                catch { }
 
                 try
                 {
@@ -280,10 +298,14 @@ namespace com.clusterrr.Famicom
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors, coolboyGpioMode);
+                            break;
                         case "write-coolboy-gpio": // for backward compatibility
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
-                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors, true);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
@@ -435,6 +457,7 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-30}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-30}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
             Console.WriteLine(" {0,-30}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
+            Console.WriteLine(" {0,-30}{1}", "--coolboy-gpio", "enable COOLBOY writing using dumper's GPIO pins");            
         }
 
         static public void Reset(IFamicomDumperConnectionExt dumper)

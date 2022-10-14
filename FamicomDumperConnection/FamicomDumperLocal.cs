@@ -20,6 +20,8 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public string PortName { get; set; }
         public byte ProtocolVersion { get; private set; } = 0;
+        public Version FirmwareVersion { get; private set; } = null;
+        public Version HardwareVersion { get; private set; } = null;
         public uint Timeout
         {
             get
@@ -101,6 +103,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             SET_VALUE_DONE = 56,
             FDS_DISK_WRITE_PROTECTED = 57,
             FDS_BLOCK_CRC_ERROR = 58,
+            COOLBOY_GPIO_MODE = 59,
 
             BOOTLOADER = 0xFE,
             DEBUG = 0xFF
@@ -200,6 +203,8 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void Open()
         {
             ProtocolVersion = 0;
+            FirmwareVersion = null;
+            HardwareVersion = null;
             MaxReadPacketSize = DefaultMaxReadPacketSize;
             MaxWritePacketSize = DefaultMaxWritePacketSize;
 
@@ -574,6 +579,10 @@ namespace com.clusterrr.Famicom.DumperConnection
                                 MaxReadPacketSize = (ushort)(Data[1] | (Data[2] << 8));
                             if (Data.Length >= 5)
                                 MaxWritePacketSize = (ushort)(Data[3] | (Data[4] << 8));
+                            if (Data.Length >= 9)
+                                FirmwareVersion = new Version(Data[5] | (Data[6] << 8), Data[7], Data[8]);
+                            if (Data.Length >= 13)
+                                HardwareVersion = new Version(Data[9] | (Data[10] << 8), Data[11], Data[12]);
                             result = true;
                         }
                     }
@@ -1029,6 +1038,18 @@ namespace com.clusterrr.Famicom.DumperConnection
         {
             Close();
             GC.SuppressFinalize(this);
+        }
+
+        public void SetCoolboyGpioMode(bool coolboyGpioMode)
+        {
+            if (ProtocolVersion < 4)
+                throw new NotSupportedException("Dumper firmware version is too old");
+            if (HardwareVersion == null || HardwareVersion.Major < 3)
+                throw new NotSupportedException("Not supported by this dumper hardware");
+            SendCommand(DumperCommand.COOLBOY_GPIO_MODE, new byte[] { (byte)(coolboyGpioMode ? 1 : 0) });
+            var (Command, Data) = RecvCommand();
+            if (Command != DumperCommand.SET_VALUE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
         }
     }
 }

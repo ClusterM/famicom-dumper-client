@@ -13,9 +13,19 @@ namespace com.clusterrr.Famicom.DumperConnection
         public bool Init();
 
         /// <summary>
-        /// Famicom Dumper serial protocol version (depends on firmware)
+        /// Famicom Dumper serial protocol version (depends on firmware version)
         /// </summary>
         byte ProtocolVersion { get; }
+
+        /// <summary>
+        /// Famicom Dumper firmware version (depends on protocol version)
+        /// </summary>
+        Version FirmwareVersion { get; }
+
+        /// <summary>
+        /// Famicom Dumper firmware version (depends on protocol version)
+        /// </summary>
+        Version HardwareVersion { get; }
 
         /// <summary>
         /// Famicom Dumper maximum read packet size (depends on firmware and hardware)
@@ -65,5 +75,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// </summary>
         /// <param name="pageSize"></param>
         void SetMaximumNumberOfBytesInMultiProgram(uint pageSize);
+
+        /// <summary>
+        /// Enable/disable COOLBOY GPIO mode
+        /// </summary>
+        /// <param name="coolboyGpioMode">Enable COOLBOY GPIO mode</param>
+        void SetCoolboyGpioMode(bool coolboyGpioMode);
     }
 }

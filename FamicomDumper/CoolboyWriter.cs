@@ -65,7 +65,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false, bool coolboyGpioMode = false)
         {
             byte[] PRG;
             if (Path.GetExtension(fileName).ToLower() == ".bin")
@@ -130,7 +130,9 @@ namespace com.clusterrr.Famicom
                     byte r2 = 0;
                     byte r3 = (byte)((1 << 4) // NROM mode
                         | ((bank & 7) << 1)); // 2, 1, 0 bits
+                    if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
                     dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
+                    if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
 
                     var data = new byte[BANK_SIZE];
                     int pos = bank * BANK_SIZE;
@@ -184,6 +186,7 @@ namespace com.clusterrr.Famicom
                     continue;
                 }
             }
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
 
             if (totalErrorCount > 0)
                 Console.WriteLine($"Write error count: {totalErrorCount}");

@@ -11,8 +11,14 @@ service Dumper {
 	// Init dumper (flush queud data, check connection)
 	rpc Init (EmptyRequest) returns (InitResponse);
 
-	// Get Famicom Dumper serial protocol version (depends on firmware)
+	// Get Famicom Dumper serial protocol version (depends on firmware version)
 	rpc GetProtocolVersion (EmptyRequest) returns (ProtocolVersionResponse);
+
+	// Get Famicom Dumper firmware version (depends on protocol version)
+	rpc GetFirmwareVersion (EmptyRequest) returns (FirmwareVersionResponse);
+
+	// Get Famicom Dumper hardware version (depends on protocol version)
+	rpc GetHardwareVersion (EmptyRequest) returns (HardwareVersionResponse);
 
 	// Get Famicom Dumper maximum read packet size (depends on firmware and hardware)
 	rpc GetMaxReadPacketSize (EmptyRequest) returns (PacketSizeResponse);
@@ -67,6 +73,9 @@ service Dumper {
 
 	// Set maximum number of bytes in multi-byte flash program
 	rpc SetMaximumNumberOfBytesInMultiProgram (SetMaximumNumberOfBytesInMultiProgramRequest) returns (EmptyResponse);
+
+	// Enable/disable COOLBOY GPIO mode
+	rpc SetCoolboyGpioMode (CoolboyGpioModeRequest) returns (EmptyResponse);
 }
 
 message EmptyRequest{
@@ -84,6 +93,20 @@ message ProtocolVersionResponse {
 	optional ErrorInfo error_info = 1;
 	// Protocol version
 	int32 protocol_version = 2;
+}
+
+message FirmwareVersionResponse {
+	optional ErrorInfo error_info = 1;
+	// Firmware version
+	int32 major = 2;
+	int32 minor = 3;
+}
+
+message HardwareVersionResponse {
+	optional ErrorInfo error_info = 1;
+	// Firmware version
+	int32 major = 2;
+	int32 minor = 3;
 }
 
 message PacketSizeResponse {
@@ -185,6 +208,11 @@ message MirroringResponse {
 
 message SetMaximumNumberOfBytesInMultiProgramRequest {
 	int32 page_size = 1;
+}
+
+message CoolboyGpioModeRequest {
+	// Enable COOLBOY GPIO mode
+	bool coolboy_gpio_mode = 1;
 }
 
 // Basic information about error

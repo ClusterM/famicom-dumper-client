@@ -13,7 +13,7 @@ jobs:
       matrix:
         host: [windows-latest, ubuntu-latest, macos-latest]
         os: [win, linux, osx]
-        arch: [x86, x64, arm]
+        arch: [x86, x64, arm, arm64]
         sc: [no-self-contained, self-contained]
         exclude:
           - os: linux

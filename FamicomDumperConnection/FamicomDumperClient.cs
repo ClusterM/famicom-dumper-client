@@ -61,7 +61,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         /// <summary>
-        /// Famicom Dumper serial protocol version (depends on firmware)
+        /// Famicom Dumper serial protocol version (depends on firmware version)
         /// </summary>
         public byte ProtocolVersion
         {
@@ -70,6 +70,26 @@ namespace com.clusterrr.Famicom.DumperConnection
                 var r = client.GetProtocolVersion(new EmptyRequest());
                 ThrowIfNotSuccess(r.ErrorInfo);
                 return (byte)r.ProtocolVersion;
+            }
+        }
+
+        public Version FirmwareVersion 
+        {
+            get
+            {
+                var r = client.GetFirmwareVersion(new EmptyRequest());
+                ThrowIfNotSuccess(r.ErrorInfo);
+                return new Version(r.Major, r.Minor);
+            }
+        }
+
+        public Version HardwareVersion
+        {
+            get
+            {
+                var r = client.GetHardwareVersion(new EmptyRequest());
+                ThrowIfNotSuccess(r.ErrorInfo);
+                return new Version(r.Major, r.Minor);
             }
         }
 
@@ -352,6 +372,14 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void SetMaximumNumberOfBytesInMultiProgram(uint pageSize)
         {
             var r = client.SetMaximumNumberOfBytesInMultiProgram(new SetMaximumNumberOfBytesInMultiProgramRequest() { PageSize = (int)pageSize });
+            ThrowIfNotSuccess(r.ErrorInfo);
+        }
+
+        public void SetCoolboyGpioMode(bool coolboyGpioMode)
+        {
+            var r = client.SetCoolboyGpioMode(new CoolboyGpioModeRequest() { 
+                CoolboyGpioMode = coolboyGpioMode 
+            });
             ThrowIfNotSuccess(r.ErrorInfo);
         }
     }

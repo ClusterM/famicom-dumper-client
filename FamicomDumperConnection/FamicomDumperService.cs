@@ -66,6 +66,50 @@ namespace com.clusterrr.Famicom.DumperConnection
             return Task.FromResult(result);
         }
 
+        public override Task<FirmwareVersionResponse> GetFirmwareVersion(EmptyRequest request, ServerCallContext context)
+        {
+            var result = new FirmwareVersionResponse();
+            try
+            {
+                if (dumper.FirmwareVersion == null) 
+                    throw new NotSupportedException("Firmware version too old");
+                result.Major = dumper.FirmwareVersion.Major;
+                result.Minor = dumper.FirmwareVersion.Minor;
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+                result.ErrorInfo = new ErrorInfo()
+                {
+                    ExceptionName = ex.GetType().ToString(),
+                    ExceptionMessage = ex.Message
+                };
+            }
+            return Task.FromResult(result);
+        }
+
+        public override Task<HardwareVersionResponse> GetHardwareVersion(EmptyRequest request, ServerCallContext context)
+        {
+            var result = new HardwareVersionResponse();
+            try
+            {
+                if (dumper.FirmwareVersion == null)
+                    throw new NotSupportedException("Firmware version too old");
+                result.Major = dumper.FirmwareVersion.Major;
+                result.Minor = dumper.FirmwareVersion.Minor;
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+                result.ErrorInfo = new ErrorInfo()
+                {
+                    ExceptionName = ex.GetType().ToString(),
+                    ExceptionMessage = ex.Message
+                };
+            }
+            return Task.FromResult(result);
+        }
+
         public override Task<PacketSizeResponse> GetMaxReadPacketSize(EmptyRequest request, ServerCallContext context)
         {
             var result = new PacketSizeResponse();
@@ -523,6 +567,26 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             return Task.FromResult(result);
         }
+
+        public override Task<EmptyResponse> SetCoolboyGpioMode(CoolboyGpioModeRequest request, ServerCallContext context)
+        {
+            var result = new EmptyResponse();
+            try
+            {
+                dumper.SetCoolboyGpioMode(request.CoolboyGpioMode);
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+                result.ErrorInfo = new ErrorInfo()
+                {
+                    ExceptionName = ex.GetType().ToString(),
+                    ExceptionMessage = ex.Message
+                };
+            }
+            return Task.FromResult(result);
+        }
+
 
         private static void PrintError(Exception ex)
         {
