@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        host: [windows-latest, ubuntu-latest, macos-latest]
+        host: [ubuntu-latest]
         os: [win, linux, osx]
         arch: [x86, x64, arm, arm64]
         sc: [no-self-contained, self-contained]
@@ -37,7 +37,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     - name: Build
       env:
         SC_OPS: ${{ matrix.sc == 'self-contained' && '--self-contained true -p:PublishTrimmed=True' || '--no-self-contained' }}
@@ -52,10 +52,6 @@ jobs:
         ./famicom-dumper --help
         ./famicom-dumper list-mappers
     - name: Upload artifact
-      if: |
-        (matrix.host == 'ubuntu-latest' && matrix.os == 'linux') 
-        || (matrix.host == 'macos-latest' && matrix.os == 'osx')
-        || (matrix.host == 'windows-latest' && matrix.os == 'win')
       uses: actions/upload-artifact@v2
       with:
         name: ${{ env.OUTPUT_SUBDIR }}
