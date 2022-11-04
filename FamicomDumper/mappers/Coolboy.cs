@@ -14,7 +14,16 @@
 
     public byte Submapper
     {
-        get { return version - 1; }
+        get
+        {
+            switch (version)
+            {
+                default:
+                    return 0;
+                case 2:
+                    return 1;
+            }
+        }
     }
 
     public string UnifName
