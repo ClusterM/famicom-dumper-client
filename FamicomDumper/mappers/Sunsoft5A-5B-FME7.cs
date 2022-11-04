@@ -62,8 +62,8 @@
         dumper.WriteCpu(0x5103, 0xC0); // PRG RAM Enabled (0x80) + PRG RAM (0x40), bank #0 (should i select #0?)
     }
 
-    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
     {
-        return NesFile.MirroringType.MapperControlled;
+        return MirroringType.MapperControlled;
     }
 }

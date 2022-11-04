@@ -78,8 +78,8 @@
         WriteMMC1(dumper, 0xE000, 0x00);
     }
 
-    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
     {
-        return NesFile.MirroringType.MapperControlled;
+        return MirroringType.MapperControlled;
     }
 }

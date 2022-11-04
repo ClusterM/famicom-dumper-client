@@ -87,6 +87,6 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// Read decoded current mirroring mode
         /// </summary>
         /// <returns>Current mirroring</returns>
-        NesFile.MirroringType GetMirroring();
+        MirroringType GetMirroring();
     }
 }

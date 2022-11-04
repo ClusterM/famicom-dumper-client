@@ -986,13 +986,13 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// Read decoded current mirroring mode
         /// </summary>
         /// <returns>Current mirroring</returns>
-        public NesFile.MirroringType GetMirroring()
+        public MirroringType GetMirroring()
         {
             var mirroringRaw = GetMirroringRaw();
             if (mirroringRaw.Length == 1)
             {
                 // Backward compatibility with old firmwares
-                return mirroringRaw[0] ? NesFile.MirroringType.Vertical : NesFile.MirroringType.Horizontal;
+                return mirroringRaw[0] ? MirroringType.Vertical : MirroringType.Horizontal;
             }
             else if (mirroringRaw.Length == 4)
             {
@@ -1000,16 +1000,16 @@ namespace com.clusterrr.Famicom.DumperConnection
                 switch (mirrstr)
                 {
                     case "0011":
-                        return NesFile.MirroringType.Horizontal; // Horizontal
+                        return MirroringType.Horizontal; // Horizontal
                     case "0101":
-                        return NesFile.MirroringType.Vertical; // Vertical
+                        return MirroringType.Vertical; // Vertical
                     case "0000":
-                        return NesFile.MirroringType.OneScreenA; // One-screen A
+                        return MirroringType.OneScreenA; // One-screen A
                     case "1111":
-                        return NesFile.MirroringType.OneScreenB; // One-screen B
+                        return MirroringType.OneScreenB; // One-screen B
                 }
             }
-            return NesFile.MirroringType.Unknown; // Unknown
+            return MirroringType.Unknown; // Unknown
         }
 
         /// <summary>

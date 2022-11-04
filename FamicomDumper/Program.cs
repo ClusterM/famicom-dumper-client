@@ -871,7 +871,7 @@ namespace com.clusterrr.Famicom
                 mapper.DumpChr(dumper, chr, chrSize);
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
-            NesFile.MirroringType mirroring;
+            MirroringType mirroring;
             // TODO: move GetMapper to IMapper, so it will not be optional
             mirroring = mapper.GetMirroring(dumper);
             Console.WriteLine($"Mirroring: {mirroring}");
@@ -901,9 +901,9 @@ namespace com.clusterrr.Famicom
                 };
                 if (unifName != null)
                     unifFile.GameName = unifName;
-                unifFile.Fields["PRG0"] = prg.ToArray();
+                unifFile["PRG0"] = prg.ToArray();
                 if (chr.Count > 0)
-                    unifFile.Fields["CHR0"] = chr.ToArray();
+                    unifFile["CHR0"] = chr.ToArray();
                 unifFile.Mirroring = mirroring;
                 unifFile.Battery = battery;
                 if (!string.IsNullOrEmpty(unifAuthor))

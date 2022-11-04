@@ -61,8 +61,8 @@
         dumper.WriteCpu(0xF800, 0x40);
     }
 
-    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
     {
-        return NesFile.MirroringType.MapperControlled;
+        return MirroringType.MapperControlled;
     }
 }

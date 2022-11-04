@@ -358,11 +358,11 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// Read decoded current mirroring mode
         /// </summary>
         /// <returns>Current mirroring</returns>
-        public NesFile.MirroringType GetMirroring()
+        public MirroringType GetMirroring()
         {
             var r = client.GetMirroring(new EmptyRequest());
             ThrowIfNotSuccess(r.ErrorInfo);
-            return (NesFile.MirroringType)r.Mirroring;
+            return (MirroringType)r.Mirroring;
         }
 
         /// <summary>

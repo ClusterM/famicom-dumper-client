@@ -68,7 +68,7 @@
         throw new NotSupportedException("PRG RAM is not supported by this mapper");
     }
 
-    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
     {
         return dumper.GetMirroring();
     }

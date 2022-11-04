@@ -63,6 +63,6 @@ namespace com.clusterrr.Famicom
         /// </summary>
         /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
         /// <returns></returns>
-        NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
+        MirroringType GetMirroring(IFamicomDumperConnection dumper);
     }
 }

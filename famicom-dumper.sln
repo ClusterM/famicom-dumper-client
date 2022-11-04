@@ -1,18 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30225.117
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NesContainers", "NesContainers\NesContainers.csproj", "{CC0B9916-A053-4E0E-A52B-6D0DB2F4F841}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FamicomDumper", "FamicomDumper\FamicomDumper.csproj", "{28F0CF2B-C5F2-4BDD-99C2-EC28A2D5D70B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FamicomDumperConnection", "FamicomDumperConnection\FamicomDumperConnection.csproj", "{BF3EA23E-72F5-4757-AC09-97313B9F8754}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2E724810-06AF-4142-88A8-EAE7ECA700EE}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

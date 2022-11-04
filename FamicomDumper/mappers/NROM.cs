@@ -49,7 +49,7 @@
         // Actually PRG RAM is present in Family Basic
     }
 
-    public NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper)
+    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
     {
         return dumper.GetMirroring();
     }

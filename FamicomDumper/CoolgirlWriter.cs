@@ -40,7 +40,7 @@ namespace com.clusterrr.Famicom
                 catch
                 {
                     var nesFile = new UnifFile(fileName);
-                    PRG = nesFile.Fields["PRG0"];
+                    PRG = nesFile["PRG0"].ToArray();
                 }
             }
 

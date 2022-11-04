@@ -381,7 +381,7 @@ namespace com.clusterrr.Famicom
         {
             Console.WriteLine("Disk info block:");
             Console.WriteLine($" Game name: {header.GameName}");
-            Console.WriteLine($" Manufacturer code: {header.ManufacturerCode}");
+            Console.WriteLine($" LicenseeCode code: {header.LicenseeCode}");
             Console.Write($" Game type: ");
             switch (header.GameType)
             {
