@@ -9,12 +9,12 @@
 
     public int Number
     {
-        get { return -1; }
+        get { return 265; }
     }
 
     public byte Submapper
     {
-        get { return 0; }
+        return version - 1;
     }
 
     public string UnifName

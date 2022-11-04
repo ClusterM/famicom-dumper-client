@@ -7,7 +7,7 @@
 
     public int Number
     {
-        get { return -1; }
+        get { return 342; }
     }
 
     public byte Submapper
