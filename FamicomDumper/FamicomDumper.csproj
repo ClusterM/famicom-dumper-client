@@ -10,10 +10,11 @@
     <Authors>Alexey "Cluster" Avdyukhin</Authors>
     <Description>Client (PC-software) for Famicom Dumper/Programmer</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>portable</DebugType>
+    <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
