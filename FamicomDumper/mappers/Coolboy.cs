@@ -14,7 +14,7 @@
 
     public byte Submapper
     {
-        return version - 1;
+        get { return version - 1; }
     }
 
     public string UnifName
