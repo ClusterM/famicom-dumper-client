@@ -107,7 +107,6 @@ namespace com.clusterrr.Famicom.DumperConnection
             UNROM512_ERASE_REQUEST = 60,
             UNROM512_WRITE_REQUEST = 61,
 
-            BOOTLOADER = 0xFE,
             DEBUG = 0xFF
         }
 
@@ -1090,11 +1089,6 @@ namespace com.clusterrr.Famicom.DumperConnection
             var (Command, Data) = RecvCommand();
             if (Command != DumperCommand.SET_VALUE_DONE)
                 throw new IOException($"Invalid data received: {Command}");
-        }
-
-        public void Bootloader()
-        {
-            SendCommand(DumperCommand.BOOTLOADER, Array.Empty<byte>());
         }
 
         public void Dispose()

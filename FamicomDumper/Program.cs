@@ -318,9 +318,6 @@ namespace com.clusterrr.Famicom
                         case "info-coolgirl":
                             CoolgirlWriter.PrintFlashInfo(dumper);
                             break;
-                        case "bootloader":
-                            Bootloader(dumper);
-                            break;
                         case "script":
                             if (string.IsNullOrEmpty(csFile))
                                 throw new ArgumentNullException("--cs-file", "Please specify C# script using --cs-file argument");
@@ -986,15 +983,6 @@ namespace com.clusterrr.Famicom
                 Console.WriteLine("OK!");
                 count--;
             }
-        }
-
-        static void Bootloader(IFamicomDumperConnectionExt dumper)
-        {
-            Console.WriteLine("Rebooting to bootloader...");
-            if (dumper is FamicomDumperLocal)
-                (dumper as FamicomDumperLocal).Bootloader();
-            else
-                throw new IOException("'bootloader' command for local dumper only");
         }
 
         static void StartServer(FamicomDumperLocal dumper, int tcpPort)
