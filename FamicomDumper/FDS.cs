@@ -59,7 +59,7 @@ namespace com.clusterrr.Famicom
                             else break;
                         }
                         if (!blocksToWrite.Any())
-                            throw new OutOfMemoryException("Dumper has not enoght memory to write such big block");
+                            throw new OutOfMemoryException("Dumper has not enought memory to write such big block");
                         Console.Write($"Writing block(s): {string.Join(", ", blockIDs)}... ");
                         dumper.WriteFdsBlocks(blockIDs.ToArray(), blocksToWrite.Select(b => b.ToBytes()).ToArray());
                         Console.WriteLine("OK");

@@ -28,7 +28,7 @@
         /// <returns>CRC16 checksum</returns>
         public static ushort CalculateCRC16(byte[] data, int offset, int length)
         {
-            // Calculate CRC32
+            // Calculate CRC16
             ushort crc = 0;
             for (int i = offset; length > 0; i++, length--)
             {

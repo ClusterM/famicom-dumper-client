@@ -104,6 +104,8 @@ namespace com.clusterrr.Famicom.DumperConnection
             FDS_DISK_WRITE_PROTECTED = 57,
             FDS_BLOCK_CRC_ERROR = 58,
             COOLBOY_GPIO_MODE = 59,
+            UNROM512_ERASE_REQUEST = 60,
+            UNROM512_WRITE_REQUEST = 61,
 
             BOOTLOADER = 0xFE,
             DEBUG = 0xFF
@@ -750,6 +752,67 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.FLASH_WRITE_REQUEST, buffer);
+            var (Command, Data) = RecvCommand();
+            if (Command == DumperCommand.FLASH_WRITE_ERROR)
+                throw new IOException($"Flash write error");
+            else if (Command == DumperCommand.FLASH_WRITE_TIMEOUT)
+                throw new IOException($"Flash write timeout");
+            else if (Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
+        }
+
+        /// <summary>
+        /// Erase UNROM512
+        /// </summary>
+        public void EraseUnrom512()
+        {
+            if (ProtocolVersion < 5)
+                throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM512 cartridges");
+            SendCommand(DumperCommand.UNROM512_ERASE_REQUEST, Array.Empty<byte>());
+            var (Command, Data) = RecvCommand();
+            if (Command == DumperCommand.FLASH_ERASE_ERROR)
+                throw new IOException($"Flash erase error (0x{Data[0]:X2})");
+            else if (Command == DumperCommand.FLASH_ERASE_TIMEOUT)
+                throw new TimeoutException($"Flash erase timeout");
+            else if (Command != DumperCommand.PRG_WRITE_DONE)
+                throw new IOException($"Invalid data received: {Command}");
+        }
+
+        /// <summary>
+        /// Write UNROM512 flash memory
+        /// </summary>
+        /// <param name="address">Address to write to</param>
+        /// <param name="data">Data to write, address will be incremented after each byte</param>
+        public void WriteUnrom512(uint address, byte[] data)
+        {
+            if (ProtocolVersion < 5)
+                throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM512 cartridges");
+            int wlength = data.Length;
+            int pos = 0;
+            while (wlength > 0)
+            {
+                var wdata = new byte[Math.Min(MaxWritePacketSize, wlength)];
+                Array.Copy(data, pos, wdata, 0, wdata.Length);
+                if (data.Where(b => b != 0xFF).Any()) // if there is any not FF byte
+                    WriteUnrom512Block(address, wdata);
+                address += (ushort)wdata.Length;
+                pos += wdata.Length;
+                wlength -= wdata.Length;
+            }
+        }
+
+        private void WriteUnrom512Block(uint address, byte[] data)
+        {
+            int length = data.Length;
+            var buffer = new byte[6 + length];
+            buffer[0] = (byte)(address & 0xFF);
+            buffer[1] = (byte)((address >> 8) & 0xFF);
+            buffer[2] = (byte)((address >> 16) & 0xFF);
+            buffer[3] = (byte)((address >> 24) & 0xFF);
+            buffer[4] = (byte)(length & 0xFF);
+            buffer[5] = (byte)((length >> 8) & 0xFF);
+            Array.Copy(data, 0, buffer, 6, length);
+            SendCommand(DumperCommand.UNROM512_WRITE_REQUEST, buffer);
             var (Command, Data) = RecvCommand();
             if (Command == DumperCommand.FLASH_WRITE_ERROR)
                 throw new IOException($"Flash write error");

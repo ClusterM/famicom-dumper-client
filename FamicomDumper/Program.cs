@@ -91,7 +91,6 @@ namespace com.clusterrr.Famicom
             byte fdsSides = 1;
             bool fdsUseHeader = true;
             bool fdsDumpHiddenFiles = false;
-            bool coolboyGpioMode = false;
             try
             {
                 if (args.Length == 0 || args.Contains("help") || args.Contains("--help"))
@@ -206,10 +205,6 @@ namespace com.clusterrr.Famicom
                         case "ignore-bad-sectors":
                             ignoreBadSectors = true;
                             break;
-                        case "coolboygpio":
-                        case "coolboy-gpio":
-                            coolboyGpioMode = true;
-                            break;
                         default:
                             Console.WriteLine("Unknown option: " + param);
                             PrintHelp();
@@ -300,17 +295,22 @@ namespace com.clusterrr.Famicom
                         case "write-coolboy-direct":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
-                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors, coolboyGpioMode);
+                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors, coolboyGpioMode: false);
                             break;
-                        case "write-coolboy-gpio": // for backward compatibility
+                        case "write-coolboy-gpio":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
-                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors, true);
+                            CoolboyWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors, coolboyGpioMode: true);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
                             CoolgirlWriter.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            break;
+                        case "write-unrom512":
+                            if (string.IsNullOrEmpty(filename))
+                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                            Unrom512Writer.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "info-coolboy":
                             CoolboyWriter.PrintFlashInfo(dumper);
@@ -431,7 +431,9 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-30}{1}", "read-prg-ram", "read PRG RAM (battery backed save if exists)");
             Console.WriteLine(" {0,-30}{1}", "write-prg-ram", "write PRG RAM");
             Console.WriteLine(" {0,-30}{1}", "write-coolboy", "write COOLBOY cartridge");
+            Console.WriteLine(" {0,-30}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using dumper's GPIO pins");
             Console.WriteLine(" {0,-30}{1}", "write-coolgirl", "write COOLGIRL cartridge");
+            Console.WriteLine(" {0,-30}{1}", "write-unrom512", "write UNROM512 cartridge");
             Console.WriteLine(" {0,-30}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
             Console.WriteLine(" {0,-30}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
             Console.WriteLine();
@@ -457,7 +459,6 @@ namespace com.clusterrr.Famicom
             Console.WriteLine(" {0,-30}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-30}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
             Console.WriteLine(" {0,-30}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
-            Console.WriteLine(" {0,-30}{1}", "--coolboy-gpio", "enable COOLBOY writing using dumper's GPIO pins");            
         }
 
         static public void Reset(IFamicomDumperConnectionExt dumper)

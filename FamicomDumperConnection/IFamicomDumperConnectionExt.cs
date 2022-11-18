@@ -71,6 +71,18 @@ namespace com.clusterrr.Famicom.DumperConnection
         void WriteFlash(ushort address, byte[] data);
 
         /// <summary>
+        /// Erase UNROM512
+        /// </summary>
+        void EraseUnrom512();
+
+        /// <summary>
+        /// Write UNROM512 flash memory
+        /// </summary>
+        /// <param name="address">Address to write to</param>
+        /// <param name="data">Data to write, address will be incremented after each byte</param>
+        void WriteUnrom512(uint address, byte[] data);
+
+        /// <summary>
         /// Set maximum number of bytes in multi-byte flash program
         /// </summary>
         /// <param name="pageSize"></param>

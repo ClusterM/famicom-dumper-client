@@ -59,6 +59,12 @@ service Dumper {
 	// Write COOLBOY/GOOLGIRL flash memory
 	rpc WriteFlash (WriteRequest) returns (EmptyResponse);
 
+	// Erase UNROM512
+	rpc EraseUnrom512 (EmptyRequest) returns (EmptyResponse);
+
+	// Write UNROM512 flash memory
+	rpc WriteUnrom512 (WriteRequest) returns (EmptyResponse);
+
 	// Read Famicom Disk System blocks
 	rpc ReadFdsBlocks (ReadFdsRequest) returns (ReadFdsResponse);
 

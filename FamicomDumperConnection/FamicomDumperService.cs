@@ -393,6 +393,27 @@ namespace com.clusterrr.Famicom.DumperConnection
             return Task.FromResult(result);
         }
 
+        public override Task<EmptyResponse> EraseFlashSector(EmptyRequest request, ServerCallContext context)
+        {
+            var result = new EmptyResponse();
+            try
+            {
+                Console.Write("Erasing flash sector... ");
+                dumper.EraseFlashSector();
+                Console.WriteLine("OK");
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+                result.ErrorInfo = new ErrorInfo()
+                {
+                    ExceptionName = ex.GetType().ToString(),
+                    ExceptionMessage = ex.Message
+                };
+            }
+            return Task.FromResult(result);
+        }
+
         public override Task<EmptyResponse> WriteFlash(WriteRequest request, ServerCallContext context)
         {
             var result = new EmptyResponse();
@@ -413,6 +434,61 @@ namespace com.clusterrr.Famicom.DumperConnection
                     Console.Write($"Writing to 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ flash... ");
                 }
                 dumper.WriteFlash((ushort)request.Address, request.Data.ToByteArray());
+                Console.WriteLine("OK");
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+                result.ErrorInfo = new ErrorInfo()
+                {
+                    ExceptionName = ex.GetType().ToString(),
+                    ExceptionMessage = ex.Message
+                };
+            }
+            return Task.FromResult(result);
+        }
+
+        public override Task<EmptyResponse> EraseUnrom512(EmptyRequest request, ServerCallContext context)
+        {
+            var result = new EmptyResponse();
+            try
+            {
+                Console.Write("Erasing UNROM512... ");
+                dumper.EraseUnrom512();
+                Console.WriteLine("OK");
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+                result.ErrorInfo = new ErrorInfo()
+                {
+                    ExceptionName = ex.GetType().ToString(),
+                    ExceptionMessage = ex.Message
+                };
+            }
+            return Task.FromResult(result);
+        }
+
+        public override Task<EmptyResponse> WriteUnrom512(WriteRequest request, ServerCallContext context)
+        {
+            var result = new EmptyResponse();
+            try
+            {
+                if (request.Data.Length <= 32)
+                {
+                    Console.Write($"Writing ");
+                    foreach (var b in request.Data)
+                        Console.Write($"0x{b:X2} ");
+                    if (request.Data.Length > 1)
+                        Console.Write($"=> 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ flash... ");
+                    else
+                        Console.Write($"=> 0x{request.Address:X4} @ flash... ");
+                }
+                else
+                {
+                    Console.Write($"Writing to 0x{request.Address:X4}-0x{request.Address + request.Data.Length - 1:X4} @ flash... ");
+                }
+                dumper.WriteUnrom512((ushort)request.Address, request.Data.ToByteArray());
                 Console.WriteLine("OK");
             }
             catch (Exception ex)
@@ -533,27 +609,6 @@ namespace com.clusterrr.Famicom.DumperConnection
             {
                 Console.Write($"Setting maximum number of bytes in multi program mode to {request.PageSize}... ");
                 dumper.SetMaximumNumberOfBytesInMultiProgram((uint)request.PageSize);
-                Console.WriteLine("OK");
-            }
-            catch (Exception ex)
-            {
-                PrintError(ex);
-                result.ErrorInfo = new ErrorInfo()
-                {
-                    ExceptionName = ex.GetType().ToString(),
-                    ExceptionMessage = ex.Message
-                };
-            }
-            return Task.FromResult(result);
-        }
-
-        public override Task<EmptyResponse> EraseFlashSector(EmptyRequest request, ServerCallContext context)
-        {
-            var result = new EmptyResponse();
-            try
-            {
-                Console.Write("Erasing flash sector... ");
-                dumper.EraseFlashSector();
                 Console.WriteLine("OK");
             }
             catch (Exception ex)

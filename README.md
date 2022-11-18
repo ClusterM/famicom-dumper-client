@@ -41,7 +41,9 @@ Available commands:
 - **read-prg-ram** - read PRG RAM (battery backed save if exists)
 - **write-prg-ram** - write PRG RAM
 - **write-coolboy** - write COOLBOY cartridge
+- **write-coolboy-gpio** - write COOLBOY cartridge using dumper's GPIO pins
 - **write-coolgirl** - write COOLGIRL cartridge
+- **write-unrom512** - write UNROM512 cartridge
 - **info-coolboy** - show information about COOLBOY's flash memory
 - **info-coolgirl** - show information about COOLGIRL's flash memory
 

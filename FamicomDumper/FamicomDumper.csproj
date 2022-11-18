@@ -87,10 +87,12 @@
     <None Include="..\LICENSE">
       <Pack>True</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory><ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory><ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\114.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -138,6 +140,7 @@
     </None>
     <None Include="mappers\ColorDreams.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\Coolboy.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -244,12 +247,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.9.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
+    <PackageReference Include="NesContainers" Version="1.1.1" />
     <PackageReference Include="System.Windows.Extensions" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FamicomDumperConnection\FamicomDumperConnection.csproj" />
-    <ProjectReference Include="..\NesContainers\NesContainers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

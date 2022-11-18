@@ -73,7 +73,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
         }
 
-        public Version FirmwareVersion 
+        public Version FirmwareVersion
         {
             get
             {
@@ -299,6 +299,29 @@ namespace com.clusterrr.Famicom.DumperConnection
         }
 
         /// <summary>
+        /// Erase UNROM512
+        /// </summary>
+        public void EraseUnrom512()
+        {
+            var r = client.EraseUnrom512(new EmptyRequest());
+            ThrowIfNotSuccess(r.ErrorInfo);
+        }
+
+        /// <summary>
+        /// Write UNROM512 flash memory
+        /// </summary>
+        /// <param name="address">Address to write to</param>
+        /// <param name="data">Data to write, address will be incremented after each byte</param>
+        public void WriteUnrom512(uint address, byte[] data)
+        {
+            var r = client.WriteUnrom512(new WriteRequest()
+            {
+                Address = address,
+                Data = ByteString.CopyFrom(data)
+            });
+        }
+
+        /// <summary>
         /// Read Famicom Disk System blocks
         /// </summary>
         /// <param name="startBlock">First block number to read (zero-based)</param>
@@ -377,8 +400,9 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public void SetCoolboyGpioMode(bool coolboyGpioMode)
         {
-            var r = client.SetCoolboyGpioMode(new CoolboyGpioModeRequest() { 
-                CoolboyGpioMode = coolboyGpioMode 
+            var r = client.SetCoolboyGpioMode(new CoolboyGpioModeRequest()
+            {
+                CoolboyGpioMode = coolboyGpioMode
             });
             ThrowIfNotSuccess(r.ErrorInfo);
         }
