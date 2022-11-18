@@ -11,6 +11,8 @@ namespace com.clusterrr.Famicom
     public static class Unrom512Writer
     {
         const int BANK_SIZE = 0x4000;
+        const int MAPPER_NUMBER = 30;
+        static string[] MAPPER_STRINGS = { "UNROM", "UNROM-512", "UNROM-512-8", "UNROM-512-16", "UNROM-512-32" };
 
         static void WriteFlashCmd(IFamicomDumperConnection dumper, uint address, byte value)
         {
@@ -18,39 +20,43 @@ namespace com.clusterrr.Famicom
             dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
         }
 
-        static byte ReadFlash(IFamicomDumperConnection dumper, uint address)
-        {
-            dumper.WriteCpu(0xC000, (byte)(address >> 14));
-            return dumper.ReadCpu((ushort)(0x8000 | (address & 0x3FFF)));
-        }
         static void ResetFlash(IFamicomDumperConnection dumper)
         {
             dumper.WriteCpu(0x8000, 0xF0);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(IFamicomDumperConnectionExt dumper, string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
-            if (Path.GetExtension(fileName).ToLower() == ".bin")
+            var extension = Path.GetExtension(filename).ToLower();
+            switch (extension)
             {
-                PRG = File.ReadAllBytes(fileName);
-            }
-            else
-            {
-                try
-                {
-                    var nesFile = new NesFile(fileName);
-                    PRG = nesFile.PRG.ToArray();
-                }
-                catch
-                {
-                    var nesFile = new UnifFile(fileName);
-                    PRG = nesFile["PRG0"].ToArray();
-                }
+                case ".bin":
+                    PRG = File.ReadAllBytes(filename);
+                    break;
+                case ".nes":
+                    var nes = NesFile.FromFile(filename);
+                    if (nes.Mapper != MAPPER_NUMBER)
+                        Console.WriteLine($"WARNING! Invalid mapper: {nes.Mapper}, most likely it will not work after writing.");
+                    PRG = nes.PRG;
+                    break;
+                case ".unf":
+                case ".unif":
+                    var unif = UnifFile.FromFile(filename);
+                    var mapper = unif.Mapper;
+                    if (mapper.StartsWith("NES-") || mapper.StartsWith("UNL-") || mapper.StartsWith("HVC-") || mapper.StartsWith("BTL-") || mapper.StartsWith("BMC-"))
+                        mapper = mapper[4..];
+                    if (!MAPPER_STRINGS.Contains(mapper))
+                        Console.WriteLine($"WARNING! Invalid mapper: {mapper}, most likely it will not work after writing.");
+                    PRG = unif.PRG0;
+                    break;
+                default:
+                    throw new InvalidDataException($"Unknown extension: {extension}, can't detect file format");
             }
 
             int banks = PRG.Length / BANK_SIZE;
 
+            Program.Reset(dumper);
             ResetFlash(dumper);
             WriteFlashCmd(dumper, 0x5555, 0xAA);
             WriteFlashCmd(dumper, 0x2AAA, 0x55);
@@ -63,9 +69,9 @@ namespace com.clusterrr.Famicom
                 0xB7 => 512 * 1024,
                 _ => 0
             };
-            Console.WriteLine($"Device size: {size / 1024} KByte / {size / 1024 * 8} Kbit");
+            Console.WriteLine($"Device size: " + (size > 0 ? $"{size / 1024} KByte / {size / 1024 * 8} Kbit" : "unknown"));
             if ((size > 0) && (PRG.Length > size))
-                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
+                throw new InvalidDataException("This ROM is too big for this cartridge");
 
             Console.Write($"Erasing flash chip... ");
             dumper.EraseUnrom512();

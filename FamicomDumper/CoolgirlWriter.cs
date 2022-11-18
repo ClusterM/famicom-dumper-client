@@ -2,6 +2,7 @@
 using com.clusterrr.Famicom.DumperConnection;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security;
@@ -11,6 +12,8 @@ namespace com.clusterrr.Famicom
     public static class CoolgirlWriter
     {
         const int BANK_SIZE = 0x8000;
+        const int MAPPER_NUMBER = 342;
+        const string MAPPER_STRING = "COOLGIRL";
 
         public static void PrintFlashInfo(IFamicomDumperConnectionExt dumper)
         {
@@ -23,25 +26,32 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public static void Write(IFamicomDumperConnectionExt dumper, string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
-            if (Path.GetExtension(fileName).ToLower() == ".bin")
+            var extension = Path.GetExtension(filename).ToLower();
+            switch (extension)
             {
-                PRG = File.ReadAllBytes(fileName);
-            }
-            else
-            {
-                try
-                {
-                    var nesFile = new NesFile(fileName);
-                    PRG = nesFile.PRG.ToArray();
-                }
-                catch
-                {
-                    var nesFile = new UnifFile(fileName);
-                    PRG = nesFile["PRG0"].ToArray();
-                }
+                case ".bin":
+                    PRG = File.ReadAllBytes(filename);
+                    break;
+                case ".nes":
+                    var nes = NesFile.FromFile(filename);
+                    if (nes.Mapper != MAPPER_NUMBER)
+                        Console.WriteLine($"WARNING! Invalid mapper: {nes.Mapper}, most likely it will not work after writing.");
+                    PRG = nes.PRG;
+                    break;
+                case ".unf":
+                    var unif = UnifFile.FromFile(filename);
+                    var mapper = unif.Mapper;
+                    if (mapper.StartsWith("NES-") || mapper.StartsWith("UNL-") || mapper.StartsWith("HVC-") || mapper.StartsWith("BTL-") || mapper.StartsWith("BMC-"))
+                        mapper = mapper[4..];
+                    if (mapper != MAPPER_STRING)
+                        Console.WriteLine($"WARNING! Invalid mapper: {mapper}, most likely it will not work after writing.");
+                    PRG = unif.PRG0;
+                    break;
+                default:
+                    throw new InvalidDataException($"Unknown extension: {extension}, can't detect file format");
             }
 
             int banks = PRG.Length / BANK_SIZE;
@@ -58,7 +68,7 @@ namespace com.clusterrr.Famicom
             if (dumper.ProtocolVersion >= 3)
                 dumper.SetMaximumNumberOfBytesInMultiProgram(cfi.MaximumNumberOfBytesInMultiProgram);
             if (PRG.Length > cfi.DeviceSize)
-                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
+                throw new InvalidDataException("This ROM is too big for this cartridge");
             try
             {
                 PPBClear(dumper);

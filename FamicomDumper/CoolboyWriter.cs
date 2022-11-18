@@ -10,6 +10,11 @@ namespace com.clusterrr.Famicom
     public static class CoolboyWriter
     {
         const int BANK_SIZE = 0x4000;
+        const int MAPPER_NUMBER = 268;
+        const int SUBMAPPER_NUMBER_COOLBOY = 0;
+        const int SUBMAPPER_NUMBER_MINDKIDS = 1;
+        const string MAPPER_STRING_COOLBOY = "COOLBOY";
+        const string MAPPER_STRING_MINDKIDS = "MINDKIDS";
 
         public static byte DetectVersion(IFamicomDumperConnectionExt dumper)
         {
@@ -65,31 +70,47 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false, bool coolboyGpioMode = false)
+        public static void Write(IFamicomDumperConnectionExt dumper, string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false, bool coolboyGpioMode = false)
         {
+            Program.Reset(dumper);
+            var version = DetectVersion(dumper);
+
             byte[] PRG;
-            if (Path.GetExtension(fileName).ToLower() == ".bin")
+            var extension = Path.GetExtension(filename).ToLower();
+            switch (extension)
             {
-                PRG = File.ReadAllBytes(fileName);
-            }
-            else
-            {
-                try
-                {
-                    var nesFile = new NesFile(fileName);
-                    PRG = nesFile.PRG.ToArray();
-                }
-                catch
-                {
-                    var nesFile = new UnifFile(fileName);
-                    PRG = nesFile["PRG0"].ToArray();
-                }
+                case ".bin":
+                    PRG = File.ReadAllBytes(filename);
+                    break;
+                case ".nes":
+                    var nes = NesFile.FromFile(filename);
+                    if (
+                        (nes.Mapper != MAPPER_NUMBER)
+                        || ((version == 1) && (nes.Submapper != SUBMAPPER_NUMBER_COOLBOY))
+                        || ((version == 2) && (nes.Submapper != SUBMAPPER_NUMBER_MINDKIDS))
+                        )
+                        Console.WriteLine($"WARNING! Invalid mapper: {nes.Mapper}.{nes.Submapper}, most likely it will not work after writing.");
+                    PRG = nes.PRG;
+                    break;
+                case ".unf":
+                case ".unif":
+                    var unif = UnifFile.FromFile(filename);
+                    var mapper = unif.Mapper;
+                    if (mapper.StartsWith("NES-") || mapper.StartsWith("UNL-") || mapper.StartsWith("HVC-") || mapper.StartsWith("BTL-") || mapper.StartsWith("BMC-"))
+                        mapper = mapper[4..];
+                    if (
+                        ((version == 1) && (mapper != MAPPER_STRING_COOLBOY))
+                        || ((version == 2) && (mapper != MAPPER_STRING_MINDKIDS))
+                        )
+                        Console.WriteLine($"WARNING! Invalid mapper: {mapper}, most likely it will not work after writing.");
+                    PRG = unif.PRG0;
+                    break;
+                default:
+                    throw new InvalidDataException($"Unknown extension: {extension}, can't detect file format");
             }
 
             int banks = PRG.Length / BANK_SIZE;
 
-            Program.Reset(dumper);
-            var version = DetectVersion(dumper);
             var coolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             FlashHelper.ResetFlash(dumper);
             var cfi = FlashHelper.GetCFIInfo(dumper);
@@ -98,10 +119,12 @@ namespace com.clusterrr.Famicom
             if (dumper.ProtocolVersion >= 3)
                 dumper.SetMaximumNumberOfBytesInMultiProgram(cfi.MaximumNumberOfBytesInMultiProgram);
             if (PRG.Length > cfi.DeviceSize)
-                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
+                throw new InvalidDataException("This ROM is too big for this cartridge");
             try
             {
+                if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
                 PPBClear(dumper, coolboyReg);
+                if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
             }
             catch (Exception ex)
             {
