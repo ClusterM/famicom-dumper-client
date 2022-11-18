@@ -1,0 +1,122 @@
+﻿using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.DumperConnection;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security;
+
+namespace com.clusterrr.Famicom
+{
+    public static class Unrom512Writer
+    {
+        const int BANK_SIZE = 0x4000;
+
+        static void WriteFlashCmd(IFamicomDumperConnection dumper, uint address, byte value)
+        {
+            dumper.WriteCpu(0xC000, (byte)(address >> 14));
+            dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
+        }
+
+        static byte ReadFlash(IFamicomDumperConnection dumper, uint address)
+        {
+            dumper.WriteCpu(0xC000, (byte)(address >> 14));
+            return dumper.ReadCpu((ushort)(0x8000 | (address & 0x3FFF)));
+        }
+        static void ResetFlash(IFamicomDumperConnection dumper)
+        {
+            dumper.WriteCpu(0x8000, 0xF0);
+        }
+
+        public static void Write(IFamicomDumperConnectionExt dumper, string fileName, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        {
+            byte[] PRG;
+            if (Path.GetExtension(fileName).ToLower() == ".bin")
+            {
+                PRG = File.ReadAllBytes(fileName);
+            }
+            else
+            {
+                try
+                {
+                    var nesFile = new NesFile(fileName);
+                    PRG = nesFile.PRG.ToArray();
+                }
+                catch
+                {
+                    var nesFile = new UnifFile(fileName);
+                    PRG = nesFile["PRG0"].ToArray();
+                }
+            }
+
+            int banks = PRG.Length / BANK_SIZE;
+
+            ResetFlash(dumper);
+            WriteFlashCmd(dumper, 0x5555, 0xAA);
+            WriteFlashCmd(dumper, 0x2AAA, 0x55);
+            WriteFlashCmd(dumper, 0x5555, 0x90);
+            var id = dumper.ReadCpu(0x8000, 2);
+            int size = id[1] switch
+            {
+                0xB5 => 128 * 1024,
+                0xB6 => 256 * 1024,
+                0xB7 => 512 * 1024,
+                _ => 0
+            };
+            Console.WriteLine($"Device size: {size / 1024} KByte / {size / 1024 * 8} Kbit");
+            if ((size > 0) && (PRG.Length > size))
+                throw new ArgumentOutOfRangeException("PRG.Length", "This ROM is too big for this cartridge");
+
+            Console.Write($"Erasing flash chip... ");
+            dumper.EraseUnrom512();
+            Console.WriteLine("OK");
+
+            for (int bank = 0; bank < banks; bank++)
+            {
+                try
+                {
+                    var data = new byte[BANK_SIZE];
+                    int pos = bank * BANK_SIZE;
+                    Array.Copy(PRG, pos, data, 0, data.Length);
+                    Console.Write($"Writing bank #{bank}/{banks} ({100 * bank / banks}%)... ");
+                    dumper.WriteUnrom512((uint)pos, data);
+                    Console.WriteLine("OK");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"ERROR {ex.GetType()}: {ex.Message}");
+                    if (!silent) Program.PlayErrorSound();
+                }
+            }
+
+            var wrongCrcSectorsList = new List<int>();
+            if (needCheck)
+            {
+                Console.WriteLine("Starting verification process");
+                var readStartTime = DateTime.Now;
+
+                for (int bank = 0; bank < banks; bank++)
+                {
+                    dumper.WriteCpu(0xC000, (byte)bank);
+                    int pos = bank * BANK_SIZE;
+                    ushort crc = Crc16Calculator.CalculateCRC16(PRG, pos, BANK_SIZE);
+                    Console.Write($"Reading CRC of bank #{bank}/{banks} ({100 * bank / banks}%)... ");
+                    var crcr = dumper.ReadCpuCrc(0x8000, BANK_SIZE);
+                    if (crcr != crc)
+                    {
+                        Console.WriteLine($"Verification failed: {crcr:X4} != {crc:X4}");
+                        if (!silent) Program.PlayErrorSound();
+                        wrongCrcSectorsList.Add(bank);
+                    }
+                    else
+                        Console.WriteLine($"OK (CRC = {crcr:X4})");
+                }
+                if (wrongCrcSectorsList.Any())
+                    Console.WriteLine($"Banks with wrong CRC: {string.Join(", ", wrongCrcSectorsList.Distinct().OrderBy(s => s))}");
+            }
+
+            if (wrongCrcSectorsList.Any())
+                throw new IOException("Cartridge is not writed correctly");
+        }
+    }
+}
