@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace com.clusterrr.Famicom.Properties {
+namespace com.clusterrr.Famicom.Dumper.Properties {
     using System;
     
     
@@ -19,7 +19,7 @@ namespace com.clusterrr.Famicom.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -39,7 +39,7 @@ namespace com.clusterrr.Famicom.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("com.clusterrr.Famicom.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("com.clusterrr.Famicom.Dumper.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,7 +61,7 @@ namespace com.clusterrr.Famicom.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 132668315034203063
+        ///   Looks up a localized string similar to 1668970995
         ///.
         /// </summary>
         internal static string buildtime {
@@ -89,7 +89,7 @@ namespace com.clusterrr.Famicom.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to c1d1805 (dirty).
+        ///   Looks up a localized string similar to 1b39da5 (dirty).
         /// </summary>
         internal static string gitCommit {
             get {

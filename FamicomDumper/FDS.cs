@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Dumper
 {
     public class FDS
     {

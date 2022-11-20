@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Dumper
 {
     static class FlashHelper
     {

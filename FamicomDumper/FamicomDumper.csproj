@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>com.clusterrr.Famicom</RootNamespace>
+    <RootNamespace>com.clusterrr.Famicom.Dumper</RootNamespace>
     <AssemblyName>famicom-dumper</AssemblyName>
     <Version>3.1.0</Version>
     <RepositoryUrl>https://github.com/ClusterM/famicom-dumper-client</RepositoryUrl>
@@ -53,6 +53,7 @@
     <Compile Remove="mappers\MMC5.cs" />
     <Compile Remove="mappers\NROM.cs" />
     <Compile Remove="mappers\Sunsoft5A-5B-FME7.cs" />
+    <Compile Remove="mappers\UNROM-512.cs" />
     <Compile Remove="mappers\UxROM.cs" />
     <Compile Remove="mappers\VRC2a.cs" />
     <Compile Remove="mappers\VRC2b4f4e.cs" />
@@ -175,6 +176,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\Sunsoft5A-5B-FME7.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\UNROM-512.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>

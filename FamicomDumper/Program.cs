@@ -41,24 +41,14 @@ using System.Security;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Dumper
 {
     public class Program
     {
-        private static string[] MappersSearchDirectories = {
-            Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
-            "/usr/share/famicom-dumper/mappers"
-        };
-        private static readonly string[] ScriptsSearchDirectories = {
-            Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
-            "/usr/share/famicom-dumper/scripts"
-        };
 
-        private const string SCRIPTS_CACHE_DIRECTORY = ".dumpercache";
-        private const string SCRIPT_START_METHOD = "Run";
-        private const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
-        private const int DEFAULT_GRPC_PORT = 26673;
-        private static DateTime BUILD_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(long.Parse(Properties.Resources.buildtime.Trim()));
+        public const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
+        public const int DEFAULT_GRPC_PORT = 26673;
+        public static DateTime BUILD_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(long.Parse(Properties.Resources.buildtime.Trim()));
 
         static int Main(string[] args)
         {
@@ -109,7 +99,7 @@ namespace com.clusterrr.Famicom
                         csArgs = args.Skip(i + 1).ToArray();
                         break;
                     }
-                    while (param.StartsWith("-") || param.StartsWith("—")) param = param[1..];
+                    while (param.StartsWith("-")) param = param[1..];
                     string value = i < args.Length - 1 ? args[i + 1] : "";
                     switch (param.ToLower())
                     {
@@ -119,8 +109,8 @@ namespace com.clusterrr.Famicom
                             i++;
                             break;
                         case "mappers":
-                            //MappersSearchDirectories = MappersSearchDirectories.Append(value).ToArray();
-                            MappersSearchDirectories = new string[] { value };
+                            // Meh... using static field
+                            Scripting.MappersSearchDirectories = new string[] { value };
                             i++;
                             break;
                         case "m":
@@ -214,7 +204,7 @@ namespace com.clusterrr.Famicom
 
                 if (command == "list-mappers")
                 {
-                    ListMappers();
+                    Scripting.ListMappers();
                     return 0;
                 }
 
@@ -251,7 +241,7 @@ namespace com.clusterrr.Famicom
 
                     if (!string.IsNullOrEmpty(csFile))
                     {
-                        CompileAndExecute(csFile, dumper, filename, mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery, csArgs);
+                        Scripting.CompileAndExecute(csFile, dumper, filename, mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery, csArgs);
                     }
 
                     switch (command)
@@ -261,7 +251,7 @@ namespace com.clusterrr.Famicom
                                 Reset(dumper);
                             break;
                         case "list-mappers":
-                            ListMappers();
+                            Scripting.ListMappers();
                             break;
                         case "dump":
                             Dump(dumper, filename ?? "output.nes", mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery);
@@ -463,389 +453,9 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
         }
 
-        static Assembly Compile(string path)
-        {
-            int linesOffset = 0;
-            var source = File.ReadAllText(path);
-            var cacheDirectory = Path.Combine(Path.GetDirectoryName(path), SCRIPTS_CACHE_DIRECTORY);
-            var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
-
-            // Try to load cached assembly
-            ;
-            if (File.Exists(cacheFile))
-            {
-                var cacheCompileTime = new FileInfo(cacheFile).LastWriteTime;
-                if ((cacheCompileTime >= new FileInfo(path).LastWriteTime) // recompile if script was changed
-                    && (cacheCompileTime >= BUILD_TIME.ToLocalTime())) // recompile if our app is newer
-                {
-                    try
-                    {
-                        var rawAssembly = File.ReadAllBytes(cacheFile);
-                        return Assembly.Load(rawAssembly);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Can't load cached compiled script file: {ex.Message}");
-                    }
-                }
-            }
-
-            // And usings
-            SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
-            CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
-            var usings = root.Usings.Select(e => e.Name.ToString());
-            var usingsToAdd = new string[]
-            {
-                "System",
-                "System.IO",
-                "System.Collections.Generic",
-                "System.Linq",
-                "com.clusterrr.Famicom",
-                "com.clusterrr.Famicom.DumperConnection",
-                "com.clusterrr.Famicom.Containers"
-            };
-            foreach (var @using in usingsToAdd)
-            {
-                if (!usings.Contains(@using))
-                {
-                    source = $"using {@using};\r\n" + source;
-                    linesOffset++; // for correct line numbers in errors
-                }
-            }
-            tree = CSharpSyntaxTree.ParseText(source);
-
-            // Loading assemblies
-            var domainAssemblys = AppDomain.CurrentDomain.GetAssemblies();
-            var metadataReferenceList = new List<MetadataReference>();
-            foreach (var assembl in domainAssemblys)
-            {
-                unsafe
-                {
-                    assembl.TryGetRawMetadata(out byte* blob, out int length);
-                    var moduleMetadata = ModuleMetadata.CreateFromMetadata((IntPtr)blob, length);
-                    var assemblyMetadata = AssemblyMetadata.Create(moduleMetadata);
-                    var metadataReference = assemblyMetadata.GetReference();
-                    metadataReferenceList.Add(metadataReference);
-                }
-            }
-            unsafe
-            {
-                // Add extra refs
-                // FamicomDumperConnection.dll
-                typeof(IFamicomDumperConnectionExt).Assembly.TryGetRawMetadata(out byte* blob, out int length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-                // NesContainers.dll
-                typeof(NesFile).Assembly.TryGetRawMetadata(out blob, out length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-                // for image processing
-                typeof(System.Drawing.Bitmap).Assembly.TryGetRawMetadata(out blob, out length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-                typeof(ImageFormat).Assembly.TryGetRawMetadata(out blob, out length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-                // for JSON
-                typeof(JsonSerializer).Assembly.TryGetRawMetadata(out blob, out length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-                // for Regex
-                typeof(Regex).Assembly.TryGetRawMetadata(out blob, out length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-                // wtf is it?
-                typeof(System.Linq.Expressions.Expression).Assembly.TryGetRawMetadata(out blob, out length);
-                metadataReferenceList.Add(AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference());
-            }
-
-            // Compile
-            var cs = CSharpCompilation.Create("Script", new[] { tree }, metadataReferenceList,
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-            );
-            using var memoryStream = new MemoryStream();
-            EmitResult result = cs.Emit(memoryStream);
-            foreach (Diagnostic d in result.Diagnostics.Where(d => d.Severity != DiagnosticSeverity.Hidden
-#if !DEBUG
-                && d.Severity != DiagnosticSeverity.Warning
-#endif
-                ))
-            {
-                Console.WriteLine($"{Path.GetFileName(path)} ({d.Location.GetLineSpan().StartLinePosition.Line - linesOffset + 1}, {d.Location.GetLineSpan().StartLinePosition.Character + 1}): {d.Severity.ToString().ToLower()} {d.Descriptor.Id}: {d.GetMessage()}");
-            }
-            if (result.Success)
-            {
-                var rawAssembly = memoryStream.ToArray();
-                Assembly assembly = Assembly.Load(rawAssembly);
-                // Save compiled assembly to cache (at least try)
-                try
-                {
-                    if (!Directory.Exists(cacheDirectory))
-                        Directory.CreateDirectory(cacheDirectory);
-                    File.WriteAllBytes(cacheFile, rawAssembly);
-                }
-                catch { }
-                return assembly;
-            }
-            else throw new InvalidProgramException();
-        }
-
-        static IMapper CompileMapper(string path)
-        {
-            Assembly assembly = Compile(path);
-            var programs = assembly.GetTypes();
-            if (!programs.Any())
-                throw new InvalidProgramException("There is no assemblies");
-            Type program = programs.First();
-            var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-            if (constructor == null)
-                throw new InvalidProgramException("There is no valid default constructor");
-            var mapper = constructor.Invoke(Array.Empty<object>());
-            if (!(mapper is IMapper))
-                throw new InvalidProgramException("Class doesn't implement IMapper interface");
-            return mapper as IMapper;
-        }
-
-        static Dictionary<string, IMapper> CompileAllMappers()
-        {
-            var result = new Dictionary<string, IMapper>();
-            var mappersSearchDirectories = MappersSearchDirectories.Distinct().Where(d => Directory.Exists(d));
-            if (!mappersSearchDirectories.Any())
-            {
-                Console.WriteLine("None of the listed mappers directories were found:");
-                foreach (var d in MappersSearchDirectories)
-                    Console.WriteLine($" {d}");
-            }
-            foreach (var mappersDirectory in mappersSearchDirectories)
-            {
-                Console.WriteLine($"Compiling mappers in {mappersDirectory}...");
-                foreach (var f in Directory.GetFiles(mappersDirectory, "*.cs", SearchOption.AllDirectories))
-                {
-                    result[f] = CompileMapper(f);
-                }
-            }
-            return result;
-        }
-
-        static void ListMappers()
-        {
-            var mappers = CompileAllMappers();
-            Console.WriteLine("Supported mappers:");
-            Console.WriteLine(" {0,-30}{1,-24}{2,-9}{3,-24}", "File", "Name", "Number", "UNIF name");
-            Console.WriteLine("----------------------------- ----------------------- -------- -----------------------");
-            foreach (var mapperFile in mappers
-                .Where(m => m.Value.Number >= 0)
-                .OrderBy(m => m.Value.Number)
-                .Union(mappers.Where(m => m.Value.Number < 0)
-                .OrderBy(m => m.Value.Name)))
-            {
-                Console.WriteLine(" {0,-30}{1,-24}{2,-9}{3,-24}",
-                    Path.GetFileName(mapperFile.Key),
-                    mapperFile.Value.Name,
-                    mapperFile.Value.Number >= 0 ? mapperFile.Value.Number.ToString() : "None",
-                    mapperFile.Value.UnifName ?? "None");
-            }
-        }
-
-        public static IMapper GetMapper(string mapperName)
-        {
-            if (File.Exists(mapperName)) // CS script?
-            {
-                Console.WriteLine($"Compiling {mapperName}...");
-                return CompileMapper(mapperName);
-            }
-
-            if (string.IsNullOrEmpty(mapperName))
-                mapperName = "0";
-            var mapperList = CompileAllMappers()
-                .Where(m => m.Value.Name.ToLower() == mapperName.ToLower()
-                || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
-            if (!mapperList.Any()) throw new KeyNotFoundException("Can't find mapper");
-            var mapper = mapperList.First();
-            Console.WriteLine($"Using {Path.GetFileName(mapper.Key)} as mapper file");
-            return mapper.Value;
-        }
-
-        static void CompileAndExecute(string scriptPath, IFamicomDumperConnectionExt dumper, string filename, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery, string[] args)
-        {
-            if (!File.Exists(scriptPath))
-            {
-                var scriptsPathes = ScriptsSearchDirectories.Select(d => Path.Combine(d, scriptPath)).Where(f => File.Exists(f));
-                if (!scriptsPathes.Any())
-                {
-                    Console.WriteLine($"{Path.Combine(Directory.GetCurrentDirectory(), scriptPath)} not found");
-                    foreach (var d in ScriptsSearchDirectories)
-                        Console.WriteLine($"{Path.Combine(d, scriptPath)} not found");
-                    throw new FileNotFoundException($"{scriptPath} not found");
-                }
-                scriptPath = scriptsPathes.First();
-            }
-            Console.WriteLine($"Compiling {scriptPath}...");
-            Assembly assembly = Compile(scriptPath);
-            var programs = assembly.GetTypes();
-            if (!programs.Any())
-                throw new InvalidProgramException("There is no assemblies");
-            Type program = programs.First();
-
-            try
-            {
-                object obj;
-                MethodInfo method;
-
-                // Let's check if static method exists
-                var staticMethods = program.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => m.Name == SCRIPT_START_METHOD);
-                if (staticMethods.Any())
-                {
-                    obj = program;
-                    method = staticMethods.First();
-                }
-                else
-                {
-                    // Let's try instance method, need to call constructor first
-                    var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-                    if (constructor == null)
-                        throw new InvalidProgramException($"There is no static {SCRIPT_START_METHOD} method and no valid default constructor");
-                    obj = constructor.Invoke(Array.Empty<object>());
-                    // Is it instance method with string[] parameter?
-                    var instanceMethods = obj.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(m => m.Name == SCRIPT_START_METHOD);
-                    if (!instanceMethods.Any())
-                    {
-                        // Seems like there are no valid methods at all
-                        throw new InvalidProgramException($"There is no {SCRIPT_START_METHOD} method");
-                    }
-                    method = instanceMethods.First();
-                }
-
-                var parameterInfos = method.GetParameters();
-                List<object> parameters = new();
-                bool filenameParamExists = false;
-                bool mapperParamExists = false;
-                bool prgSizeParamExists = false;
-                bool chrSizeParamExists = false;
-                bool unifNameParamExists = false;
-                bool unifAuthorParamExists = false;
-                bool batteryParamExists = false;
-                bool argsParamExists = false;
-                foreach (var parameterInfo in parameterInfos)
-                {
-                    var signature = $"{parameterInfo.ParameterType.Name} {parameterInfo.Name}";
-                    switch (parameterInfo.Name.ToLower())
-                    {
-                        case "dumper":
-                            parameters.Add(dumper);
-                            break;
-                        case "filename":
-                            filenameParamExists = true;
-                            if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
-                            if (string.IsNullOrEmpty(filename) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
-                            else
-                                parameters.Add(filename);
-                            break;
-                        case "mapper":
-                            mapperParamExists = true;
-                            //if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
-                            //    throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
-                            parameters.Add(GetMapper(mapperName));
-                            break;
-                        case "prgsize":
-                            prgSizeParamExists = true;
-                            if ((prgSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
-                            if ((prgSize < 0) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
-                            else
-                                parameters.Add(prgSize);
-                            break;
-                        case "chrsize":
-                            chrSizeParamExists = true;
-                            if ((chrSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
-                            if ((chrSize < 0) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
-                            else
-                                parameters.Add(chrSize);
-                            break;
-                        case "unifname":
-                            unifNameParamExists = true;
-                            if (string.IsNullOrEmpty(unifName) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
-                            if (string.IsNullOrEmpty(unifName) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
-                            else
-                                parameters.Add(unifName);
-                            break;
-                        case "unifauthor":
-                            unifAuthorParamExists = true;
-                            if (string.IsNullOrEmpty(unifAuthor) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
-                            if (string.IsNullOrEmpty(unifAuthor) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
-                            else
-                                parameters.Add(unifAuthor);
-                            break;
-                        case "battery":
-                            batteryParamExists = true;
-                            parameters.Add(battery);
-                            break;
-                        case "args":
-                            argsParamExists = true;
-                            parameters.Add(args);
-                            break;
-                        default:
-                            switch (parameterInfo.ParameterType.Name)
-                            {
-                                // For backward compatibility
-                                case nameof(IFamicomDumperConnection):
-                                    parameters.Add(dumper);
-                                    break;
-                                case "String[]":
-                                    argsParamExists = true;
-                                    parameters.Add(args);
-                                    break;
-                                case nameof(IMapper):
-                                    mapperParamExists = true;
-                                    if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
-                                        throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
-                                    if (string.IsNullOrEmpty(mapperName) && parameterInfo.HasDefaultValue)
-                                        parameters.Add(parameterInfo.DefaultValue);
-                                    else
-                                        parameters.Add(GetMapper(mapperName));
-                                    break;
-                                default:
-                                    throw new ArgumentException($"Unknown parameter: {signature}");
-                            }
-                            break;
-                    }
-                }
-                if (!filenameParamExists && !string.IsNullOrEmpty(filename))
-                    Console.WriteLine($"WARNING: --file argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string filename\" parameter");
-                if (!mapperParamExists && !string.IsNullOrEmpty(mapperName))
-                    Console.WriteLine($"WARNING: --mapper argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"IMapper mapper\" parameter");
-                if (!prgSizeParamExists && prgSize >= 0)
-                    Console.WriteLine($"WARNING: --prg-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int prgSize\" parameter");
-                if (!chrSizeParamExists && chrSize >= 0)
-                    Console.WriteLine($"WARNING: --chr-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int chrSize\" parameter");
-                if (!unifNameParamExists && !string.IsNullOrEmpty(unifName))
-                    Console.WriteLine($"WARNING: --unif-name argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string unifName\" parameter");
-                if (!unifAuthorParamExists && !string.IsNullOrEmpty(unifAuthor))
-                    Console.WriteLine($"WARNING: --unif-author argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string unifAuthor\" parameter");
-                if (!batteryParamExists && battery)
-                    Console.WriteLine($"WARNING: --battery argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"bool battery\" parameter");
-                if (!argsParamExists && args.Any())
-                    Console.WriteLine($"WARNING: command line arguments are specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string[] args\" parameter");
-
-                // Start it!
-                Console.WriteLine($"Running {program.Name}.{SCRIPT_START_METHOD}()...");
-                method.Invoke(obj, parameters.ToArray());
-            }
-            catch (TargetInvocationException ex)
-            {
-                if (ex.InnerException != null)
-                    throw ex.InnerException;
-                else
-                    throw;
-            }
-        }
-
         static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
         {
-            var mapper = GetMapper(mapperName);
+            var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
                 Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
@@ -890,6 +500,7 @@ namespace com.clusterrr.Famicom
             }
             else
             {
+                // Non-numeric mapper, using UNIF
                 var unifFile = new UnifFile
                 {
                     Version = 4,
@@ -912,7 +523,7 @@ namespace com.clusterrr.Famicom
 
         static void ReadPrgRam(IFamicomDumperConnectionExt dumper, string fileName, string mapperName)
         {
-            var mapper = GetMapper(mapperName);
+            var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
                 Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
@@ -930,7 +541,7 @@ namespace com.clusterrr.Famicom
 
         static void WritePrgRam(IFamicomDumperConnectionExt dumper, string fileName, string mapperName)
         {
-            var mapper = GetMapper(mapperName);
+            var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
                 Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
             else
@@ -942,45 +553,6 @@ namespace com.clusterrr.Famicom
             Console.WriteLine("OK");
             dumper.ReadCpu(0x0, 1); // to avoid corruption
             Reset(dumper);
-        }
-
-        static void TestPrgRam(IFamicomDumperConnectionExt dumper, string mapperName, int count = -1)
-        {
-            var mapper = GetMapper(mapperName);
-            if (mapper.Number >= 0)
-                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
-            else
-                Console.WriteLine($"Using mapper: {mapper.Name}");
-            mapper.EnablePrgRam(dumper);
-            var rnd = new Random();
-            while (count != 0)
-            {
-                var data = new byte[0x2000];
-                rnd.NextBytes(data);
-                Console.Write("Writing PRG RAM... ");
-                dumper.WriteCpu(0x6000, data);
-                Console.Write("Reading PRG RAM... ");
-                var rdata = dumper.ReadCpu(0x6000, 0x2000);
-                bool ok = true;
-                for (int b = 0; b < 0x2000; b++)
-                {
-                    if (data[b] != rdata[b])
-                    {
-                        Console.WriteLine($"Mismatch at {b:X4}: {rdata[b]:X2} != {data[b]:X2}");
-                        ok = false;
-                    }
-                }
-                if (!ok)
-                {
-                    File.WriteAllBytes("prgramgood.bin", data);
-                    Console.WriteLine("prgramgood.bin writed");
-                    File.WriteAllBytes("prgrambad.bin", rdata);
-                    Console.WriteLine("prgrambad.bin writed");
-                    throw new VerificationException("Failed!");
-                }
-                Console.WriteLine("OK!");
-                count--;
-            }
         }
 
         static void StartServer(FamicomDumperLocal dumper, int tcpPort)

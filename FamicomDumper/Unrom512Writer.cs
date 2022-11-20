@@ -1,31 +1,39 @@
 ﻿using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
+using com.clusterrr.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Dumper
 {
-    public static class Unrom512Writer
+    public class Unrom512Writer
     {
         const int BANK_SIZE = 0x4000;
         const int MAPPER_NUMBER = 30;
         static string[] MAPPER_STRINGS = { "UNROM", "UNROM-512", "UNROM-512-8", "UNROM-512-16", "UNROM-512-32" };
 
-        static void WriteFlashCmd(IFamicomDumperConnection dumper, uint address, byte value)
+        private readonly IFamicomDumperConnectionExt dumper;
+
+        public Unrom512Writer(IFamicomDumperConnectionExt dumper)
+        {
+            this.dumper = dumper;
+        }
+
+        void WriteFlashCmd(uint address, byte value)
         {
             dumper.WriteCpu(0xC000, (byte)(address >> 14));
             dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
         }
 
-        static void ResetFlash(IFamicomDumperConnection dumper)
+        void ResetFlash()
         {
             dumper.WriteCpu(0x8000, 0xF0);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public void Write(string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             var extension = Path.GetExtension(filename).ToLower();
@@ -57,10 +65,10 @@ namespace com.clusterrr.Famicom
             int banks = PRG.Length / BANK_SIZE;
 
             Program.Reset(dumper);
-            ResetFlash(dumper);
-            WriteFlashCmd(dumper, 0x5555, 0xAA);
-            WriteFlashCmd(dumper, 0x2AAA, 0x55);
-            WriteFlashCmd(dumper, 0x5555, 0x90);
+            ResetFlash();
+            WriteFlashCmd(0x5555, 0xAA);
+            WriteFlashCmd(0x2AAA, 0x55);
+            WriteFlashCmd(0x5555, 0x90);
             var id = dumper.ReadCpu(0x8000, 2);
             int size = id[1] switch
             {

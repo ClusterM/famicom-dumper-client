@@ -2,7 +2,7 @@
 using com.clusterrr.Famicom.DumperConnection;
 using System.Collections.Generic;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Dumper
 {
     public interface IMapper
     {

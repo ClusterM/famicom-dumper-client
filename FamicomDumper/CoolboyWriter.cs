@@ -1,11 +1,12 @@
 ﻿using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
+using com.clusterrr.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace com.clusterrr.Famicom
+namespace com.clusterrr.Famicom.Dumper
 {
     public class CoolboyWriter
     {

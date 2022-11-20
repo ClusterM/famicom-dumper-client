@@ -1,4 +1,4 @@
-﻿namespace com.clusterrr.Famicom
+﻿namespace com.clusterrr.Utils
 {
     public static class Crc16Calculator
     {
