@@ -1,4 +1,5 @@
-﻿using com.clusterrr.Famicom.Containers;
+﻿using com.clusterrr.Communication;
+using com.clusterrr.Famicom.Containers;
 using FTD2XX_NET;
 using System;
 using System.Collections.Generic;
@@ -12,39 +13,17 @@ namespace com.clusterrr.Famicom.DumperConnection
 {
     public class FamicomDumperLocal : IDisposable, IFamicomDumperConnectionExt
     {
-        const int PortBaudRate = 250000;
-        const ushort DefaultMaxReadPacketSize = 1024;
-        const ushort DefaultMaxWritePacketSize = 1024;
-        const byte Magic = 0x46;
-        readonly string[] DeviceNames = new string[] { "Famicom Dumper/Programmer", "Famicom Dumper/Writer" };
+        readonly string[] DEVICE_NAMES = new string[] { "Famicom Dumper/Programmer", "Famicom Dumper/Writer" };
+        const uint TIMEOUT = 10000;
+        const uint BAUDRATE = 250000;
 
-        public string PortName { get; set; }
         public byte ProtocolVersion { get; private set; } = 0;
         public Version FirmwareVersion { get; private set; } = null;
         public Version HardwareVersion { get; private set; } = null;
-        public uint Timeout
-        {
-            get
-            {
-                return timeout;
-            }
-            set
-            {
-                timeout = value;
-                if (serialPort != null)
-                {
-                    serialPort.ReadTimeout = (int)timeout;
-                    serialPort.WriteTimeout = (int)timeout;
-                }
-            }
-        }
-
-        private SerialPort serialPort = null;
-        private FTDI d2xxPort = null;
-        public ushort MaxReadPacketSize { get; private set; }
-        public ushort MaxWritePacketSize { get; private set; }
-
-        private uint timeout = 10000;
+        public uint Timeout { get => connection.Timeout; set => connection.Timeout = value; }
+        public ushort MaxReadPacketSize { get => connection.MaxReadPacketSize; set => connection.MaxReadPacketSize = value; }
+        public ushort MaxWritePacketSize { get => connection.MaxWritePacketSize; set => connection.MaxWritePacketSize = value; }
+        private SerialClient connection = new SerialClient();
 
         enum DumperCommand
         {
@@ -63,24 +42,10 @@ namespace com.clusterrr.Famicom.DumperConnection
             CHR_READ_RESULT = 12,
             CHR_WRITE_REQUEST = 13,
             CHR_WRITE_DONE = 14,
-            //PHI2_INIT = 15,
-            //PHI2_INIT_DONE = 16,
             MIRRORING_REQUEST = 17,
             MIRRORING_RESULT = 18,
             RESET = 19,
             RESET_ACK = 20,
-            //PRG_EPROM_WRITE_REQUEST = 21,
-            //CHR_EPROM_WRITE_REQUEST = 22,
-            //EPROM_PREPARE = 23,
-            //PRG_FLASH_ERASE_REQUEST = 24,
-            //PRG_FLASH_WRITE_REQUEST = 25,
-            //CHR_FLASH_ERASE_REQUEST = 26,
-            //CHR_FLASH_WRITE_REQUEST = 27,
-            //TEST_SET = 32,
-            //TEST_RESULT = 33,
-            COOLBOY_READ_REQUEST = 34,
-            COOLBOY_ERASE_SECTOR_REQUEST = 35,
-            COOLBOY_WRITE_REQUEST = 36,
             FLASH_ERASE_SECTOR_REQUEST = 37,
             FLASH_WRITE_REQUEST = 38,
             PRG_CRC_READ_REQUEST = 39,
@@ -110,437 +75,29 @@ namespace com.clusterrr.Famicom.DumperConnection
             DEBUG = 0xFF
         }
 
-        public FamicomDumperLocal(string portName = null)
+        public FamicomDumperLocal()
         {
-            this.PortName = portName;
         }
 
-        /// <summary>
-        /// Method to obtain list of Linux USB devices
-        /// </summary>
-        /// <returns>Array of usb devices </returns>
-        private static string[] GetLinuxUsbDevices()
-        {
-            return Directory.GetDirectories("/sys/bus/usb/devices").Where(d => File.Exists(Path.Combine(d, "dev"))).ToArray();
-        }
-
-        /// <summary>
-        /// Method to get serial port path for specified USB converter
-        /// </summary>
-        /// <param name="deviceSerial">Serial number of USB to serial converter</param>
-        /// <returns>Path of serial port</returns>
-        private static string LinuxDeviceToPort(string device)
-        {
-            var subdirectories = Directory.GetDirectories(device);
-            foreach (var subdir in subdirectories)
-            {
-                // Searching for /sys/bus/usb/devices/{device}/xxx/ttyZZZ/
-                var subsubdirectories = Directory.GetDirectories(subdir);
-                var ports = subsubdirectories.Where(d =>
-                {
-                    var directory = Path.GetFileName(d);
-                    return directory.Length > 3 && directory.StartsWith("tty");
-                });
-                if (ports.Any())
-                    return $"/dev/{Path.GetFileName(ports.First())}";
-
-                // Searching for /sys/bus/usb/devices/{device}/xxx/tty/ttyZZZ/
-                var ttyDirectory = Path.Combine(subdir, "tty");
-                if (Directory.Exists(ttyDirectory))
-                {
-                    ports = Directory.GetDirectories(ttyDirectory).Where(d =>
-                    {
-                        var directory = Path.GetFileName(d);
-                        return directory.Length > 3 && directory.StartsWith("tty");
-                    });
-                    if (ports.Any())
-                        return $"/dev/{Path.GetFileName(ports.First())}";
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Method to get serial port path for specified USB converter
-        /// </summary>
-        /// <param name="deviceSerial">Serial number of USB to serial converter</param>
-        /// <returns>Path of serial port</returns>
-        private static string LinuxDeviceSerialToPort(string deviceSerial)
-        {
-            var devices = GetLinuxUsbDevices().Where(d =>
-            {
-                var serialFile = Path.Combine(d, "serial");
-                return File.Exists(serialFile) && File.ReadAllText(serialFile).Trim() == deviceSerial;
-            });
-            if (!devices.Any()) return null;
-            var device = devices.First();
-            return LinuxDeviceToPort(device);
-        }
-
-        private static SerialPort OpenPort(string name, int timeout)
-        {
-            var sPort = new SerialPort
-            {
-                PortName = name,
-                WriteTimeout = timeout,
-                ReadTimeout = timeout
-            };
-            if (!name.Contains("ttyACM"))
-            {
-                // Not supported by ACM devices
-                sPort.BaudRate = PortBaudRate;
-                sPort.Parity = Parity.None;
-                sPort.DataBits = 8;
-                sPort.StopBits = StopBits.One;
-                sPort.Handshake = Handshake.None;
-                sPort.DtrEnable = false;
-                sPort.RtsEnable = false;
-            }
-            sPort.NewLine = Environment.NewLine;
-            sPort.Open();
-            return sPort;
-        }
-
-        public void Open()
+        public void Open(string portName = null)
         {
             ProtocolVersion = 0;
             FirmwareVersion = null;
             HardwareVersion = null;
-            MaxReadPacketSize = DefaultMaxReadPacketSize;
-            MaxWritePacketSize = DefaultMaxWritePacketSize;
-
-            SerialPort sPort = null;
-            string portName = PortName;
-            // Is port specified?
-            if (string.IsNullOrEmpty(portName) || portName.ToLower() == "auto")
-            {
-                portName = null;
-                // Need to autodetect port
-
-                // Is it running on Windows?
-                try
-                {
-                    // First of all lets check bus reported device descriptions
-                    var allComPorts = Win32DeviceMgmt.GetAllCOMPorts();
-                    foreach (var port in allComPorts)
-                    {
-                        if (!DeviceNames.Contains(port.bus_description))
-                            continue;
-                        // Seems like it's dumper port but it can be already busy
-                        try
-                        {
-                            sPort = OpenPort(port.name, (int)Timeout);
-                            // It's not busy
-                            portName = port.name;
-                            Console.WriteLine($"Autodetected virtual serial port: {portName}");
-                            break;
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                    }
-                }
-                catch { }
-
-                if (portName == null)
-                {
-                    // Port still not detected, using Windows FTDI driver to determine serial number
-                    try
-                    {
-                        FTDI myFtdiDevice = new();
-                        uint ftdiDeviceCount = 0;
-                        FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
-                        // FTDI serial number autodetect
-                        ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
-                        // Check status
-                        if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                            throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                        // If no devices available, return
-                        if (ftdiDeviceCount == 0)
-                            throw new IOException("Failed to get number of devices (error " + ftStatus.ToString() + ")");
-
-                        // Allocate storage for device info list
-                        FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
-
-                        // Populate our device list
-                        ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
-
-                        portName = null;
-                        if (ftStatus == FTDI.FT_STATUS.FT_OK)
-                        {
-                            var dumpers = ftdiDeviceList.Where(d => DeviceNames.Contains(d.Description));
-                            portName = dumpers.First().SerialNumber;
-                            Console.WriteLine($"Autodetected USB device serial number: {portName}");
-                        }
-                        if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                            throw new IOException("Failed to get FTDI devices (error " + ftStatus.ToString() + ")");
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                if (portName == null)
-                {
-                    // Port still not detected, let's try Linux methods
-                    try
-                    {
-                        var devices = GetLinuxUsbDevices();
-                        var dumpers = devices.Where(d =>
-                        {
-                            var productFile = Path.Combine(d, "product");
-                            return File.Exists(productFile) && DeviceNames.Contains(File.ReadAllText(productFile).Trim());
-                        });
-                        if (dumpers.Any())
-                        {
-                            portName = LinuxDeviceToPort(dumpers.First());
-                            if (string.IsNullOrEmpty(portName))
-                                throw new IOException($"Can't detect device path");
-                            Console.WriteLine($"Autodetected USB device path: {portName}");
-                        }
-                    }
-                    catch { }
-                }
-
-                if (portName == null)
-                    throw new IOException($"{DeviceNames.First()} not found, try to specify port name manually");
-            }
-
-            if (sPort != null)
-            {
-                // success, already opened
-                serialPort = sPort;
-                return;
-            }
-
-            if (portName.ToUpper().StartsWith("COM") || File.Exists(portName))
-            {
-                // Serial port name/path to open
-                serialPort = OpenPort(portName, (int)Timeout);
-                return;
-            }
-
-            try
-            {
-                // Is it VCP serial number?
-                var ttyPath = LinuxDeviceSerialToPort(portName);
-                if (!string.IsNullOrEmpty(ttyPath))
-                {
-                    serialPort = OpenPort(ttyPath, (int)Timeout);
-                    return;
-                }
-            }
-            catch { }
-
-            try
-            {
-                // Is is FTDI serial number?
-                // Using Windows FTDI driver
-                FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
-                // Create new instance of the FTDI device class
-                FTDI myFtdiDevice = new();
-                // Open first device in our list by serial number
-                ftStatus = myFtdiDevice.OpenBySerialNumber(portName);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException($"Failed to open device (error {ftStatus})");
-                // Set data characteristics - Data bits, Stop bits, Parity
-                ftStatus = myFtdiDevice.SetTimeouts(Timeout, Timeout);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException($"Failed to set timeouts (error {ftStatus})");
-                ftStatus = myFtdiDevice.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException($"Failed to set data characteristics (error {ftStatus})");
-                // Set flow control
-                ftStatus = myFtdiDevice.SetFlowControl(FTDI.FT_FLOW_CONTROL.FT_FLOW_NONE, 0x11, 0x13);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException($"Failed to set flow control (error {ftStatus})");
-                // Set up device data parameters
-                ftStatus = myFtdiDevice.SetBaudRate(PortBaudRate);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException($"Failed to set Baud rate (error {ftStatus})");
-                // Set latency
-                ftStatus = myFtdiDevice.SetLatency(0);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException($"Failed to set latency (error {ftStatus})");
-                d2xxPort = myFtdiDevice;
-                return;
-            }
-            catch { }
-
-            throw new IOException($"Can't open {serialPort}");
+            connection.Open(portName, BAUDRATE, TIMEOUT, DEVICE_NAMES);
         }
+
         public void Close()
         {
-            if (serialPort != null)
-            {
-                if (serialPort.IsOpen)
-                    serialPort.Close();
-                serialPort = null;
-            }
-            if (d2xxPort != null)
-            {
-                if (d2xxPort.IsOpen)
-                    d2xxPort.Close();
-                d2xxPort = null;
-            }
+            connection.Close();
         }
 
-        private byte[] ReadPort()
-        {
-            var buffer = new byte[MaxReadPacketSize + 8];
-            if (serialPort != null)
-            {
-                var l = serialPort.Read(buffer, 0, buffer.Length);
-                var result = new byte[l];
-                Array.Copy(buffer, result, l);
-                return result;
-            }
-            else if (d2xxPort != null)
-            {
-                uint numBytesAvailable = 0;
-                FTDI.FT_STATUS ftStatus;
-                int t = 0;
-                do
-                {
-                    ftStatus = d2xxPort.GetRxBytesAvailable(ref numBytesAvailable);
-                    if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                        throw new IOException("Failed to get number of bytes available to read (error " + ftStatus.ToString() + ")");
-                    if (numBytesAvailable > 0)
-                        break;
-                    Thread.Sleep(10);
-                    t += 10;
-                    if (t >= Timeout)
-                        throw new TimeoutException("Read timeout");
-                } while (numBytesAvailable == 0);
-                uint numBytesRead = 0;
-                ftStatus = d2xxPort.Read(buffer, Math.Min(numBytesAvailable, (uint)MaxReadPacketSize + 8), ref numBytesRead);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to read data (error " + ftStatus.ToString() + ")");
-                var result = new byte[numBytesRead];
-                Array.Copy(buffer, result, numBytesRead);
-                return result;
-            }
-            return null;
-        }
+        private void SendCommand(DumperCommand command, byte[] data) => connection.SendCommand((byte)command, data);
 
-        void SendCommand(DumperCommand command, byte[] data)
+        private (DumperCommand Command, byte[] Data) RecvCommand()
         {
-            byte[] buffer = new byte[data.Length + 5];
-            buffer[0] = Magic;
-            buffer[1] = (byte)command;
-            buffer[2] = (byte)(data.Length & 0xFF);
-            buffer[3] = (byte)((data.Length >> 8) & 0xFF);
-            Array.Copy(data, 0, buffer, 4, data.Length);
-
-            byte crc = 0;
-            for (var i = 0; i < buffer.Length - 1; i++)
-            {
-                byte inbyte = buffer[i];
-                for (int j = 0; j < 8; j++)
-                {
-                    byte mix = (byte)((crc ^ inbyte) & 0x01);
-                    crc >>= 1;
-                    if (mix != 0)
-                        crc ^= 0x8C;
-                    inbyte >>= 1;
-                }
-            }
-            buffer[^1] = crc;
-            if (serialPort != null)
-                serialPort.Write(buffer, 0, buffer.Length);
-            if (d2xxPort != null)
-            {
-                uint numBytesWritten = 0;
-                var ftStatus = d2xxPort.Write(buffer, buffer.Length, ref numBytesWritten);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                    throw new IOException("Failed to write to device (error " + ftStatus.ToString() + ")");
-            }
-        }
-
-        (DumperCommand Command, byte[] Data) RecvCommand()
-        {
-            int commRecvPos = 0;
-            DumperCommand commRecvCommand = 0;
-            int commRecvLength = 0;
-            List<byte> recvBuffer = new();
-            while (true)
-            {
-                var data = ReadPort();
-                foreach (var b in data)
-                {
-                    recvBuffer.Add(b);
-                    switch (commRecvPos)
-                    {
-                        case 0:
-                            if (b == Magic)
-                                commRecvPos++;
-                            else
-                            {
-                                recvBuffer.Clear();
-                                continue;
-                                //throw new InvalidDataException("Received invalid magic");
-                            }
-                            break;
-                        case 1:
-                            commRecvCommand = (DumperCommand)b;
-                            commRecvPos++;
-                            break;
-                        case 2:
-                            commRecvLength = b;
-                            commRecvPos++;
-                            break;
-                        case 3:
-                            commRecvLength |= b << 8;
-                            commRecvPos++;
-                            break;
-                        default:
-                            if (recvBuffer.Count == commRecvLength + 5)
-                            {
-                                // CRC
-                                var calculatecCRC = CRC(recvBuffer);
-                                if (calculatecCRC == 0)
-                                {
-                                    // CRC OK
-                                    if (commRecvCommand == DumperCommand.ERROR_CRC)
-                                        throw new InvalidDataException("Dumper reported CRC error");
-                                    else if (commRecvCommand == DumperCommand.ERROR_INVALID)
-                                        throw new InvalidDataException("Dumper reported invalid magic");
-                                    else if (commRecvCommand == DumperCommand.ERROR_OVERFLOW)
-                                        throw new InvalidDataException("Dumper reported overflow error");
-                                    else
-                                        return (commRecvCommand, recvBuffer.Skip(4).Take(commRecvLength).ToArray());
-                                }
-                                else
-                                {
-                                    // CRC NOT OK
-                                    throw new InvalidDataException("Received data CRC error");
-                                }
-                            }
-                            break;
-                    }
-                }
-            }
-        }
-
-        static byte CRC(IEnumerable<byte> data)
-        {
-            byte commRecvCrc = 0;
-            foreach (var b in data)
-            {
-                var inbyte = b;
-                int j;
-                for (j = 0; j < 8; j++)
-                {
-                    byte mix = (byte)((commRecvCrc ^ inbyte) & 0x01);
-                    commRecvCrc >>= 1;
-                    if (mix != 0)
-                        commRecvCrc ^= 0x8C;
-                    inbyte >>= 1;
-                }
-            }
-            return commRecvCrc;
+            var (Command, Data) = connection.RecvCommand();
+            return ((DumperCommand)Command, Data);
         }
 
         /// <summary>
@@ -596,7 +153,6 @@ namespace com.clusterrr.Famicom.DumperConnection
             }
             return result;
         }
-
 
         /// <summary>
         /// Simulate reset (M2 goes to Z-state for a second)
@@ -1091,12 +647,6 @@ namespace com.clusterrr.Famicom.DumperConnection
                 throw new IOException($"Invalid data received: {Command}");
         }
 
-        public void Dispose()
-        {
-            Close();
-            GC.SuppressFinalize(this);
-        }
-
         public void SetCoolboyGpioMode(bool coolboyGpioMode)
         {
             if (ProtocolVersion < 4)
@@ -1107,6 +657,11 @@ namespace com.clusterrr.Famicom.DumperConnection
             var (Command, Data) = RecvCommand();
             if (Command != DumperCommand.SET_VALUE_DONE)
                 throw new IOException($"Invalid data received: {Command}");
+        }
+
+        public void Dispose()
+        {
+            Close();
         }
     }
 }

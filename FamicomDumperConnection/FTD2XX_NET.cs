@@ -1,7 +1,7 @@
 /*
 ** FTD2XX_NET.cs
 **
-** Copyright © 2009-2012 Future Technology Devices International Limited
+** Copyright ï¿½ 2009-2012 Future Technology Devices International Limited
 **
 ** C# Source file for .NET wrapper of the Windows FTD2XX.dll API calls.
 ** Main module

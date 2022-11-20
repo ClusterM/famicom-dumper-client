@@ -222,8 +222,8 @@ namespace com.clusterrr.Famicom
                 if (string.IsNullOrEmpty(remoteHost))
                 {
                     // Using local dumper
-                    var localDumper = new FamicomDumperLocal(port);
-                    localDumper.Open();
+                    var localDumper = new FamicomDumperLocal();
+                    localDumper.Open(port);
                     dumper = localDumper;
                 }
                 else
@@ -239,17 +239,11 @@ namespace com.clusterrr.Famicom
 #if DEBUG
                 Console.WriteLine($"Protocol version: {dumper.ProtocolVersion}");
 #endif
-                try
-                {
+                if (dumper.HardwareVersion != null)
                     Console.WriteLine($"Dumper hardware version: {dumper.HardwareVersion.Major}.{dumper.HardwareVersion.Minor}{((dumper.HardwareVersion.Build != 0) ? new string((char)dumper.HardwareVersion.Build, 1) : "")}");
-                }
-                catch { }
-                try
-                {
+                if (dumper.FirmwareVersion != null)
                     Console.WriteLine($"Dumper firmware version: {dumper.FirmwareVersion.Major}.{dumper.FirmwareVersion.Minor}{((dumper.FirmwareVersion.Build != 0) ? new string((char)dumper.FirmwareVersion.Build, 1) : "")}");
-                }
-                catch { }
-
+            
                 try
                 {
                     if (reset)
