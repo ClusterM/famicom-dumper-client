@@ -79,7 +79,7 @@ namespace com.clusterrr.Famicom.Dumper
                     linesOffset++; // for correct line numbers in errors
                 }
             }
-            tree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.CSharp9));
+            tree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest));
 
             // Loading assemblies
             var domainAssemblys = AppDomain.CurrentDomain.GetAssemblies();
