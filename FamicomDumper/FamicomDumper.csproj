@@ -41,7 +41,6 @@
     <Compile Remove="mappers\58.cs" />
     <Compile Remove="mappers\87.cs" />
     <Compile Remove="mappers\AxROM.cs" />
-    <Compile Remove="mappers\BMC-10-24-C-A1.cs" />
     <Compile Remove="mappers\CNROM.cs" />
     <Compile Remove="mappers\ColorDreams.cs" />
     <Compile Remove="mappers\Coolboy.cs" />
@@ -128,10 +127,6 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\AxROM.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </None>
-    <None Include="mappers\BMC-10-24-C-A1.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
