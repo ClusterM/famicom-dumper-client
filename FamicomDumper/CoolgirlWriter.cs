@@ -9,13 +9,20 @@ using System.Security;
 
 namespace com.clusterrr.Famicom
 {
-    public static class CoolgirlWriter
+    public class CoolgirlWriter
     {
         const int BANK_SIZE = 0x8000;
         const int MAPPER_NUMBER = 342;
         const string MAPPER_STRING = "COOLGIRL";
 
-        public static void PrintFlashInfo(IFamicomDumperConnectionExt dumper)
+        private readonly IFamicomDumperConnectionExt dumper;
+
+        public CoolgirlWriter(IFamicomDumperConnectionExt dumper)
+        {
+            this.dumper = dumper;
+        }
+
+        public void PrintFlashInfo()
         {
             Program.Reset(dumper);
             dumper.WriteCpu(0x5007, 0x04); // enable PRG write
@@ -26,7 +33,7 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        public void Write(string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             byte[] PRG;
             var extension = Path.GetExtension(filename).ToLower();
@@ -71,7 +78,7 @@ namespace com.clusterrr.Famicom
                 throw new InvalidDataException("This ROM is too big for this cartridge");
             try
             {
-                PPBClear(dumper);
+                PPBClear();
             }
             catch (Exception ex)
             {
@@ -205,7 +212,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        public static void PPBClear(IFamicomDumperConnectionExt dumper)
+        public void PPBClear()
         {
             // enable PRG write
             dumper.WriteCpu(0x5007, 0x04);

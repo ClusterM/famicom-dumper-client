@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace com.clusterrr.Famicom
 {
-    public static class CoolboyWriter
+    public class CoolboyWriter
     {
         const int BANK_SIZE = 0x4000;
         const int MAPPER_NUMBER = 268;
@@ -16,7 +16,16 @@ namespace com.clusterrr.Famicom
         const string MAPPER_STRING_COOLBOY = "COOLBOY";
         const string MAPPER_STRING_MINDKIDS = "MINDKIDS";
 
-        public static byte DetectVersion(IFamicomDumperConnectionExt dumper)
+        private readonly IFamicomDumperConnectionExt dumper;
+        private readonly bool coolboyGpioMode;
+
+        public CoolboyWriter(IFamicomDumperConnectionExt dumper, bool coolboyGpioMode)
+        {
+            this.dumper = dumper;
+            this.coolboyGpioMode = coolboyGpioMode;
+        }
+
+        public byte DetectVersion()
         {
             byte version;
             Console.Write("Detecting COOLBOY version... ");
@@ -48,10 +57,10 @@ namespace com.clusterrr.Famicom
             return version;
         }
 
-        public static void PrintFlashInfo(IFamicomDumperConnectionExt dumper)
+        public void PrintFlashInfo()
         {
             Program.Reset(dumper);
-            var version = DetectVersion(dumper);
+            var version = DetectVersion();
             var CoolboyReg = (ushort)(version == 2 ? 0x5000 : 0x6000);
             int bank = 0;
             byte r0 = (byte)(((bank >> 3) & 0x07) // 5, 4, 3 bits
@@ -70,10 +79,10 @@ namespace com.clusterrr.Famicom
             FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
-        public static void Write(IFamicomDumperConnectionExt dumper, string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false, bool coolboyGpioMode = false)
+        public void Write(string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             Program.Reset(dumper);
-            var version = DetectVersion(dumper);
+            var version = DetectVersion();
 
             byte[] PRG;
             var extension = Path.GetExtension(filename).ToLower();
@@ -122,9 +131,7 @@ namespace com.clusterrr.Famicom
                 throw new InvalidDataException("This ROM is too big for this cartridge");
             try
             {
-                if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
-                PPBClear(dumper, coolboyReg);
-                if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
+                PPBClear(coolboyReg);
             }
             catch (Exception ex)
             {
@@ -271,7 +278,7 @@ namespace com.clusterrr.Famicom
                 throw new IOException("Cartridge is not writed correctly");
         }
 
-        public static void PPBClear(IFamicomDumperConnectionExt dumper, ushort coolboyReg)
+        public void PPBClear(ushort coolboyReg)
         {
             // Sector 0
             int bank = 0;
@@ -285,8 +292,9 @@ namespace com.clusterrr.Famicom
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
-
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
             FlashHelper.PPBClear(dumper);
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
         }
     }
 }

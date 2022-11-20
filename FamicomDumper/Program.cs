@@ -304,7 +304,7 @@ namespace com.clusterrr.Famicom
                         case "write-unrom512":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
-                            Unrom512Writer.Write(dumper, filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            new Unrom512Writer(dumper).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "info-coolboy":
                             new CoolboyWriter(dumper, coolboyGpioMode: false).PrintFlashInfo();
