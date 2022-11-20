@@ -1,34 +1,11 @@
 ﻿class BMC1024CA1 : IMapper
 {
-    public string Name
-    {
-        get { return "BMC-10-24-C-A1"; }
-    }
-
-    public int Number
-    {
-        get { return -1; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return "BMC-10-24-C-A1"; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 1024 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 512 * 1024; }
-    }
+    public string Name { get => "BMC-10-24-C-A1"; }
+    public int Number { get => -1; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => "BMC-10-24-C-A1"; }
+    public int DefaultPrgSize { get => 1024 * 1024; }
+    public int DefaultChrSize { get => 512 * 1024; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

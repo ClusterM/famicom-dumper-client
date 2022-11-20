@@ -2,53 +2,26 @@
 {
     int version = 1;
 
-    public string Name
-    {
-        get { return "COOLBOY"; }
-    }
-
-    public int Number
-    {
-        get { return 265; }
-    }
-
+    public string Name { get => "COOLBOY"; }
+    public int Number { get => 265; }
     public byte Submapper
     {
-        get
+        get => version switch
         {
-            switch (version)
-            {
-                default:
-                    return 0;
-                case 2:
-                    return 1;
-            }
-        }
+            2 => 1,
+            _ => 0
+        };
     }
-
     public string UnifName
     {
-        get
+        get => version switch
         {
-            switch (version)
-            {
-                default:
-                    return "COOLBOY";
-                case 2:
-                    return "MINDKIDS";
-            }
-        }
+            2 => "MINDKIDS",
+            _ => "COOLBOY"
+        };
     }
-
-    public int DefaultPrgSize
-    {
-        get { return 1024 * 1024 * 32; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0; }
-    }
+    public int DefaultPrgSize { get => 1024 * 1024 * 32; }
+    public int DefaultChrSize { get => 0; }
 
     public static byte DetectVersion(IFamicomDumperConnection dumper)
     {
@@ -101,7 +74,7 @@
             var r2 = (byte)0;
             var r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
-            dumper.WriteCpu(coolboyReg, r0, r1, r2, r3 );
+            dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
 
             Console.Write($"Reading PRG bank #{bank}/{banks}... ");
             data.AddRange(dumper.ReadCpu(0x8000, 0x4000));

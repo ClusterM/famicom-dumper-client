@@ -1,34 +1,11 @@
 ﻿class MMC1 : IMapper
 {
-    public string Name
-    {
-        get { return "MMC1"; }
-    }
-
-    public int Number
-    {
-        get { return 1; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 256 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 128 * 1024; }
-    }
+    public string Name { get => "MMC1"; }
+    public int Number { get => 1; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 256 * 1024; }
+    public int DefaultChrSize { get => 128 * 1024; }
 
     void WriteMMC1(IFamicomDumperConnection dumper, ushort address, byte data)
     {

@@ -1,34 +1,11 @@
 ﻿class VRC2b4f4e : IMapper
 {
-    public string Name
-    {
-        get { return "VRC2b/VRC4f/VRC4e"; }
-    }
-
-    public int Number
-    {
-        get { return 23; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 256 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 512 * 1024; }
-    }
+    public string Name { get => "VRC2b/VRC4f/VRC4e"; }
+    public int Number { get => 23; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 256 * 1024; }
+    public int DefaultChrSize { get => 512 * 1024; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

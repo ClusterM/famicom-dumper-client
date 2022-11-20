@@ -1,34 +1,11 @@
 ﻿class NROM : IMapper
 {
-    public string Name
-    {
-        get { return "NROM"; }
-    }
-
-    public int Number
-    {
-        get { return 0; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 0x8000; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0x2000; }
-    }
+    public string Name { get => "NROM"; }
+    public int Number { get => 0; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 0x8000; }
+    public int DefaultChrSize { get => 0x2000; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

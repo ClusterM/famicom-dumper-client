@@ -1,34 +1,11 @@
 ﻿class Namco_129_163 : IMapper
 {
-    public string Name
-    {
-        get { return "Namco 129/163"; }
-    }
-
-    public int Number
-    {
-        get { return 19; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 512 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 256 * 1024; }
-    }
+    public string Name { get => "Namco 129/163"; }
+    public int Number { get => 19; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 512 * 1024; }
+    public int DefaultChrSize { get => 256 * 1024; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

@@ -1,34 +1,11 @@
 ﻿class VRC3 : IMapper
 {
-    public string Name
-    {
-        get { return "VRC3"; }
-    }
-
-    public int Number
-    {
-        get { return 73; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 128 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0; }
-    }
+    public string Name { get => "VRC3"; }
+    public int Number { get => 73; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 128 * 1024; }
+    public int DefaultChrSize { get => 0; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

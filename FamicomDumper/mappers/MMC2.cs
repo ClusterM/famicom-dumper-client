@@ -1,34 +1,11 @@
 ﻿class MMC2 : IMapper
 {
-    public string Name
-    {
-        get { return "MMC2"; }
-    }
-
-    public int Number
-    {
-        get { return 9; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 128 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0; }
-    }
+    public string Name { get => "MMC2"; }
+    public int Number { get => 9; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 128 * 1024; }
+    public int DefaultChrSize { get => 0; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

@@ -1,34 +1,11 @@
 ﻿class Coolgirl : IMapper
 {
-    public string Name
-    {
-        get { return "COOLGIRL"; }
-    }
-
-    public int Number
-    {
-        get { return 342; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return "COOLGIRL"; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 1024 * 1024 * 128; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0; }
-    }
+    public string Name { get => "COOLGIRL"; }
+    public int Number { get => 342; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => "COOLGIRL"; }
+    public int DefaultPrgSize { get => 1024 * 1024 * 128; }
+    public int DefaultChrSize { get => 0; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

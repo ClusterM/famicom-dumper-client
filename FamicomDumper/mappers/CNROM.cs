@@ -1,34 +1,11 @@
 ﻿class CNROM : IMapper
 {
-    public string Name
-    {
-        get { return "CNROM"; }
-    }
-
-    public int Number
-    {
-        get { return 3; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 0x8000; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0x2000 * 4; }
-    }
+    public string Name { get => "CNROM"; }
+    public int Number { get => 3; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 0x8000; }
+    public int DefaultChrSize { get => 0x2000 * 4; }
 
     byte[] prg;
 

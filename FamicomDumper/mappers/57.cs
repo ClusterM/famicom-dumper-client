@@ -1,34 +1,11 @@
 ﻿class Mapper57 : IMapper
 {
-    public string Name
-    {
-        get { return "Mapper 57"; }
-    }
-
-    public int Number
-    {
-        get { return 57; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 8 * 0x4000; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 8 * 0x2000; }
-    }
+    public string Name { get => "Mapper 57"; }
+    public int Number { get => 57; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 8 * 0x4000; }
+    public int DefaultChrSize { get => 8 * 0x2000; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {

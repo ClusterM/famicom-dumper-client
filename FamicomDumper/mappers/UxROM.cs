@@ -1,34 +1,11 @@
 ﻿class UxROM : IMapper
 {
-    public string Name
-    {
-        get { return "UxROM"; }
-    }
-
-    public int Number
-    {
-        get { return 2; }
-    }
-
-    public byte Submapper
-    {
-        get { return 0; }
-    }
-
-    public string UnifName
-    {
-        get { return null; }
-    }
-
-    public int DefaultPrgSize
-    {
-        get { return 256 * 1024; }
-    }
-
-    public int DefaultChrSize
-    {
-        get { return 0; }
-    }
+    public string Name { get => "UxROM"; }
+    public int Number { get => 2; }
+    public byte Submapper { get => 0; }
+    public string UnifName { get => null; }
+    public int DefaultPrgSize { get => 256 * 1024; }
+    public int DefaultChrSize { get => 0; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {
@@ -39,19 +16,20 @@
         for (int bank = 0; bank < banks - 1; bank++)
         {
             Console.Write($"Reading PRG bank #{bank}/{banks}... ");
-            // Avoiding bus conflicts
-            var noBusConflict = false;
-            for (var i = 0; i < lastBank.Length; i++)
+            // Avoiding bus conflicts            
+            var nonConflictable = Enumerable.Range(0, lastBank.Length)
+                .Where(a => lastBank[a] == (byte)bank)
+                .Select(a => a + 0xC000);
+            if (nonConflictable.Any())
             {
-                if (lastBank[i] == bank)
-                {
-                    dumper.WriteCpu((ushort)(0xC000 + i), (byte)bank);
-                    noBusConflict = true;
-                    break;
-                }
+                dumper.WriteCpu((ushort)(nonConflictable.First()), (byte)bank);
             }
-            if (!noBusConflict) // Whatever...
-                dumper.WriteCpu(0x8000, (byte)bank);
+            else
+            {
+                // Whatever...
+                Console.Write("oops, bus conflict... ");
+                dumper.WriteCpu(0xC000, (byte)bank);
+            }
             data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
             Console.WriteLine("OK");
         }

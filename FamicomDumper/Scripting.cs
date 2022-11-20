@@ -79,7 +79,7 @@ namespace com.clusterrr.Famicom.Dumper
                     linesOffset++; // for correct line numbers in errors
                 }
             }
-            tree = CSharpSyntaxTree.ParseText(source);
+            tree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.CSharp9));
 
             // Loading assemblies
             var domainAssemblys = AppDomain.CurrentDomain.GetAssemblies();
@@ -122,7 +122,9 @@ namespace com.clusterrr.Famicom.Dumper
 
             // Compile
             var cs = CSharpCompilation.Create("Script", new[] { tree }, metadataReferenceList,
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                options: new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary                    
+                )
             );
             using var memoryStream = new MemoryStream();
             EmitResult result = cs.Emit(memoryStream);
