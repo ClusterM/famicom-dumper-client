@@ -15,11 +15,11 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public enum FlashDeviceInterface
         {
-            x8_only = 0x0000,
-            x16_only = 0x0001,
-            x8_and_x16_via_byte_pin = 0x0002,
-            x32_only = 0x0003,
-            x8_and_x16_via_word_pin = 0x0004
+            X8_only = 0x0000,
+            X16_only = 0x0001,
+            X8_and_X16_via_byte_pin = 0x0002,
+            X32_only = 0x0003,
+            X8_and_X16_via_word_pin = 0x0004
         }
 
         public struct EraseBlockRegionInfo
