@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 
 namespace com.clusterrr.Famicom.DumperConnection
 {
@@ -164,6 +165,21 @@ namespace com.clusterrr.Famicom.DumperConnection
                 regions.Add(new EraseBlockRegionInfo(numberOfBlocks, sizeOfBlocks));
             }
             EraseBlockRegionsInfo = regions.AsReadOnly();
+        }
+
+        public uint GetSectorSizeAt(int offset)
+        {
+            if (!EraseBlockRegionsInfo.Any()) throw new InvalidDataException("Can't get block regions list");
+            uint currentOffset = 0;
+            foreach(var sector in EraseBlockRegionsInfo)
+            {
+                var sectorBlockSize = sector.SizeOfBlocks * sector.NumberOfBlocks;
+                if (currentOffset < sectorBlockSize)
+                    return sector.SizeOfBlocks;
+                else
+                    currentOffset += sectorBlockSize;
+            }
+            return 0;
         }
     }
 }
