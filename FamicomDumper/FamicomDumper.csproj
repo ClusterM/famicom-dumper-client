@@ -45,6 +45,7 @@
     <Compile Remove="mappers\ColorDreams.cs" />
     <Compile Remove="mappers\Coolboy.cs" />
     <Compile Remove="mappers\Coolgirl.cs" />
+    <Compile Remove="mappers\Mindkids.cs" />
     <Compile Remove="mappers\MMC1.cs" />
     <Compile Remove="mappers\MMC2.cs" />
     <Compile Remove="mappers\MMC3.cs" />
@@ -135,6 +136,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\ColorDreams.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\Mindkids.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
