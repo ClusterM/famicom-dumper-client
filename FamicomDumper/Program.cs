@@ -481,42 +481,54 @@ namespace com.clusterrr.Famicom.Dumper
             // TODO: move GetMapper to IMapper, so it will not be optional
             mirroring = mapper.GetMirroring(dumper);
             Console.WriteLine($"Mirroring: {mirroring}");
-            Console.Write($"Saving to {fileName}... ");
-            if (mapper.Number >= 0)
+            var ext = Path.GetExtension(fileName);
+            switch (ext.ToLower())
             {
-                // TODO: add RAM and NV-RAM settings for NES 2.0
-                var nesFile = new NesFile();
-                var submapper = mapper.Submapper;
-                nesFile.Version = (mapper.Number > 255 || submapper != 0)
-                    ? NesFile.iNesVersion.NES20
-                    : NesFile.iNesVersion.iNES;
-                nesFile.Mapper = (ushort)mapper.Number;
-                nesFile.Submapper = submapper;
-                nesFile.Mirroring = mirroring;
-                nesFile.PRG = prg.ToArray();
-                nesFile.CHR = chr.ToArray();
-                nesFile.Battery = battery;
-                nesFile.Save(fileName);
-            }
-            else
-            {
-                // Non-numeric mapper, using UNIF
-                var unifFile = new UnifFile
-                {
-                    Version = 4,
-                    Mapper = mapper.UnifName
-                };
-                if (unifName != null)
-                    unifFile.GameName = unifName;
-                unifFile["PRG0"] = prg.ToArray();
-                if (chr.Count > 0)
-                    unifFile["CHR0"] = chr.ToArray();
-                unifFile.Mirroring = mirroring;
-                unifFile.Battery = battery;
-                if (!string.IsNullOrEmpty(unifAuthor))
-                    unifFile.DumperName = unifAuthor;
-                unifFile.DumpingSoftware = $"Famicom Dumper by Cluster / {REPO_PATH}";
-                unifFile.Save(fileName);
+                case ".nes":
+                    Console.Write($"Saving as NES 2.0 file: {fileName}... ");
+                    if (mapper.Number < 0)
+                        throw new NotSupportedException("Can't save file as NES 2.0: mapper number unknown");
+                    // TODO: add RAM and NV-RAM settings for NES 2.0
+                    var nesFile = new NesFile();
+                    nesFile.Version = NesFile.iNesVersion.NES20;
+                    nesFile.Mapper = (ushort)mapper.Number;
+                    nesFile.Submapper = mapper.Submapper;
+                    nesFile.Mirroring = mirroring;
+                    nesFile.PRG = prg.ToArray();
+                    nesFile.CHR = chr.ToArray();
+                    nesFile.Battery = battery;
+                    nesFile.Save(fileName);
+                    break;
+                case ".unf":
+                case ".unif":
+                    // Non-numeric mapper, using UNIF
+                    Console.Write($"Saving as UNIF file: {fileName}... ");
+                    if (string.IsNullOrEmpty(mapper.UnifName))
+                        throw new NotSupportedException("Can't save file as UNIF - mapper code name unknown");
+                    var unifFile = new UnifFile
+                    {
+                        Version = 5,
+                        Mapper = mapper.UnifName
+                    };
+                    if (unifName != null)
+                        unifFile.GameName = unifName;
+                    unifFile.PRG0 = prg.ToArray();
+                    if (chr.Count > 0)
+                        unifFile.CHR0 = chr.ToArray();
+                    unifFile.Mirroring = mirroring;
+                    unifFile.Battery = battery;
+                    if (!string.IsNullOrEmpty(unifAuthor))
+                        unifFile.DumperName = unifAuthor;
+                    unifFile.DumpingSoftware = $"Famicom Dumper by Cluster / {REPO_PATH}";
+                    unifFile.Save(fileName);
+                    break;
+                case ".bin":
+                    Console.Write($"Saving as raw binary file: {fileName}... ");
+                    File.WriteAllBytes(fileName, prg.ToArray());
+                    if (chr.Count > 0) Console.Write("WARNING! CHR is not saved! PRG only. ");
+                    break;
+                default:
+                    throw new NotSupportedException($"Unknown extention {ext}, can't determine container type");
             }
             Console.WriteLine("OK");
         }
