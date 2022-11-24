@@ -12,7 +12,7 @@ namespace com.clusterrr.Famicom.Dumper
     public class Unrom512Writer
     {
         const int BANK_SIZE = 0x4000;
-        const int MAPPER_NUMBER = 30;
+        static int[] MAPPER_NUMBERS = { 2, 30 };
         static string[] MAPPER_STRINGS = { "UNROM", "UNROM-512", "UNROM-512-8", "UNROM-512-16", "UNROM-512-32" };
 
         private readonly IFamicomDumperConnectionExt dumper;
@@ -44,7 +44,7 @@ namespace com.clusterrr.Famicom.Dumper
                     break;
                 case ".nes":
                     var nes = NesFile.FromFile(filename);
-                    if (nes.Mapper != MAPPER_NUMBER)
+                    if (!MAPPER_NUMBERS.Contains(nes.Mapper))
                         Console.WriteLine($"WARNING! Invalid mapper: {nes.Mapper}, most likely it will not work after writing.");
                     PRG = nes.PRG;
                     break;
@@ -62,24 +62,27 @@ namespace com.clusterrr.Famicom.Dumper
                     throw new InvalidDataException($"Unknown extension: {extension}, can't detect file format");
             }
 
-            int banks = PRG.Length / BANK_SIZE;
-
             Program.Reset(dumper);
             ResetFlash();
             WriteFlashCmd(0x5555, 0xAA);
             WriteFlashCmd(0x2AAA, 0x55);
             WriteFlashCmd(0x5555, 0x90);
             var id = dumper.ReadCpu(0x8000, 2);
-            int size = id[1] switch
+            int flashSize = id[1] switch
             {
                 0xB5 => 128 * 1024,
                 0xB6 => 256 * 1024,
                 0xB7 => 512 * 1024,
                 _ => 0
             };
-            Console.WriteLine($"Device size: " + (size > 0 ? $"{size / 1024} KByte / {size / 1024 * 8} Kbit" : "unknown"));
-            if ((size > 0) && (PRG.Length > size))
+            Console.WriteLine($"Device size: " + (flashSize > 0 ? $"{flashSize / 1024} KByte / {flashSize / 1024 * 8} Kbit" : "unknown"));
+            if ((flashSize > 0) && (PRG.Length > flashSize))
                 throw new InvalidDataException("This ROM is too big for this cartridge");
+
+            // Enlarge PRG if need
+            while ((flashSize % PRG.Length == 0) && (PRG.Length < flashSize))
+                PRG = Enumerable.Concat(PRG, PRG).ToArray();
+            int banks = PRG.Length / BANK_SIZE;
 
             Console.Write($"Erasing flash chip... ");
             dumper.EraseUnrom512();
