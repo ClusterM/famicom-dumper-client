@@ -74,15 +74,18 @@ namespace com.clusterrr.Famicom.Dumper
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(CoolboyReg, r0, r1, r2, r3);
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
             var cfi = FlashHelper.GetCFIInfo(dumper);
             FlashHelper.PrintCFIInfo(cfi);
             FlashHelper.LockBitsCheckPrint(dumper);
             FlashHelper.PPBLockBitCheckPrint(dumper);
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
         }
 
         public void Write(string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
         {
             Program.Reset(dumper);
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
             var version = DetectVersion();
 
             byte[] PRG;
@@ -161,13 +164,11 @@ namespace com.clusterrr.Famicom.Dumper
                     byte r2 = 0;
                     byte r3 = (byte)((1 << 4) // NROM mode
                         | ((bank & 7) << 1)); // 2, 1, 0 bits
-                    if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
                     dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
-                    if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
 
                     var data = new byte[BANK_SIZE];
                     int pos = bank * BANK_SIZE;
-                    if (pos % (128 * 1024) == 0)
+                    if (pos % (cfi.EraseBlockRegionsInfo.First().SizeOfBlocks / 2) == 0)
                     {
                         timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 8);
                         timeEstimated = timeEstimated.Add(DateTime.Now - writeStartTime);
@@ -217,7 +218,6 @@ namespace com.clusterrr.Famicom.Dumper
                     continue;
                 }
             }
-            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
 
             if (totalErrorCount > 0)
                 Console.WriteLine($"Write error count: {totalErrorCount}");
@@ -248,7 +248,7 @@ namespace com.clusterrr.Famicom.Dumper
                     dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
 
                     int pos = bank * BANK_SIZE;
-                    if (pos % (128 * 1024) == 0)
+                    if (pos % cfi.EraseBlockRegionsInfo.First().SizeOfBlocks == 0)
                     {
                         timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 8);
                         timeEstimated = timeEstimated.Add(DateTime.Now - readStartTime);
@@ -275,6 +275,8 @@ namespace com.clusterrr.Famicom.Dumper
                     Console.WriteLine($"Sectors with wrong CRC: {string.Join(", ", wrongCrcSectorsList.Distinct().OrderBy(s => s))}");
             }
 
+            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
+
             if (newBadSectorsList.Any() || wrongCrcSectorsList.Any())
                 throw new IOException("Cartridge is not writed correctly");
         }
@@ -293,9 +295,7 @@ namespace com.clusterrr.Famicom.Dumper
             byte r3 = (byte)((1 << 4) // NROM mode
                 | ((bank & 7) << 1)); // 2, 1, 0 bits
             dumper.WriteCpu(coolboyReg, r0, r1, r2, r3);
-            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(true);
             FlashHelper.PPBClear(dumper);
-            if (coolboyGpioMode) dumper.SetCoolboyGpioMode(false);
         }
     }
 }

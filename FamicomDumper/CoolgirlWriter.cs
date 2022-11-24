@@ -106,7 +106,7 @@ namespace com.clusterrr.Famicom.Dumper
 
                     var data = new byte[BANK_SIZE];
                     int pos = bank * BANK_SIZE;
-                    if (pos % (128 * 1024) == 0)
+                    if (pos % cfi.EraseBlockRegionsInfo.First().SizeOfBlocks == 0)
                     {
                         timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 4);
                         timeEstimated = timeEstimated.Add(DateTime.Now - writeStartTime);
@@ -182,7 +182,7 @@ namespace com.clusterrr.Famicom.Dumper
                     dumper.WriteCpu(0x5001, r1);
 
                     int pos = bank * BANK_SIZE;
-                    if (pos % (128 * 1024) == 0)
+                    if (pos % cfi.EraseBlockRegionsInfo.First().SizeOfBlocks == 0)
                     {
                         timeEstimated = new TimeSpan((DateTime.Now - lastSectorTime).Ticks * (banks - bank) / 4);
                         timeEstimated = timeEstimated.Add(DateTime.Now - readStartTime);

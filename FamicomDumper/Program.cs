@@ -238,6 +238,8 @@ namespace com.clusterrr.Famicom.Dumper
                 {
                     if (reset)
                         Reset(dumper);
+                    if (dumper.ProtocolVersion >= 4)
+                        dumper.SetCoolboyGpioMode(false);
 
                     if (!string.IsNullOrEmpty(csFile))
                     {
