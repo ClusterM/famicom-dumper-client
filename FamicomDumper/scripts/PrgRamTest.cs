@@ -60,6 +60,7 @@ class TestPrgRam
             }
             if (!ok)
             {
+                DetectProblems(data, rdata, "CPU");
                 File.WriteAllBytes("prgramgood.bin", data);
                 Console.WriteLine("prgramgood.bin writed");
                 File.WriteAllBytes("prgrambad.bin", rdata);
@@ -69,5 +70,42 @@ class TestPrgRam
             Console.WriteLine("OK!");
             count--;
         }
+    }
+
+
+    // Function to detect problem lines
+    private static void DetectProblems(byte[] good, byte[] bad, string busName)
+    {
+        var size = Math.Min(good.Length, bad.Length);
+        int problemBits = 0;
+        for (int i = 0; i < size; i++)
+        {
+            problemBits |= (byte)(good[i] ^ bad[i]);
+        }
+        if (problemBits != 0xFF)
+        {
+            for (int i = 0; i < 8; i++)
+                if ((problemBits & (1 << i)) != 0)
+                    Console.WriteLine($"Problems on line D{i} @ {busName}");
+        }
+
+        int memoryTestSize = 4;
+        problemBits = 0;
+        for (int i = memoryTestSize; i < bad.Length; i += memoryTestSize)
+        {
+            bool matched = true;
+            for (int j = 0; j < memoryTestSize; j++)
+            {
+                if (bad[i + j] != bad[j])
+                {
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched) problemBits |= i;
+        }
+        for (int i = 0; i < 16; i++)
+            if ((problemBits & (1 << i)) != 0)
+                Console.WriteLine($"Problems on line A{i} @ {busName}");
     }
 }
