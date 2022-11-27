@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 
-namespace com.clusterrr.Famicom.Dumper
+namespace com.clusterrr.Famicom.Dumper.FlashWriters
 {
     public class Unrom512Writer : FlashWriter
     {

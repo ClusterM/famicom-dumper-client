@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static com.clusterrr.Famicom.DumperConnection.CFIInfo;
+using static com.clusterrr.Famicom.Dumper.FlashWriters.CFIInfo;
 
 namespace com.clusterrr.Famicom.Dumper.FlashWriters
 {
