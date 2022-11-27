@@ -63,7 +63,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
             Console.WriteLine($"Flash device interface: {cfi.FlashDeviceInterfaceCodeDescription.ToString().Replace("_", " ")}");
             Console.WriteLine($"Maximum number of bytes in multi-byte program: {cfi.MaximumNumberOfBytesInMultiProgram}");
-            for (int eraseBlockRegion = 0; eraseBlockRegion < cfi.EraseBlockRegionsInfo.Count; eraseBlockRegion++)
+            for (int eraseBlockRegion = 0; eraseBlockRegion < cfi.EraseBlockRegionsInfo.Length; eraseBlockRegion++)
             {
                 Console.WriteLine($"Erase block region #{eraseBlockRegion + 1}:");
                 Console.WriteLine($" - Sectors size: {cfi.EraseBlockRegionsInfo[eraseBlockRegion].SizeOfBlocks} Bytes");

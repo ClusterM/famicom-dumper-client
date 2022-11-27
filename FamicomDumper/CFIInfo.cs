@@ -25,10 +25,10 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         public struct EraseBlockRegionInfo
         {
-            public readonly ushort NumberOfBlocks;
-            public readonly uint SizeOfBlocks;
+            public readonly short NumberOfBlocks;
+            public readonly int SizeOfBlocks;
 
-            public EraseBlockRegionInfo(ushort numberOfBlocks, uint sizeOfBlocks)
+            public EraseBlockRegionInfo(short numberOfBlocks, int sizeOfBlocks)
             {
                 NumberOfBlocks = numberOfBlocks;
                 SizeOfBlocks = sizeOfBlocks;
@@ -108,7 +108,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         /// <summary>
         /// Erase Block Regions Information
         /// </summary>
-        public readonly ReadOnlyCollection<EraseBlockRegionInfo> EraseBlockRegionsInfo;
+        public readonly EraseBlockRegionInfo[] EraseBlockRegionsInfo;
 
         public CFIInfo(byte[] data, ParseMode parseMode)
         {
@@ -159,25 +159,25 @@ namespace com.clusterrr.Famicom.DumperConnection
             var regions = new List<EraseBlockRegionInfo>();
             for (int i = 0; i < eraseBlockRegions; i++)
             {
-                ushort numberOfBlocks = (ushort)(data[0x2D + i * 4] + data[0x2E + i * 4] * 0x100 + 1);
-                uint sizeOfBlocks = (ushort)(data[0x2F + i * 4] + data[0x30 + i * 4] * 0x100);
+                short numberOfBlocks = (short)(data[0x2D + i * 4] + data[0x2E + i * 4] * 0x100 + 1);
+                int sizeOfBlocks = (short)(data[0x2F + i * 4] + data[0x30 + i * 4] * 0x100);
                 sizeOfBlocks = sizeOfBlocks == 0 ? 128 : (256 * sizeOfBlocks);
                 regions.Add(new EraseBlockRegionInfo(numberOfBlocks, sizeOfBlocks));
             }
-            EraseBlockRegionsInfo = regions.AsReadOnly();
+            EraseBlockRegionsInfo = regions.ToArray();
         }
 
-        public uint GetSectorSizeAt(int offset)
+        public int GetSectorSizeAt(int offset)
         {
             if (!EraseBlockRegionsInfo.Any()) throw new InvalidDataException("Can't get block regions list");
-            uint currentOffset = 0;
+            int currentOffset = 0;
             foreach(var sector in EraseBlockRegionsInfo)
             {
                 var sectorBlockSize = sector.SizeOfBlocks * sector.NumberOfBlocks;
                 if (currentOffset < sectorBlockSize)
-                    return sector.SizeOfBlocks;
+                    return (int)sector.SizeOfBlocks;
                 else
-                    currentOffset += sectorBlockSize;
+                    currentOffset += (int)sectorBlockSize;
             }
             return 0;
         }

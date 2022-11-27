@@ -650,9 +650,19 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void SetCoolboyGpioMode(bool coolboyGpioMode)
         {
             if (ProtocolVersion < 4)
-                throw new NotSupportedException("Dumper firmware version is too old");
-            if (HardwareVersion == null || HardwareVersion.Major < 3)
-                throw new NotSupportedException("Not supported by this dumper hardware");
+            {
+                if (coolboyGpioMode)
+                    throw new NotSupportedException("Dumper firmware version is too old");
+                else
+                    return;
+            }
+            if ((HardwareVersion == null) || (HardwareVersion.Major < 3))
+            {
+                if (coolboyGpioMode)
+                    throw new NotSupportedException("Not supported by this dumper hardware");
+                else
+                    return;
+            }
             SendCommand(DumperCommand.COOLBOY_GPIO_MODE, new byte[] { (byte)(coolboyGpioMode ? 1 : 0) });
             var (Command, Data) = RecvCommand();
             if (Command != DumperCommand.SET_VALUE_DONE)

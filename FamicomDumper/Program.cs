@@ -22,6 +22,7 @@
  */
 
 using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.Dumper.FlashWriters;
 using com.clusterrr.Famicom.DumperConnection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -52,24 +53,27 @@ namespace com.clusterrr.Famicom.Dumper
 
         static int Main(string[] args)
         {
-            Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}");
+            Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName()?.Version?.Major}.{Assembly.GetExecutingAssembly().GetName()?.Version?.Minor}");
             Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
 #if DEBUG
             Console.WriteLine($"  Debug version, build time: {BUILD_TIME.ToLocalTime()}");
 #endif
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine("");
-            var startTime = DateTime.Now;
+#if DEBUG
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+#endif
             string port = "auto";
-            string mapperName = null;
-            string psize = null;
-            string csize = null;
-            string filename = null;
+            string? mapperName = null;
+            string? psize = null;
+            string? csize = null;
+            string? filename = null;
             bool battery = false;
-            string csFile = null;
+            string? csFile = null;
             string[] csArgs = Array.Empty<string>();
-            string unifName = null;
-            string unifAuthor = null;
+            string? unifName = null;
+            string? unifAuthor = null;
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
@@ -77,7 +81,7 @@ namespace com.clusterrr.Famicom.Dumper
             List<int> badSectors = new();
             int tcpPort = DEFAULT_GRPC_PORT;
             bool ignoreBadSectors = false;
-            string remoteHost = null;
+            string? remoteHost = null;
             byte fdsSides = 1;
             bool fdsUseHeader = true;
             bool fdsDumpHiddenFiles = false;
@@ -233,7 +237,7 @@ namespace com.clusterrr.Famicom.Dumper
                     Console.WriteLine($"Dumper hardware version: {dumper.HardwareVersion.Major}.{dumper.HardwareVersion.Minor}{((dumper.HardwareVersion.Build != 0) ? new string((char)dumper.HardwareVersion.Build, 1) : "")}");
                 if (dumper.FirmwareVersion != null)
                     Console.WriteLine($"Dumper firmware version: {dumper.FirmwareVersion.Major}.{dumper.FirmwareVersion.Minor}{((dumper.FirmwareVersion.Build != 0) ? new string((char)dumper.FirmwareVersion.Build, 1) : "")}");
-            
+
                 try
                 {
                     if (reset)
@@ -312,7 +316,8 @@ namespace com.clusterrr.Famicom.Dumper
                                 throw new ArgumentNullException("--cs-file", "Please specify C# script using --cs-file argument");
                             break;
                         case "server":
-                            StartServer(dumper as FamicomDumperLocal, tcpPort);
+                            if (dumper is FamicomDumperLocal d)
+                                StartServer(d, tcpPort);
                             break;
                         default:
                             Console.WriteLine("Unknown command: " + command);
@@ -320,7 +325,7 @@ namespace com.clusterrr.Famicom.Dumper
                             return 2;
                     }
 #if DEBUG
-                    var timePassed = DateTime.Now - startTime;
+                    var timePassed = stopwatch.Elapsed;
                     if (timePassed.TotalMinutes >= 60)
                         Console.WriteLine($"Done in {timePassed.Hours}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
                     else if (timePassed.TotalSeconds >= 10)
@@ -337,19 +342,18 @@ namespace com.clusterrr.Famicom.Dumper
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ERROR {ex.GetType()}: " + ex.Message
 #if DEBUG
-                    + ex.StackTrace
+                Console.WriteLine($"ERROR {ex.GetType()}: {ex.Message}{ex.StackTrace}");
+#else
+                Console.WriteLine($"ERROR: {ex.Message}");
 #endif
-                    );
-                if (!silent)
-                    PlayErrorSound();
+                if (!silent) PlayErrorSound();
                 return 1;
             }
             return 0;
         }
 
-        static int ParseSize(string size)
+        static int ParseSize(string? size)
         {
             if (string.IsNullOrEmpty(size)) return -1;
             size = size.ToUpper();
@@ -404,7 +408,7 @@ namespace com.clusterrr.Famicom.Dumper
 
         static void PrintHelp()
         {
-            Console.WriteLine($"Usage: {Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName)} <command> [<options>] [- <cs_script_arguments>]");
+            Console.WriteLine($"Usage: {Path.GetFileName(Process.GetCurrentProcess().MainModule?.FileName)} <command> [<options>] [- <cs_script_arguments>]");
             Console.WriteLine();
             Console.WriteLine("Available commands:");
             Console.WriteLine(" {0,-30}{1}", "list-mappers", "list available mappers to dump");
@@ -455,7 +459,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine("OK");
         }
 
-        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery)
+        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName, int prgSize, int chrSize, string? unifName, string? unifAuthor, bool battery)
         {
             var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -535,7 +539,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine("OK");
         }
 
-        static void ReadPrgRam(IFamicomDumperConnectionExt dumper, string fileName, string mapperName)
+        static void ReadPrgRam(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName)
         {
             var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -553,7 +557,7 @@ namespace com.clusterrr.Famicom.Dumper
             Reset(dumper);
         }
 
-        static void WritePrgRam(IFamicomDumperConnectionExt dumper, string fileName, string mapperName)
+        static void WritePrgRam(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName)
         {
             var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)

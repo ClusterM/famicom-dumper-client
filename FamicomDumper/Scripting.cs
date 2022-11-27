@@ -33,7 +33,7 @@ namespace com.clusterrr.Famicom.Dumper
         {
             int linesOffset = 0;
             var source = File.ReadAllText(path);
-            var cacheDirectory = Path.Combine(Path.GetDirectoryName(path), SCRIPTS_CACHE_DIRECTORY);
+            var cacheDirectory = Path.Combine(Path.GetDirectoryName(path)!, SCRIPTS_CACHE_DIRECTORY);
             var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
 
             // Try to load cached assembly
@@ -166,7 +166,7 @@ namespace com.clusterrr.Famicom.Dumper
             var mapper = constructor.Invoke(Array.Empty<object>());
             if (!(mapper is IMapper))
                 throw new InvalidProgramException("Class doesn't implement IMapper interface");
-            return mapper as IMapper;
+            return (mapper as IMapper)!;
         }
 
         static Dictionary<string, IMapper> CompileAllMappers()
@@ -210,9 +210,9 @@ namespace com.clusterrr.Famicom.Dumper
             }
         }
 
-        public static IMapper GetMapper(string mapperName)
+        public static IMapper GetMapper(string? mapperName)
         {
-            if (File.Exists(mapperName)) // CS script?
+            if (!string.IsNullOrEmpty(mapperName) && File.Exists(mapperName)) // CS script?
             {
                 Console.WriteLine($"Compiling {mapperName}...");
                 return CompileMapper(mapperName);
@@ -229,7 +229,7 @@ namespace com.clusterrr.Famicom.Dumper
             return mapper.Value;
         }
 
-        public static void CompileAndExecute(string scriptPath, IFamicomDumperConnectionExt dumper, string filename, string mapperName, int prgSize, int chrSize, string unifName, string unifAuthor, bool battery, string[] args)
+        public static void CompileAndExecute(string scriptPath, IFamicomDumperConnectionExt dumper, string? filename, string? mapperName, int prgSize, int chrSize, string? unifName, string? unifAuthor, bool battery, string[] args)
         {
             if (!File.Exists(scriptPath))
             {
@@ -280,7 +280,7 @@ namespace com.clusterrr.Famicom.Dumper
                 }
 
                 ParameterInfo[] parameterInfos = method.GetParameters();
-                List<object> parameters = new();
+                List<object?> parameters = new();
                 bool filenameParamExists = false;
                 bool mapperParamExists = false;
                 bool prgSizeParamExists = false;
@@ -292,7 +292,7 @@ namespace com.clusterrr.Famicom.Dumper
                 foreach (var parameterInfo in parameterInfos)
                 {
                     var signature = $"{parameterInfo.ParameterType.Name} {parameterInfo.Name}";
-                    switch (parameterInfo.Name.ToLower())
+                    switch (parameterInfo.Name?.ToLower())
                     {
                         case "dumper":
                             parameters.Add(dumper);
@@ -302,9 +302,9 @@ namespace com.clusterrr.Famicom.Dumper
                             if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
                                 throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
                             if (string.IsNullOrEmpty(filename) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
+                                parameters.Add(parameterInfo.DefaultValue!);
                             else
-                                parameters.Add(filename);
+                                parameters.Add(filename!);
                             break;
                         case "mapper":
                             mapperParamExists = true;
@@ -315,7 +315,7 @@ namespace com.clusterrr.Famicom.Dumper
                             if ((prgSize < 0) && !parameterInfo.HasDefaultValue)
                                 throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
                             if ((prgSize < 0) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
+                                parameters.Add(parameterInfo.DefaultValue!);
                             else
                                 parameters.Add(prgSize);
                             break;
@@ -324,7 +324,7 @@ namespace com.clusterrr.Famicom.Dumper
                             if ((chrSize < 0) && !parameterInfo.HasDefaultValue)
                                 throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
                             if ((chrSize < 0) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
+                                parameters.Add(parameterInfo.DefaultValue!);
                             else
                                 parameters.Add(chrSize);
                             break;
@@ -333,7 +333,7 @@ namespace com.clusterrr.Famicom.Dumper
                             if (string.IsNullOrEmpty(unifName) && !parameterInfo.HasDefaultValue)
                                 throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
                             if (string.IsNullOrEmpty(unifName) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
+                                parameters.Add(parameterInfo.DefaultValue!);
                             else
                                 parameters.Add(unifName);
                             break;
@@ -342,7 +342,7 @@ namespace com.clusterrr.Famicom.Dumper
                             if (string.IsNullOrEmpty(unifAuthor) && !parameterInfo.HasDefaultValue)
                                 throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
                             if (string.IsNullOrEmpty(unifAuthor) && parameterInfo.HasDefaultValue)
-                                parameters.Add(parameterInfo.DefaultValue);
+                                parameters.Add(parameterInfo.DefaultValue!);
                             else
                                 parameters.Add(unifAuthor);
                             break;
@@ -370,7 +370,7 @@ namespace com.clusterrr.Famicom.Dumper
                                     if (string.IsNullOrEmpty(mapperName) && !parameterInfo.HasDefaultValue)
                                         throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --mapper is not specified");
                                     if (string.IsNullOrEmpty(mapperName) && parameterInfo.HasDefaultValue)
-                                        parameters.Add(parameterInfo.DefaultValue);
+                                        parameters.Add(parameterInfo.DefaultValue!);
                                     else
                                         parameters.Add(GetMapper(mapperName));
                                     break;

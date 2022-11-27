@@ -216,9 +216,9 @@ namespace com.clusterrr.Famicom.Dumper
                         break;
                     default:
                         if ((blockNumber % 2) == 0)
-                            Console.Write($"Reading block #{blockNumber} (file #{(blockNumber - 2) / 2}/{(result[1] as FdsBlockFileAmount).FileAmount} header block)... ");
+                            Console.Write($"Reading block #{blockNumber} (file #{(blockNumber - 2) / 2}/{(result[1] as FdsBlockFileAmount)!.FileAmount} header block)... ");
                         else
-                            Console.Write($"Reading block #{blockNumber} (file #{(blockNumber - 2) / 2}/{(result[1] as FdsBlockFileAmount).FileAmount} data block)... ");
+                            Console.Write($"Reading block #{blockNumber} (file #{(blockNumber - 2) / 2}/{(result[1] as FdsBlockFileAmount)!.FileAmount} data block)... ");
                         break;
                 }
                 var fdsData = dumper.ReadFdsBlocks(blockNumber, 1);
@@ -246,7 +246,7 @@ namespace com.clusterrr.Famicom.Dumper
                         break;
                     case 1:
                         block = FdsBlockFileAmount.FromBytes(fdsData[0].Data);
-                        fileAmount = (block as FdsBlockFileAmount).FileAmount;
+                        fileAmount = (block as FdsBlockFileAmount)!.FileAmount;
                         visibleBlockAmount = (byte)(2 + fileAmount * 2);
                         break;
                     default:
@@ -280,7 +280,7 @@ namespace com.clusterrr.Famicom.Dumper
                     switch (blockNumber)
                     {
                         case 0:
-                            PrintDiskHeaderInfo(block as FdsBlockDiskInfo);
+                            PrintDiskHeaderInfo((block as FdsBlockDiskInfo)!);
                             break;
                         case 1:
                             Console.WriteLine($"Number of non-hidden files: {fileAmount}");
@@ -289,7 +289,7 @@ namespace com.clusterrr.Famicom.Dumper
                             if ((blockNumber % 2) == 0)
                             {
                                 Console.WriteLine($"File #{(blockNumber - 2) / 2}:");
-                                PrintFileHeaderInfo(block as FdsBlockFileHeader);
+                                PrintFileHeaderInfo((block as FdsBlockFileHeader)!);
                             }
                             break;
                     }
@@ -301,7 +301,7 @@ namespace com.clusterrr.Famicom.Dumper
             }
             if (dumpHiddenFiles)
             {
-                Console.WriteLine($"Number of hidden files: {(result.Count - 2) / 2 - (result[1] as FdsBlockFileAmount).FileAmount}");
+                Console.WriteLine($"Number of hidden files: {(result.Count - 2) / 2 - (result[1] as FdsBlockFileAmount)!.FileAmount}");
             }
             return result;
         }
@@ -364,7 +364,7 @@ namespace com.clusterrr.Famicom.Dumper
                 if (block is FdsBlockFileHeader && printDiskInfo)
                 {
                     Console.WriteLine($"File #{(blockNumber - 2) / 2}/{fileAmount}:");
-                    PrintFileHeaderInfo(block as FdsBlockFileHeader);
+                    PrintFileHeaderInfo((block as FdsBlockFileHeader)!);
                 }
                 result.Add(block);
             }

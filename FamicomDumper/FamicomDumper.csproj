@@ -291,6 +291,7 @@
     <Product>Famicom Dumper Client</Product>
     <AssemblyVersion>3.1.0</AssemblyVersion>
     <FileVersion>3.1.0</FileVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
 </Project>

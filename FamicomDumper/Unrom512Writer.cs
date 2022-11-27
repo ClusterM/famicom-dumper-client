@@ -1,73 +1,53 @@
 ﻿using com.clusterrr.Famicom.Containers;
+using com.clusterrr.Famicom.Dumper.FlashWriters;
 using com.clusterrr.Famicom.DumperConnection;
-using com.clusterrr.Utils;
+using RemoteDumper;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Security;
 
 namespace com.clusterrr.Famicom.Dumper
 {
-    public class Unrom512Writer
+    public class Unrom512Writer : FlashWriter
     {
-        const int BANK_SIZE = 0x4000;
         static int[] MAPPER_NUMBERS = { 2, 30 };
         static string[] MAPPER_STRINGS = { "UNROM", "UNROM-512", "UNROM-512-8", "UNROM-512-16", "UNROM-512-32" };
 
-        private readonly IFamicomDumperConnectionExt dumper;
+        protected override IFamicomDumperConnectionExt Dumper { get; }
+        protected override int BankSize => 0x4000;
+        protected override FlashEraseMode EraseMode => FlashEraseMode.Chip;
+        protected override bool NeedEnlarge => true;
 
         public Unrom512Writer(IFamicomDumperConnectionExt dumper)
         {
-            this.dumper = dumper;
+            Dumper = dumper;
         }
 
-        void WriteFlashCmd(uint address, byte value)
+        protected override void Init()
         {
-            dumper.WriteCpu(0xC000, (byte)(address >> 14));
-            dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
-        }
-
-        void ResetFlash()
-        {
-            dumper.WriteCpu(0x8000, 0xF0);
-        }
-
-        public void Write(string filename, IEnumerable<int> badSectors, bool silent, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
-        {
-            byte[] PRG;
-            var extension = Path.GetExtension(filename).ToLower();
-            switch (extension)
-            {
-                case ".bin":
-                    PRG = File.ReadAllBytes(filename);
-                    break;
-                case ".nes":
-                    var nes = NesFile.FromFile(filename);
-                    if (!MAPPER_NUMBERS.Contains(nes.Mapper))
-                        Console.WriteLine($"WARNING! Invalid mapper: {nes.Mapper}, most likely it will not work after writing.");
-                    PRG = nes.PRG;
-                    break;
-                case ".unf":
-                case ".unif":
-                    var unif = UnifFile.FromFile(filename);
-                    var mapper = unif.Mapper;
-                    if (mapper.StartsWith("NES-") || mapper.StartsWith("UNL-") || mapper.StartsWith("HVC-") || mapper.StartsWith("BTL-") || mapper.StartsWith("BMC-"))
-                        mapper = mapper[4..];
-                    if (!MAPPER_STRINGS.Contains(mapper))
-                        Console.WriteLine($"WARNING! Invalid mapper: {mapper}, most likely it will not work after writing.");
-                    PRG = unif.PRG0;
-                    break;
-                default:
-                    throw new InvalidDataException($"Unknown extension: {extension}, can't detect file format");
-            }
-
-            Program.Reset(dumper);
             ResetFlash();
+        }
+
+        protected override bool CheckMapper(ushort mapper, byte submapper)
+        {
+            return MAPPER_NUMBERS.Contains(mapper);
+        }
+
+        protected override bool CheckMapper(string mapper)
+        {
+            return MAPPER_STRINGS.Contains(mapper);
+        }
+
+        protected override FlashInfo GetFlashInfo()
+        {
             WriteFlashCmd(0x5555, 0xAA);
             WriteFlashCmd(0x2AAA, 0x55);
             WriteFlashCmd(0x5555, 0x90);
-            var id = dumper.ReadCpu(0x8000, 2);
+
+            var id = Dumper.ReadCpu(0x8000, 2);
             int flashSize = id[1] switch
             {
                 0xB5 => 128 * 1024,
@@ -75,65 +55,53 @@ namespace com.clusterrr.Famicom.Dumper
                 0xB7 => 512 * 1024,
                 _ => 0
             };
-            Console.WriteLine($"Device size: " + (flashSize > 0 ? $"{flashSize / 1024} KByte / {flashSize / 1024 * 8} Kbit" : "unknown"));
-            if ((flashSize > 0) && (PRG.Length > flashSize))
-                throw new InvalidDataException("This ROM is too big for this cartridge");
-
-            // Enlarge PRG if need
-            while ((flashSize % PRG.Length == 0) && (PRG.Length < flashSize))
-                PRG = Enumerable.Concat(PRG, PRG).ToArray();
-            int banks = PRG.Length / BANK_SIZE;
-
-            Console.Write($"Erasing flash chip... ");
-            dumper.EraseUnrom512();
-            Console.WriteLine("OK");
-
-            for (int bank = 0; bank < banks; bank++)
+            ResetFlash();
+            return new FlashInfo()
             {
-                try
-                {
-                    var data = new byte[BANK_SIZE];
-                    int pos = bank * BANK_SIZE;
-                    Array.Copy(PRG, pos, data, 0, data.Length);
-                    Console.Write($"Writing bank #{bank}/{banks} ({100 * bank / banks}%)... ");
-                    dumper.WriteUnrom512((uint)pos, data);
-                    Console.WriteLine("OK");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"ERROR {ex.GetType()}: {ex.Message}");
-                    if (!silent) Program.PlayErrorSound();
-                }
-            }
+                DeviceSize = flashSize,
+                MaximumNumberOfBytesInMultiProgram = 0,
+                Regions = null
+            };
+        }
 
-            var wrongCrcSectorsList = new List<int>();
-            if (needCheck)
-            {
-                Console.WriteLine("Starting verification process");
-                var readStartTime = DateTime.Now;
+        protected override void Erase(int offset)
+        {
+            Dumper.EraseUnrom512();
+        }
 
-                for (int bank = 0; bank < banks; bank++)
-                {
-                    dumper.WriteCpu(0xC000, (byte)bank);
-                    int pos = bank * BANK_SIZE;
-                    ushort crc = Crc16Calculator.CalculateCRC16(PRG, pos, BANK_SIZE);
-                    Console.Write($"Reading CRC of bank #{bank}/{banks} ({100 * bank / banks}%)... ");
-                    var crcr = dumper.ReadCpuCrc(0x8000, BANK_SIZE);
-                    if (crcr != crc)
-                    {
-                        Console.WriteLine($"Verification failed: {crcr:X4} != {crc:X4}");
-                        if (!silent) Program.PlayErrorSound();
-                        wrongCrcSectorsList.Add(bank);
-                    }
-                    else
-                        Console.WriteLine($"OK (CRC = {crcr:X4})");
-                }
-                if (wrongCrcSectorsList.Any())
-                    Console.WriteLine($"Banks with wrong CRC: {string.Join(", ", wrongCrcSectorsList.Distinct().OrderBy(s => s))}");
-            }
+        protected override void Write(byte[] data, int offset)
+        {
+            Dumper.WriteUnrom512((uint)offset, data);
+        }
 
-            if (wrongCrcSectorsList.Any())
-                throw new IOException("Cartridge is not writed correctly");
+        protected override ushort ReadCrc(int offset)
+        {
+            SelectBank((byte)(offset / BankSize));
+            return Dumper.ReadCpuCrc(0x8000, 0x4000);
+        }
+
+        public override void PrintFlashInfo()
+        {
+            ResetFlash();
+            var flash = GetFlashInfo();
+            var deviceSize = flash.DeviceSize;
+            Console.WriteLine($"Device size: " + (deviceSize > 0 ? $"{deviceSize / 1024} KByte / {deviceSize / 1024 * 8} Kbit" : "unknown"));
+        }
+
+        void WriteFlashCmd(uint address, byte value)
+        {
+            Dumper.WriteCpu(0xC000, (byte)(address >> 14));
+            Dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
+        }
+
+        void ResetFlash()
+        {
+            Dumper.WriteCpu(0x8000, 0xF0);
+        }
+
+        void SelectBank(byte bank)
+        {
+            Dumper.WriteCpu(0xC000, bank);
         }
     }
 }
