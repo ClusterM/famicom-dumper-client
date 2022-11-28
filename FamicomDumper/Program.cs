@@ -72,19 +72,29 @@ namespace com.clusterrr.Famicom.Dumper
             bool battery = false;
             string? csFile = null;
             string[] csArgs = Array.Empty<string>();
+
             string? unifName = null;
             string? unifAuthor = null;
+
+            string prgRamSize = "0";
+            string prgNvRamSize = "0";
+            string chrRamSize = "0";
+            string chrNvRamSize = "0";
+
+            byte fdsSides = 1;
+            bool fdsUseHeader = true;
+            bool fdsDumpHiddenFiles = false;
+
             bool reset = false;
             bool silent = true;
             bool needCheck = false;
             bool writePBBs = false;
             List<int> badSectors = new();
-            int tcpPort = DEFAULT_GRPC_PORT;
             bool ignoreBadSectors = false;
+
+            int tcpPort = DEFAULT_GRPC_PORT;
             string? remoteHost = null;
-            byte fdsSides = 1;
-            bool fdsUseHeader = true;
-            bool fdsDumpHiddenFiles = false;
+
             try
             {
                 if (args.Length == 0 || args.Contains("help") || args.Contains("--help"))
@@ -152,6 +162,22 @@ namespace com.clusterrr.Famicom.Dumper
                         case "csize":
                         case "chr-size":
                             csize = value;
+                            i++;
+                            break;
+                        case "prg-ram-size":
+                            prgRamSize = value;
+                            i++;
+                            break;
+                        case "prg-nvram-size":
+                            prgNvRamSize = value;
+                            i++;
+                            break;
+                        case "chr-ram-size":
+                            chrRamSize = value;
+                            i++;
+                            break;
+                        case "chr-nvram-size":
+                            chrNvRamSize = value;
                             i++;
                             break;
                         case "battery":
@@ -234,9 +260,11 @@ namespace com.clusterrr.Famicom.Dumper
                 Console.WriteLine($"Protocol version: {dumper.ProtocolVersion}");
 #endif
                 if (dumper.HardwareVersion != null)
-                    Console.WriteLine($"Dumper hardware version: {dumper.HardwareVersion.Major}.{dumper.HardwareVersion.Minor}{((dumper.HardwareVersion.Build != 0) ? new string((char)dumper.HardwareVersion.Build, 1) : "")}");
+                    Console.WriteLine($"Dumper hardware version: {dumper.HardwareVersion.Major}.{dumper.HardwareVersion.Minor}" +
+                        $"{((dumper.HardwareVersion.Build != 0) ? new string((char)dumper.HardwareVersion.Build, 1) : "")}");
                 if (dumper.FirmwareVersion != null)
-                    Console.WriteLine($"Dumper firmware version: {dumper.FirmwareVersion.Major}.{dumper.FirmwareVersion.Minor}{((dumper.FirmwareVersion.Build != 0) ? new string((char)dumper.FirmwareVersion.Build, 1) : "")}");
+                    Console.WriteLine($"Dumper firmware version: {dumper.FirmwareVersion.Major}.{dumper.FirmwareVersion.Minor}" +
+                        $"{((dumper.FirmwareVersion.Build != 0) ? new string((char)dumper.FirmwareVersion.Build, 1) : "")}");
 
                 try
                 {
@@ -260,7 +288,11 @@ namespace com.clusterrr.Famicom.Dumper
                             Scripting.ListMappers();
                             break;
                         case "dump":
-                            Dump(dumper, filename ?? "output.nes", mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery);
+                            Dump(dumper, filename ?? "output.nes", mapperName, 
+                                ParseSize(psize), ParseSize(csize), 
+                                ParseSize(prgRamSize), ParseSize(prgNvRamSize),
+                                ParseSize(chrRamSize), ParseSize(chrNvRamSize),
+                                unifName, unifAuthor, battery);
                             break;
                         case "dump-fds":
                             FDS.DumpFDS(dumper, filename ?? "output.fds", fdsSides, fdsDumpHiddenFiles, fdsUseHeader);
@@ -332,6 +364,8 @@ namespace com.clusterrr.Famicom.Dumper
                         Console.WriteLine($"Done in {timePassed.Minutes:D2}:{timePassed.Seconds:D2}");
                     else
                         Console.WriteLine($"Done in {(int)timePassed.TotalMilliseconds}ms");
+#else
+                    Console.WriteLine("Done.");
 #endif
                     if (!silent) PlayDoneSound();
                 }
@@ -437,19 +471,23 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
             Console.WriteLine(" {0,-30}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--prg-ram-size <size>", "size of PRG RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--chr-ram-size <size>", "size of CHR RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--prg-nvram-size <size>", "size of PRG RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--chr-nvram-size <size>", "size of NVCHR RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
-            Console.WriteLine(" {0,-30}{1}", "--cs-file <C#_file>", "execute C# script from file");
-            Console.WriteLine(" {0,-30}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-30}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-30}{1}", "--unif-author <name>", "author of dump for UNIF dumps");
             Console.WriteLine(" {0,-30}{1}", "--fds-sides", "number of FDS sides to dump (default 1)");
             Console.WriteLine(" {0,-30}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-30}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
+            Console.WriteLine(" {0,-30}{1}", "--reset", "simulate reset first");
+            Console.WriteLine(" {0,-30}{1}", "--cs-file <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-30}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
             Console.WriteLine(" {0,-30}{1}", "--ignore-bad-sectors", "ignore bad sectors while writing COOLBOY/COOLGIRL");
-            Console.WriteLine(" {0,-30}{1}", "--sound", "play sound when done or error occured");
             Console.WriteLine(" {0,-30}{1}", "--verify", "verify COOLBOY/COOLGIRL/FDS after writing");
             Console.WriteLine(" {0,-30}{1}", "--lock", "write-protect COOLBOY/COOLGIRL sectors after writing");
+            Console.WriteLine(" {0,-30}{1}", "--sound", "play sound when done or error occured");
         }
 
         static public void Reset(IFamicomDumperConnectionExt dumper)
@@ -459,7 +497,8 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine("OK");
         }
 
-        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName, int prgSize, int chrSize, string? unifName, string? unifAuthor, bool battery)
+        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName, int prgSize, int chrSize, int 
+            prgRamSize, int prgNvRamSize, int chrRamSize, int chrNvRamSize, string? unifName, string? unifAuthor, bool battery)
         {
             var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
@@ -491,17 +530,23 @@ namespace com.clusterrr.Famicom.Dumper
             switch (ext.ToLower())
             {
                 case ".nes":
-                    Console.Write($"Saving as NES 2.0 file: {fileName}... ");
-                    if (mapper.Number < 0)
-                        throw new NotSupportedException("Can't save file as NES 2.0: mapper number unknown");
-                    // TODO: add RAM and NV-RAM settings for NES 2.0
                     var nesFile = new NesFile();
-                    nesFile.Version = NesFile.iNesVersion.NES20;
+                    nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper > 0)
+                            || (prgRamSize > 0) || (prgNvRamSize > 0)
+                            || (chrRamSize > 0) || (chrNvRamSize > 0)) 
+                        ? NesFile.iNesVersion.NES20 : NesFile.iNesVersion.iNES;
+                    Console.Write($"Saving as {nesFile.Version} file: {fileName}... ");
+                    if (mapper.Number < 0)
+                        throw new NotSupportedException("Can't save as .nes file: mapper number unknown");
                     nesFile.Mapper = (ushort)mapper.Number;
                     nesFile.Submapper = mapper.Submapper;
                     nesFile.Mirroring = mirroring;
                     nesFile.PRG = prg.ToArray();
                     nesFile.CHR = chr.ToArray();
+                    nesFile.PrgRamSize = (uint)prgRamSize;
+                    nesFile.PrgNvRamSize = (uint)prgNvRamSize;
+                    nesFile.ChrRamSize = (uint)chrRamSize;
+                    nesFile.ChrNvRamSize = (uint)chrNvRamSize;
                     nesFile.Battery = battery;
                     nesFile.Save(fileName);
                     break;

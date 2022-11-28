@@ -103,7 +103,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             {
                 var pow = (int)Math.Ceiling(Math.Log(PRG.Length, 2));
                 var upSize = (int)Math.Pow(2, pow);
-                PRG = Enumerable.Concat(PRG, Enumerable.Repeat((byte)0xFF, upSize - PRG.Length)).ToArray();
+                PRG = Enumerable.Concat(PRG, Enumerable.Repeat(byte.MaxValue, upSize - PRG.Length)).ToArray();
                 while (PRG.Length < flash.DeviceSize)
                     PRG = Enumerable.Concat(PRG, PRG).ToArray();
             }

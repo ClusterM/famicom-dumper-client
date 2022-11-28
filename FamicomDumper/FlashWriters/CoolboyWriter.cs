@@ -96,7 +96,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         protected override void Write(byte[] data, int offset)
         {
             SelectBank(offset / BankSize);
-            Dumper.WriteFlash(0x0000, data);
+            Dumper.WriteFlash(0x8000, data);
         }
 
         protected override ushort ReadCrc(int offset)
