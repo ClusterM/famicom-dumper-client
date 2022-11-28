@@ -522,20 +522,19 @@ namespace com.clusterrr.Famicom.Dumper
                 mapper.DumpChr(dumper, chr, chrSize);
                 while (chr.Count % 0x2000 != 0) chr.Add(0);
             }
-            MirroringType mirroring;
-            // TODO: move GetMapper to IMapper, so it will not be optional
-            mirroring = mapper.GetMirroring(dumper);
+            var mirroring = mapper.GetMirroring(dumper);
             Console.WriteLine($"Mirroring: {mirroring}");
             var ext = Path.GetExtension(fileName);
             switch (ext.ToLower())
             {
                 case ".nes":
+                    // Using iNES or NES 2.0 container
                     var nesFile = new NesFile();
                     nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper > 0)
                             || (prgRamSize > 0) || (prgNvRamSize > 0)
                             || (chrRamSize > 0) || (chrNvRamSize > 0)) 
                         ? NesFile.iNesVersion.NES20 : NesFile.iNesVersion.iNES;
-                    Console.Write($"Saving as {nesFile.Version} file: {fileName}... ");
+                    Console.Write($"Saving as {(nesFile.Version switch { NesFile.iNesVersion.NES20 => "NES 2.0", _ => "iNES" })} file: {fileName}... ");
                     if (mapper.Number < 0)
                         throw new NotSupportedException("Can't save as .nes file: mapper number unknown");
                     nesFile.Mapper = (ushort)mapper.Number;
@@ -552,7 +551,7 @@ namespace com.clusterrr.Famicom.Dumper
                     break;
                 case ".unf":
                 case ".unif":
-                    // Non-numeric mapper, using UNIF
+                    // Using UNIF container
                     Console.Write($"Saving as UNIF file: {fileName}... ");
                     if (string.IsNullOrEmpty(mapper.UnifName))
                         throw new NotSupportedException("Can't save file as UNIF - mapper code name unknown");
@@ -574,6 +573,7 @@ namespace com.clusterrr.Famicom.Dumper
                     unifFile.Save(fileName);
                     break;
                 case ".bin":
+                    // Save as raw binary file
                     Console.Write($"Saving as raw binary file: {fileName}... ");
                     File.WriteAllBytes(fileName, prg.ToArray());
                     if (chr.Count > 0) Console.Write("WARNING! CHR is not saved! PRG only. ");
@@ -598,7 +598,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.Write($"Saving to {fileName}... ");
             File.WriteAllBytes(fileName, prgram);
             Console.WriteLine("OK");
-            dumper.ReadCpu(0x0, 1); // to avoid corruption
+            dumper.ReadCpu(0); // to avoid corruption
             Reset(dumper);
         }
 
@@ -614,7 +614,7 @@ namespace com.clusterrr.Famicom.Dumper
             var prgram = File.ReadAllBytes(fileName);
             dumper.WriteCpu(0x6000, prgram);
             Console.WriteLine("OK");
-            dumper.ReadCpu(0x0, 1); // to avoid corruption
+            dumper.ReadCpu(0); // to avoid corruption
             Reset(dumper);
         }
 
