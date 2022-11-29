@@ -101,9 +101,12 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
             if (NeedEnlarge)
             {
+                // Round up to power of 2
                 var pow = (int)Math.Ceiling(Math.Log(PRG.Length, 2));
                 var upSize = (int)Math.Pow(2, pow);
-                PRG = Enumerable.Concat(PRG, Enumerable.Repeat(byte.MaxValue, upSize - PRG.Length)).ToArray();
+                if (upSize - PRG.Length > 0)
+                    PRG = Enumerable.Concat(PRG, Enumerable.Repeat(byte.MaxValue, upSize - PRG.Length)).ToArray();
+                // Enlarge
                 while (PRG.Length < flash.DeviceSize)
                     PRG = Enumerable.Concat(PRG, PRG).ToArray();
             }

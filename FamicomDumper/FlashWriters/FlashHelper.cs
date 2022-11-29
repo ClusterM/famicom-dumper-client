@@ -46,19 +46,19 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
         public static void PrintCFIInfo(CFIInfo cfi)
         {
-            Console.WriteLine($"Primary Algorithm Command Set and Control Interface ID Code: {cfi.PrimaryAlgorithmCommandSet:X4}h");
-            Console.WriteLine($"Alternative Algorithm Command Set and Control Interface ID Code: {cfi.AlternativeAlgorithmCommandSet:X4}h");
-            Console.WriteLine($"Vcc Logic Supply Minimum Program / Erase voltage: {cfi.VccLogicSupplyMinimumProgramErase:F1}v");
-            Console.WriteLine($"Vcc Logic Supply Maximum Program / Erase voltage: {cfi.VccLogicSupplyMaximumProgramErase:F1}v");
-            Console.WriteLine($"Vpp [Programming] Supply Minimum Program / Erase voltage: {cfi.VppSupplyMinimumProgramErasevoltage:F1}v");
-            Console.WriteLine($"Vpp [Programming] Supply Maximum Program / Erase voltage: {cfi.VppSupplyMaximumProgramErasevoltage:F1}v");
-            Console.WriteLine($"Typical timeout per single byte/word/D-word program: {cfi.TypicalTimeoutPerSingleProgram}us");
+            Console.WriteLine($"Primary algorithm command set and control interface ID code: {cfi.PrimaryAlgorithmCommandSet:X4}h");
+            Console.WriteLine($"Alternative algorithm command set and control interface ID code: {cfi.AlternativeAlgorithmCommandSet:X4}h");
+            Console.WriteLine($"Vcc logic supply sinimum program / erase voltage: {cfi.VccLogicSupplyMinimumProgramErase:F1}v");
+            Console.WriteLine($"Vcc logic supply maximum program / erase voltage: {cfi.VccLogicSupplyMaximumProgramErase:F1}v");
+            Console.WriteLine($"Vpp [programming] supply minimum program / erase voltage: {cfi.VppSupplyMinimumProgramErasevoltage:F1}v");
+            Console.WriteLine($"Vpp [programming] supply maximum program / erase voltage: {cfi.VppSupplyMaximumProgramErasevoltage:F1}v");
+            Console.WriteLine($"Typical timeout for single byte/word/D-word program: {cfi.TypicalTimeoutPerSingleProgram}us");
             Console.WriteLine($"Typical timeout for maximum-size multi-byte program: {cfi.TypicalTimeoutForMaximumSizeMultiByteProgram}us");
-            Console.WriteLine($"Typical timeout per individual block erase: {cfi.TypicalTimeoutPerIndividualBlockErase}ms");
+            Console.WriteLine($"Typical timeout for individual block erase: {cfi.TypicalTimeoutPerIndividualBlockErase}ms");
             Console.WriteLine($"Typical timeout for full chip erase: {cfi.TypicalTimeoutForFullChipErase}ms");
-            Console.WriteLine($"Maximum timeout per single byte/word/D-word program: {cfi.MaximumTimeoutPerSingleProgram}us");
+            Console.WriteLine($"Maximum timeout for single byte/word/D-word program: {cfi.MaximumTimeoutPerSingleProgram}us");
             Console.WriteLine($"Maximum timeout for maximum-size multi-byte program: {cfi.MaximumTimeoutForMaximumSizeMultiByteProgram}us");
-            Console.WriteLine($"Maximum timeout per individual block erase: {cfi.MaximumTimeoutPerIndividualBlockErase}ms");
+            Console.WriteLine($"Maximum timeout for individual block erase: {cfi.MaximumTimeoutPerIndividualBlockErase}ms");
             Console.WriteLine($"Maximum timeout for full chip erase: {cfi.MaximumTimeoutForFullChipErase}ms");
             Console.WriteLine($"Device size: {cfi.DeviceSize / 1024 / 1024} MByte / {cfi.DeviceSize / 1024 / 1024 * 8} Mbit");
             Console.WriteLine($"Flash device interface: {cfi.FlashDeviceInterfaceCodeDescription.ToString().Replace("_", " ")}");
