@@ -62,7 +62,7 @@ namespace com.clusterrr.Famicom.Dumper
         /// This method must return mirroring type, it can call dumper.GetMirroring() if it's fixed
         /// </summary>
         /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
-        /// <returns></returns>
+        /// <returns>Mirroring type</returns>
         MirroringType GetMirroring(IFamicomDumperConnection dumper);
     }
 }

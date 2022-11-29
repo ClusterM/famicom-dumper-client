@@ -56,6 +56,8 @@ namespace com.clusterrr.Famicom.Dumper
                 }
             }
 
+            Console.Write($"Compiling {Path.GetFileName(path)}... ");
+
             // And usings
             SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
@@ -148,6 +150,7 @@ namespace com.clusterrr.Famicom.Dumper
                     File.WriteAllBytes(cacheFile, rawAssembly);
                 }
                 catch { }
+                Console.WriteLine("OK");
                 return assembly;
             }
             else throw new InvalidProgramException();
@@ -156,16 +159,16 @@ namespace com.clusterrr.Famicom.Dumper
         static IMapper CompileMapper(string path)
         {
             Assembly assembly = Compile(path);
-            var programs = assembly.GetTypes();
+            var programs = assembly.GetTypes().Where(a => a.BaseType?.Name == typeof(object).Name);
             if (!programs.Any())
-                throw new InvalidProgramException("There is no assemblies");
+                throw new InvalidProgramException($"There is no assemblies in {Path.GetFileName(path)}");
             Type program = programs.First();
             var constructor = program.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.Any, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
             if (constructor == null)
-                throw new InvalidProgramException("There is no valid default constructor");
+                throw new InvalidProgramException($"There is no valid default constructor in {Path.GetFileName(path)}");
             var mapper = constructor.Invoke(Array.Empty<object>());
             if (!(mapper is IMapper))
-                throw new InvalidProgramException("Class doesn't implement IMapper interface");
+                throw new InvalidProgramException($"Class doesn't implement IMapper interface in {Path.GetFileName(path)}");
             return (mapper as IMapper)!;
         }
 
@@ -243,7 +246,6 @@ namespace com.clusterrr.Famicom.Dumper
                 }
                 scriptPath = scriptsPathes.First();
             }
-            Console.WriteLine($"Compiling {scriptPath}...");
             Assembly assembly = Compile(scriptPath);
             var programs = assembly.GetTypes();
             if (!programs.Any())
