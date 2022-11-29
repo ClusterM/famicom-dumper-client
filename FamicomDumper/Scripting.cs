@@ -247,7 +247,7 @@ namespace com.clusterrr.Famicom.Dumper
                 scriptPath = scriptsPathes.First();
             }
             Assembly assembly = Compile(scriptPath);
-            var programs = assembly.GetTypes();
+            var programs = assembly.GetTypes().Where(a => a.BaseType?.Name == typeof(object).Name);
             if (!programs.Any())
                 throw new InvalidProgramException("There is no assemblies");
             Type program = programs.First();
