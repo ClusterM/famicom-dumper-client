@@ -76,10 +76,10 @@ namespace com.clusterrr.Famicom.Dumper
             string? unifName = null;
             string? unifAuthor = null;
 
-            string prgRamSize = "0";
-            string prgNvRamSize = "0";
-            string chrRamSize = "0";
-            string chrNvRamSize = "0";
+            string? prgRamSize = null;
+            string? prgNvRamSize = null;
+            string? chrRamSize = null;
+            string? chrNvRamSize = null;
 
             byte fdsSides = 1;
             bool fdsUseHeader = true;
@@ -275,7 +275,11 @@ namespace com.clusterrr.Famicom.Dumper
 
                     if (!string.IsNullOrEmpty(csFile))
                     {
-                        Scripting.CompileAndExecute(csFile, dumper, filename, mapperName, ParseSize(psize), ParseSize(csize), unifName, unifAuthor, battery, csArgs);
+                        Scripting.CompileAndExecute(csFile, dumper, filename, mapperName, 
+                            ParseSize(psize), ParseSize(csize), 
+                            ParseSize(prgRamSize), ParseSize(chrRamSize),
+                            ParseSize(prgNvRamSize), ParseSize(chrNvRamSize),
+                            unifName, unifAuthor, battery, csArgs);
                     }
 
                     switch (command)
@@ -530,9 +534,9 @@ namespace com.clusterrr.Famicom.Dumper
                 case ".nes":
                     // Using iNES or NES 2.0 container
                     var nesFile = new NesFile();
-                    nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper > 0)
-                            || (prgRamSize > 0) || (prgNvRamSize > 0)
-                            || (chrRamSize > 0) || (chrNvRamSize > 0)) 
+                    nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper >= 0)
+                            || (prgRamSize >= 0) || (prgNvRamSize >= 0)
+                            || (chrRamSize >= 0) || (chrNvRamSize >= 0)) 
                         ? NesFile.iNesVersion.NES20 : NesFile.iNesVersion.iNES;
                     Console.Write($"Saving as {(nesFile.Version switch { NesFile.iNesVersion.NES20 => "NES 2.0", _ => "iNES" })} file: {fileName}... ");
                     if (mapper.Number < 0)
@@ -542,10 +546,10 @@ namespace com.clusterrr.Famicom.Dumper
                     nesFile.Mirroring = mirroring;
                     nesFile.PRG = prg.ToArray();
                     nesFile.CHR = chr.ToArray();
-                    nesFile.PrgRamSize = (uint)prgRamSize;
-                    nesFile.PrgNvRamSize = (uint)prgNvRamSize;
-                    nesFile.ChrRamSize = (uint)chrRamSize;
-                    nesFile.ChrNvRamSize = (uint)chrNvRamSize;
+                    nesFile.PrgRamSize = (uint)Math.Max(0, prgRamSize);
+                    nesFile.PrgNvRamSize = (uint)Math.Max(0, prgNvRamSize);
+                    nesFile.ChrRamSize = (uint)Math.Max(0, chrRamSize);
+                    nesFile.ChrNvRamSize = (uint)Math.Max(0, chrNvRamSize);
                     nesFile.Battery = battery;
                     nesFile.Save(fileName);
                     break;

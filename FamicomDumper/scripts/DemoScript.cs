@@ -8,6 +8,10 @@
      *  IMapper mapper                  - mapper object compiled from mapper script specified by --mapper argument
      *  int prgSize                     - PRG size specified by --prg-size argument (parsed)
      *  int chrSize                     - CHR size specified by --chr-size argument (parsed)
+     *  int prgRamSize                  - PRG RAM size specified by --prg-ram-size argument (parsed)
+     *  int chrRamSize                  - CHR RAM size specified by --chr-ram-size argument (parsed)
+     *  int prgNvramSize                - PRG NVRAM size specified by --prg-nvram-size argument (parsed)
+     *  int chrNvramSize                - CHR NVRAM size specified by --chr-nvram-size argument (parsed)
      *  string unifName                 - string specified by --unif-name argument
      *  string unifAuthor               - string specified by --unif-author argument
      *  bool battery                    - true if --battery argument is specified

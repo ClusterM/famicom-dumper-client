@@ -232,7 +232,9 @@ namespace com.clusterrr.Famicom.Dumper
             return mapper.Value;
         }
 
-        public static void CompileAndExecute(string scriptPath, IFamicomDumperConnectionExt dumper, string? filename, string? mapperName, int prgSize, int chrSize, string? unifName, string? unifAuthor, bool battery, string[] args)
+        public static void CompileAndExecute(string scriptPath, IFamicomDumperConnectionExt dumper, string? filename, string? mapperName,
+            int prgSize, int chrSize, int prgRamSize, int chrRamSize, int prgNvRamSize, int chrNvRamSize,
+            string? unifName, string? unifAuthor, bool battery, string[] args)
         {
             if (!File.Exists(scriptPath))
             {
@@ -287,6 +289,10 @@ namespace com.clusterrr.Famicom.Dumper
                 bool mapperParamExists = false;
                 bool prgSizeParamExists = false;
                 bool chrSizeParamExists = false;
+                bool prgRamSizeParamExists = false;
+                bool chrRamSizeParamExists = false;
+                bool prgNvRamSizeParamExists = false;
+                bool chrNvRamSizeParamExists = false;
                 bool unifNameParamExists = false;
                 bool unifAuthorParamExists = false;
                 bool batteryParamExists = false;
@@ -329,6 +335,42 @@ namespace com.clusterrr.Famicom.Dumper
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
                                 parameters.Add(chrSize);
+                            break;
+                        case "prgramsize":
+                            prgRamSizeParamExists = true;
+                            if ((prgRamSize < 0) && !parameterInfo.HasDefaultValue)
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-ram-size is not specified");
+                            if ((prgRamSize < 0) && parameterInfo.HasDefaultValue)
+                                parameters.Add(parameterInfo.DefaultValue!);
+                            else
+                                parameters.Add(prgRamSize);
+                            break;
+                        case "chrramsize":
+                            chrRamSizeParamExists = true;
+                            if ((chrRamSize < 0) && !parameterInfo.HasDefaultValue)
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-ram-size is not specified");
+                            if ((chrRamSize < 0) && parameterInfo.HasDefaultValue)
+                                parameters.Add(parameterInfo.DefaultValue!);
+                            else
+                                parameters.Add(chrRamSize);
+                            break;
+                        case "prgnvramsize":
+                            prgNvRamSizeParamExists = true;
+                            if ((prgNvRamSize < 0) && !parameterInfo.HasDefaultValue)
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-nvram-size is not specified");
+                            if ((prgNvRamSize < 0) && parameterInfo.HasDefaultValue)
+                                parameters.Add(parameterInfo.DefaultValue!);
+                            else
+                                parameters.Add(prgNvRamSize);
+                            break;
+                        case "chrnvramsize":
+                            chrNvRamSizeParamExists = true;
+                            if ((chrNvRamSize < 0) && !parameterInfo.HasDefaultValue)
+                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-nvram-size is not specified");
+                            if ((chrNvRamSize < 0) && parameterInfo.HasDefaultValue)
+                                parameters.Add(parameterInfo.DefaultValue!);
+                            else
+                                parameters.Add(chrNvRamSize);
                             break;
                         case "unifname":
                             unifNameParamExists = true;
@@ -390,6 +432,14 @@ namespace com.clusterrr.Famicom.Dumper
                     Console.WriteLine($"WARNING: --prg-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int prgSize\" parameter");
                 if (!chrSizeParamExists && chrSize >= 0)
                     Console.WriteLine($"WARNING: --chr-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int chrSize\" parameter");
+                if (!prgRamSizeParamExists && prgRamSize >= 0)
+                    Console.WriteLine($"WARNING: --prg-ram-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int prgRamSize\" parameter");
+                if (!chrRamSizeParamExists && chrRamSize >= 0)
+                    Console.WriteLine($"WARNING: --chr-ram-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int chrRamSize\" parameter");
+                if (!prgNvRamSizeParamExists && prgNvRamSize >= 0)
+                    Console.WriteLine($"WARNING: --prg-nvram-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int prgNvRamSize\" parameter");
+                if (!chrNvRamSizeParamExists && chrNvRamSize >= 0)
+                    Console.WriteLine($"WARNING: --chr-nvram-size argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"int chrNvRamSize\" parameter");
                 if (!unifNameParamExists && !string.IsNullOrEmpty(unifName))
                     Console.WriteLine($"WARNING: --unif-name argument is specified but {program.Name}.{SCRIPT_START_METHOD} declared without \"string unifName\" parameter");
                 if (!unifAuthorParamExists && !string.IsNullOrEmpty(unifAuthor))
