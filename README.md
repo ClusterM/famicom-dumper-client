@@ -1,7 +1,7 @@
 # Client (computer software) for Famicom Dumper/Programmer
 [![Build test](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml/badge.svg)](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml)
 
-This is the client for the [https://github.com/ClusterM/famicom-dumper-writer](Famicom Dumper/Programmer).
+This is the client for the [Famicom Dumper/Programmer](https://github.com/ClusterM/famicom-dumper-writer).
 
 ## Requirements
 This application developed using .NET 6.0, so it can be run on Windows (x86, x64, arm), Linux (x64, arm) and OSX (x64, arm). You need either install the [ASP.NET Core Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) framework or use the self-contained version.
