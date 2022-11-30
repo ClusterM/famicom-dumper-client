@@ -178,7 +178,7 @@ namespace com.clusterrr.Famicom.Dumper
             var mappersSearchDirectories = MappersSearchDirectories.Distinct().Where(d => Directory.Exists(d));
             if (!mappersSearchDirectories.Any())
             {
-                Console.WriteLine("None of the listed mappers directories were found:");
+                Console.WriteLine("None of the listed mapper directories were found:");
                 foreach (var d in MappersSearchDirectories)
                     Console.WriteLine($" {d}");
             }
@@ -208,7 +208,7 @@ namespace com.clusterrr.Famicom.Dumper
                 Console.WriteLine(" {0,-30}{1,-24}{2,-9}{3,-24}",
                     Path.GetFileName(mapperFile.Key),
                     mapperFile.Value.Name,
-                    mapperFile.Value.Number >= 0 ? mapperFile.Value.Number.ToString() : "None",
+                    mapperFile.Value.Number >= 0 ? $"{mapperFile.Value.Number}" + (mapperFile.Value.Submapper > 0 ? $".{mapperFile.Value.Submapper}" : "") : "None",
                     mapperFile.Value.UnifName ?? "None");
             }
         }
@@ -217,15 +217,18 @@ namespace com.clusterrr.Famicom.Dumper
         {
             if (!string.IsNullOrEmpty(mapperName) && File.Exists(mapperName)) // CS script?
             {
-                Console.WriteLine($"Compiling {mapperName}...");
-                return CompileMapper(mapperName);
+                Console.Write($"Compiling {mapperName}... ");
+                var m = CompileMapper(mapperName);
+                Console.WriteLine("OK");
+                return m;
             }
 
             if (string.IsNullOrEmpty(mapperName))
                 mapperName = "0";
             var mapperList = CompileAllMappers()
                 .Where(m => m.Value.Name.ToLower() == mapperName.ToLower()
-                || (m.Value.Number >= 0 && m.Value.Number.ToString() == mapperName));
+                || (m.Value.Number >= 0 && $"{m.Value.Number}" == mapperName)
+                || (m.Value.Number >= 0 && $"{m.Value.Number}.{m.Value.Submapper}" == mapperName));
             if (!mapperList.Any()) throw new KeyNotFoundException("Can't find mapper");
             var mapper = mapperList.First();
             Console.WriteLine($"Using {Path.GetFileName(mapper.Key)} as mapper file");
