@@ -275,8 +275,8 @@ namespace com.clusterrr.Famicom.Dumper
 
                     if (!string.IsNullOrEmpty(csFile))
                     {
-                        Scripting.CompileAndExecute(csFile, dumper, filename, mapperName, 
-                            ParseSize(psize), ParseSize(csize), 
+                        Scripting.CompileAndExecute(csFile, dumper, filename, mapperName,
+                            ParseSize(psize), ParseSize(csize),
                             ParseSize(prgRamSize), ParseSize(chrRamSize),
                             ParseSize(prgNvRamSize), ParseSize(chrNvRamSize),
                             unifName, unifAuthor, battery, csArgs);
@@ -292,8 +292,8 @@ namespace com.clusterrr.Famicom.Dumper
                             Scripting.ListMappers();
                             break;
                         case "dump":
-                            Dump(dumper, filename ?? "output.nes", mapperName, 
-                                ParseSize(psize), ParseSize(csize), 
+                            Dump(dumper, filename ?? "output.nes", mapperName,
+                                ParseSize(psize), ParseSize(csize),
                                 ParseSize(prgRamSize), ParseSize(prgNvRamSize),
                                 ParseSize(chrRamSize), ParseSize(chrNvRamSize),
                                 unifName, unifAuthor, battery);
@@ -420,7 +420,7 @@ namespace com.clusterrr.Famicom.Dumper
             errorSound.PlaySync();
         }
 
-        static void PlayErrorSoundBeep()
+        static void PlayBeepSound()
         {
             Console.Beep();
         }
@@ -430,7 +430,7 @@ namespace com.clusterrr.Famicom.Dumper
             if (OperatingSystem.IsWindows())
                 PlayErrorSoundWav();
             else
-                PlayErrorSoundBeep();
+                PlayBeepSound();
         }
 
         [SupportedOSPlatform("windows")]
@@ -443,7 +443,15 @@ namespace com.clusterrr.Famicom.Dumper
         public static void PlayDoneSound()
         {
             if (OperatingSystem.IsWindows())
+            {
                 PlayDoneSoundWav();
+            }
+            else
+            {
+                PlayBeepSound();
+                PlayBeepSound();
+                PlayBeepSound();
+            }
         }
         #endregion
 
@@ -505,7 +513,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine("OK");
         }
 
-        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName, int prgSize, int chrSize, int 
+        static void Dump(IFamicomDumperConnectionExt dumper, string fileName, string? mapperName, int prgSize, int chrSize, int
             prgRamSize, int prgNvRamSize, int chrRamSize, int chrNvRamSize, string? unifName, string? unifAuthor, bool battery)
         {
             var mapper = Scripting.GetMapper(mapperName);
@@ -540,7 +548,7 @@ namespace com.clusterrr.Famicom.Dumper
                     var nesFile = new NesFile();
                     nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper >= 0)
                             || (prgRamSize >= 0) || (prgNvRamSize >= 0)
-                            || (chrRamSize >= 0) || (chrNvRamSize >= 0)) 
+                            || (chrRamSize >= 0) || (chrNvRamSize >= 0))
                         ? NesFile.iNesVersion.NES20 : NesFile.iNesVersion.iNES;
                     Console.Write($"Saving as {(nesFile.Version switch { NesFile.iNesVersion.NES20 => "NES 2.0", _ => "iNES" })} file: {fileName}... ");
                     if (mapper.Number < 0)
