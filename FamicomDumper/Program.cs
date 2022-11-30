@@ -485,7 +485,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "--chr-nvram-size <size>", "size of CHR NVRAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
             Console.WriteLine(" {0,-30}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
-            Console.WriteLine(" {0,-30}{1}", "--unif-author <name>", "author of dump for UNIF dumps");
+            Console.WriteLine(" {0,-30}{1}", "--unif-author <name>", "author of dump name for UNIF dumps");
             Console.WriteLine(" {0,-30}{1}", "--fds-sides", "number of FDS sides to dump (default - 1)");
             Console.WriteLine(" {0,-30}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-30}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
