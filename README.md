@@ -79,13 +79,13 @@ Available options:
 ## Notes
 **--port** option can be used to specify COM port number as "COMx" on Windows or as path to serial port device on Linux. Also, if you are using [old version](https://github.com/ClusterM/famicom-dumper) of the dumper, you can specify FT232 chip serial number. If this option is not not specified, port will be detected automatically based on the device name.
 
-**--mapper** option can be mapper script filename, mapper number or mapper name. If it's specified as a filename, the program will look for it in *<current directory>/mappers* directory and */usr/share/famicom-dumper/mappers* directory (on *nix systems). **--mappers** option can be used to override directory to search. Same directories will be used to search mapper script when mapper number or mapper name is specified. Mapper number can be specified as <mapper number>.<submapper number> in case when submapper is non-zero. Full file path also can be used. 
+**--mapper** option can be mapper script filename, mapper number or mapper name. If it's specified as a filename, the program will look for it in *<current directory>/mappers* directory and */usr/share/famicom-dumper/mappers* directory (on *nix systems). **--mappers** option can be used to override directory to search. Same directories will be used to search mapper script when mapper number or mapper name is specified. Mapper number can be specified as <mapper number>.<submapper number> in case when submapper is non-zero. Full file path also can be used.
     
 **--file** option used in multiple cases. It's used to specify output filename when dumping cartridge. Output format will be detected based on extension: ".nes" for iNES or NES 2.0, .unf for UNIF and ".bin" for raw binary file. NES 2.0 container will be used in cases: when submapper is non-zero or one if the options **--prg-ram-size**, **--chr-ram-size**, **--prg-nvram-size**, **--chr-nvram-size** is set. FDS container will be used in case of dumping FDS cards. In case of cartridge/disk writing this options is used to specify input file name. File format also will be detected based on file extension.
 
 **--prg-size** and **--chr-size** options will override default cartridge memory size when dumping.
     
-**--cs-file** is used with "*script*" command usually. But it's also used in case when other command is specified: script will be executed before other actions.
+**--cs-file** is used with **script** command usually. But it's also used in case when other command is specified: script will be executed before other actions. The program will look for the script in *<current directory>/scripts* directory and */usr/share/famicom-dumper/scripts* directory (on *nix systems). Full file path also can be used.
     
 **--reset** options will simulate reset before command execution. **reset** command can be used to perform reset only, without any other actions.
     
