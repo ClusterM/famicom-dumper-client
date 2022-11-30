@@ -311,7 +311,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "filename":
                             filenameParamExists = true;
                             if (string.IsNullOrEmpty(filename) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --file is not specified");
                             if (string.IsNullOrEmpty(filename) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -324,7 +324,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "prgsize":
                             prgSizeParamExists = true;
                             if ((prgSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-size is not specified");
                             if ((prgSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -333,7 +333,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "chrsize":
                             chrSizeParamExists = true;
                             if ((chrSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-size is not specified");
                             if ((chrSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -342,7 +342,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "prgramsize":
                             prgRamSizeParamExists = true;
                             if ((prgRamSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-ram-size is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-ram-size is not specified");
                             if ((prgRamSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -351,7 +351,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "chrramsize":
                             chrRamSizeParamExists = true;
                             if ((chrRamSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-ram-size is not specified");
+                                throw new ArgumentException(parameterInfo.Name, $"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-ram-size is not specified");
                             if ((chrRamSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -360,7 +360,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "prgnvramsize":
                             prgNvRamSizeParamExists = true;
                             if ((prgNvRamSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-nvram-size is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --prg-nvram-size is not specified");
                             if ((prgNvRamSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -369,7 +369,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "chrnvramsize":
                             chrNvRamSizeParamExists = true;
                             if ((chrNvRamSize < 0) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-nvram-size is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --chr-nvram-size is not specified");
                             if ((chrNvRamSize < 0) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -378,7 +378,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "unifname":
                             unifNameParamExists = true;
                             if (string.IsNullOrEmpty(unifName) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-name is not specified");
                             if (string.IsNullOrEmpty(unifName) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
@@ -387,7 +387,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "unifauthor":
                             unifAuthorParamExists = true;
                             if (string.IsNullOrEmpty(unifAuthor) && !parameterInfo.HasDefaultValue)
-                                throw new ArgumentNullException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
+                                throw new ArgumentException($"{program.Name}.{SCRIPT_START_METHOD} declared with \"{signature}\" parameter but --unif-author is not specified");
                             if (string.IsNullOrEmpty(unifAuthor) && parameterInfo.HasDefaultValue)
                                 parameters.Add(parameterInfo.DefaultValue!);
                             else
