@@ -3,6 +3,8 @@
 
 This is the client for the [Famicom Dumper/Programmer](https://github.com/ClusterM/famicom-dumper-writer).
 
+[Old version](https://github.com/ClusterM/famicom-dumper) of the dumper is also partically supported.
+
 ## Requirements
 This application developed using .NET 6.0, so it can be run on Windows (x86, x64, arm, arm64), Linux (x64, arm, arm64) and OSX (x64, arm64). You need either install the [ASP.NET Core Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) framework or use the self-contained version.
 
@@ -62,7 +64,7 @@ Available options:
 - **--cs-file** <*C#_file*> - execute C# script from file
 - **--reset** - simulate reset first
 - **--unif-name** <*name*> - internal ROM name for UNIF dumps
-- **--unif-author** <*name*> - author of dump for UNIF dumps
+- **--unif-author** <*name*> - author of dump name for UNIF dumps
 - **--fds-sides** - number of FDS sides to dump (default - 1)
 - **--fds-no-header** - do not add header to output file during FDS dumping
 - **--fds-dump-hidden** - try to dump hidden files during FDS dumping (used for some copy-protected games)
@@ -72,16 +74,24 @@ Available options:
 - **--lock** - write-protect COOLBOY/COOLGIRL sectors after writing
 - **--sound** - play sound when done or error occured
 
+## Notes
+**--port** option can be used to specify COM port number as "COMx" on Windows or as path to serial port device on Linux. Also, if you are using [old version](https://github.com/ClusterM/famicom-dumper) of the dumper, you can specify FT232 chip serial number. If this option is not not specified, port will be detected automatically based on the device name.
 
+**--mapper** option can be mapper script filename, mapper number or mapper name. If it's specified as a filename, the program will look for it in *<current directory>/mappers* directory and */usr/share/famicom-dumper/mappers* directory (on *nix systems). **--mappers** option can be used to override directory to search. Same directories will be used to search mapper script when mapper number or mapper name is specified. Mapper number can be specified as <mapper number>.<submapper number> in case when submapper is non-zero. Full file path also can be used. 
+    
+**--file** option used in multiple cases. It's used to specify output filename when dumping cartridge. Output format will be detected based on extension: ".nes" for iNES or NES 2.0, .unf for UNIF and ".bin" for raw binary file. NES 2.0 container will be used in cases: when submapper is non-zero or one if the options **--prg-ram-size**, **--chr-ram-size**, **--prg-nvram-size**, **--chr-nvram-size** is set. FDS container will be used in case of dumping FDS cards. In case of cartridge/disk writing this options is used to specify input file name. File format also will be detected based on file extension.
+
+**--prg-size** and **--chr-size** options will override default cartridge memory size when dumping.
+    
+**--cs-file** is used with "*script*" command usually. But it's also used in case when other command is specified: script will be executed before other actions.
+    
+**--reset** options will simulate reset before command execution. **reset** command can be used to perform reset only, without any other actions.
+    
+**--lock** option used to set PPB bits of flash memory for non-empty sectors (sectors with any non-FF bytes). It's used mostly to protect cartridge from self-erase in console. This protection bits is not permanent and will be cleared before cartridre rewrite.
+    
+**--sound** option used to play built-in "*done*" or "*error*" sound on Windows. "*bell*" sound will be used on *nix systems in case of errors and tripple "*bell*" when operation is done.
+    
 ## Mapper script files
-Mapper script files are stored in the "mappers" directory. By default it's:
-- <*current_directory*>/mappers
-- /usr/share/famicom-dumper/mappers (on *nix systems)
-
-Also you can specify it using **--mappers** option.
-
-When you specify a mapper number or name, the application compiles the scripts to find a matching one.
-
 Mapper scripts are written in C# language. Each script must contain class (any name allowed) that impliments [IMapper](FamicomDumper/IMapper.cs) interface.
 ```C#
 public interface IMapper
