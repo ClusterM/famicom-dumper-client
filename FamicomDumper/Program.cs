@@ -347,6 +347,9 @@ namespace com.clusterrr.Famicom.Dumper
                         case "info-coolgirl":
                             new CoolgirlWriter(dumper).PrintFlashInfo();
                             break;
+                        case "info-unrom512":
+                            new Unrom512Writer(dumper).PrintFlashInfo();
+                            break;
                         case "script":
                             if (string.IsNullOrEmpty(csFile))
                                 throw new ArgumentNullException("--cs-file", "Please specify C# script using --cs-file argument");
@@ -461,10 +464,11 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "write-coolboy", "write COOLBOY cartridge");
             Console.WriteLine(" {0,-30}{1}", "write-coolboy-gpio", "write COOLBOY cartridge using dumper's GPIO pins");
             Console.WriteLine(" {0,-30}{1}", "write-coolgirl", "write COOLGIRL cartridge");
-            Console.WriteLine(" {0,-30}{1}", "write-unrom512", "write UNROM512 cartridge");
-            Console.WriteLine(" {0,-30}{1}", "info-coolboy", "show information about COOLBOY's flash memory");
-            Console.WriteLine(" {0,-30}{1}", "info-coolboy-gpio", "show information about COOLBOY's flash memory using dumper's GPIO pins");
-            Console.WriteLine(" {0,-30}{1}", "info-coolgirl", "show information about COOLGIRL's flash memory");
+            Console.WriteLine(" {0,-30}{1}", "write-unrom512", "write UNROM-512 cartridge");
+            Console.WriteLine(" {0,-30}{1}", "info-coolboy", "show information about COOLBOY cartridge's flash memory");
+            Console.WriteLine(" {0,-30}{1}", "info-coolboy-gpio", "show information about COOLBOY cartridge's flash memory using dumper's GPIO pins");
+            Console.WriteLine(" {0,-30}{1}", "info-coolgirl", "show information about COOLGIRL cartridge's flash memory");
+            Console.WriteLine(" {0,-30}{1}", "info-unrom512", "show information about UNROM-512 cartridge's flash memory");
             Console.WriteLine();
             Console.WriteLine("Available options:");
             Console.WriteLine(" {0,-30}{1}", "--port <com>", "serial port of dumper or serial number of dumper device, default - auto");
@@ -472,13 +476,13 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "--host <host>", "enable gRPC client and connect to specified host");
             Console.WriteLine(" {0,-30}{1}", "--mappers <directory>", "directory to search mapper scripts");
             Console.WriteLine(" {0,-30}{1}", "--mapper <mapper>", "number, name or path to C# script of mapper for dumping, default - 0 (NROM)");
-            Console.WriteLine(" {0,-30}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .png or .sav)");
+            Console.WriteLine(" {0,-30}{1}", "--file <output.nes>", "output/input filename (.nes, .fds, .sav, etc.)");
             Console.WriteLine(" {0,-30}{1}", "--prg-size <size>", "size of PRG memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--chr-size <size>", "size of CHR memory to dump, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--prg-ram-size <size>", "size of PRG RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--chr-ram-size <size>", "size of CHR RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-30}{1}", "--prg-nvram-size <size>", "size of PRG RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
-            Console.WriteLine(" {0,-30}{1}", "--chr-nvram-size <size>", "size of NVCHR RAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--prg-nvram-size <size>", "size of PRG NVRAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
+            Console.WriteLine(" {0,-30}{1}", "--chr-nvram-size <size>", "size of CHR NVRAM memory for NES 2.0 header, you can use \"K\" or \"M\" suffixes");
             Console.WriteLine(" {0,-30}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
             Console.WriteLine(" {0,-30}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-30}{1}", "--unif-author <name>", "author of dump for UNIF dumps");
