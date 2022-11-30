@@ -1,26 +1,28 @@
 # Client (computer software) for Famicom Dumper/Programmer
 [![Build test](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml/badge.svg)](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml)
 
-This is the client for the [Famicom Dumper/Programmer](https://github.com/ClusterM/famicom-dumper-writer).
+This is a client for the [Famicom Dumper/Programmer](https://github.com/ClusterM/famicom-dumper-writer).
 
-[Old version](https://github.com/ClusterM/famicom-dumper) of the dumper is also partically supported.
+[The old version](https://github.com/ClusterM/famicom-dumper) of the dumper is also partically supported.
+
+It runs on Windows (x86, x64, arm, arm64), Linux (x64, arm, arm64) and OSX (x64, arm64)
 
 ## Requirements
-This application developed using .NET 6.0, so it can be run on Windows (x86, x64, arm, arm64), Linux (x64, arm, arm64) and OSX (x64, arm64). You need either install the [ASP.NET Core Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) framework or use the self-contained version.
+.NET 6.0 is required. You need to either install the [ASP.NET Core Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) framework or to use the self-contained version.
 
 
 ## Features
 It can be used to:
-- Dump Famicom/NES cartridges using C# scripts to describe any mapper, also it's bundled with scripts for the most popular mappers
+- Dump Famicom/NES cartridges using C# scripts to describe any mapper. Scripts for the most popular mappers are included.
 - Reverse engineer unknown mappers using C# scripts
 - Read/write battery-backed PRG RAM to transfer game saves
 - Read/write Famicom Disk System cards
-- (Re)write ultra-cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both "COOLBOY" (with $600x registers) and "MINDKIDS" (with $500x registers)
+- (Re)write ultra-cheap COOLBOY cartridges either with soldering (old revisions) or solder-free (new) versions. It also supports both "COOLBOY" (with $600x registers) and "MINDKIDS" (with $500x registers)
 - (Re)write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges
 - (Re)write UNROM-512 (Nesmaker) cartridges
-- Test hardware in cartridges
+- Test cartridge hardware
 - Do everything described above over the network
-- Access dumper from your C#, C++, Dart, Go, Java, Kotlin, Node, Objective-C, PHP, Python, Ruby, etc. code using gRPC
+- Access the dumper from your C#, C++, Dart, Go, Java, Kotlin, Node, Objective-C, PHP, Python, Ruby, etc. code using gRPC
 
 
 ## Usage
