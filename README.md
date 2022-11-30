@@ -1,34 +1,30 @@
-# Client (PC-software) for Famicom Dumper/Programmer
+# Client (computer software) for Famicom Dumper/Programmer
 [![Build test](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml/badge.svg)](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml)
 
-This is the client for the Famicom Dumper/Programmer hardware:
-- [https://github.com/ClusterM/famicom-dumper-writer](https://github.com/ClusterM/famicom-dumper-writer) - my own dumper project
-- [https://github.com/postal2201/8-bit-DumpShield](https://github.com/postal2201/8-bit-DumpShield) - Arduino MEGA2560 Shield
+This is the client for the [Famicom Dumper/Programmer](https://github.com/ClusterM/famicom-dumper-writer).
 
 ## Requirements
-
-This application developed using .NET 5.0, so it can be run on Windows (x86, x64, arm), Linux (x64, arm) and OSX (x64). You need either install the [.NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0) framework or use the self-contained version.
+This application developed using .NET 6.0, so it can be run on Windows (x86, x64, arm, arm64), Linux (x64, arm, arm64) and OSX (x64, arm64). You need either install the [ASP.NET Core Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) framework or use the self-contained version.
 
 
 ## Features
-
 It can be used to:
-- Dump Famicom/NES cartridges using C# scripts to describe any mapper, also it's bundled with scripts for some popular mappers
+- Dump Famicom/NES cartridges using C# scripts to describe any mapper, also it's bundled with scripts for the most popular mappers
 - Reverse engineer unknown mappers using C# scripts
 - Read/write battery-backed PRG RAM to transfer game saves
 - Read/write Famicom Disk System cards
-- (Re)write ultra-cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both COOLBOY (with $600x registers) and COOLBOY2 aka MINDKIDS (with $500x registers)
+- (Re)write ultra-cheap COOLBOY cartridges using both soldering (for old revisions) and soldering-free (new ones) versions, also it supports both "COOLBOY" (with $600x registers) and "MINDKIDS" (with $500x registers)
 - (Re)write [COOLGIRL](https://github.com/ClusterM/coolgirl-famicom-multicard) cartridges
+- (Re)write UNROM-512 (Nesmaker) cartridges
 - Test hardware in cartridges
 - Do everything described above over the network
 - Access dumper from your C#, C++, Dart, Go, Java, Kotlin, Node, Objective-C, PHP, Python, Ruby, etc. code using gRPC
 
 
 ## Usage
-
 It's a command-line application.
 
-Usage: `famicom-dumper \<command\> [options]`
+Usage: `famicom-dumper <command> [options]`
 
 Available commands:
 - **list-mappers** - list available mappers to dump
@@ -43,9 +39,11 @@ Available commands:
 - **write-coolboy** - write COOLBOY cartridge
 - **write-coolboy-gpio** - write COOLBOY cartridge using dumper's GPIO pins
 - **write-coolgirl** - write COOLGIRL cartridge
-- **write-unrom512** - write UNROM512 cartridge
-- **info-coolboy** - show information about COOLBOY's flash memory
-- **info-coolgirl** - show information about COOLGIRL's flash memory
+- **write-unrom512** - write UNROM-512 cartridge
+- **info-coolboy** - show information about COOLBOY cartridge's flash memory
+- **info-coolboy-gpio** - show information about COOLBOY cartridge's flash memory using dumper's GPIO pins
+- **info-coolgirl** - show information about COOLGIRL cartridge's flash memory
+- **info-unrom512** - show information about UNROM-512 cartridge's flash memory
 
 Available options:
 - **--port** <*com*> - serial port of dumper or serial number of dumper device, default - **auto**
@@ -53,22 +51,26 @@ Available options:
 - **--host** <*host*> - enable gRPC client and connect to the specified host
 - **--mappers** <*directory*> - directory to search mapper scripts
 - **--mapper** <*mapper*> - number, name or path to C# script of mapper for dumping, default - **0 (NROM)**
-- **--file** <*output.nes*> - output/input filename (.nes, .fds, .png or .sav)
+- **--file** <*output.nes*> - output/input filename (.nes, .fds, .sav, etc.)
 - **--prg-size** <*size*> - size of PRG memory to dump, you can use "K" or "M" suffixes
 - **--chr-size** <*size*> - size of CHR memory to dump, you can use "K" or "M" suffixes
+- **--prg-ram-size** - size of PRG RAM memory for NES 2.0 header, you can use "K" or "M" suffixes
+- **--chr-ram-size** - size of CHR RAM memory for NES 2.0 header, you can use "K" or "M" suffixes
+- **--prg-nvram-size** - size of PRG NVRAM memory for NES 2.0 header, you can use "K" or "M" suffixes
+- **--chr-nvram-size** - size of CHR NVRAM memory for NES 2.0 header, you can use "K" or "M" suffixes
 - **--battery** - set "battery" flag in ROM header after dumping
 - **--cs-file** <*C#_file*> - execute C# script from file
 - **--reset** - simulate reset first
 - **--unif-name** <*name*> - internal ROM name for UNIF dumps
 - **--unif-author** <*name*> - author of dump for UNIF dumps
-- **--fds-sides** - number of FDS sides to dump (default 1)
+- **--fds-sides** - number of FDS sides to dump (default - 1)
 - **--fds-no-header** - do not add header to output file during FDS dumping
 - **--fds-dump-hidden** - try to dump hidden files during FDS dumping (used for some copy-protected games)
 - **--bad-sectors** <*bad_sectors*> - comma separated list of bad sectors for COOLBOY/COOLGIRL writing
 - **--ignore-bad-sectors** - ignore bad sectors while writing COOLBOY/COOLGIRL
-- **--sound** - play sound when done or error occured
-- **--verify** - verify COOLBOY/COOLGIRL/FDS after writing
+- **--verify** - verify COOLBOY/COOLGIRL/UNROM-512/FDS after writing
 - **--lock** - write-protect COOLBOY/COOLGIRL sectors after writing
+- **--sound** - play sound when done or error occured
 
 
 ## Mapper script files
@@ -140,8 +142,8 @@ public interface IMapper
     /// This method must return mirroring type, it can call dumper.GetMirroring() if it's fixed
     /// </summary>
     /// <param name="dumper">FamicomDumperConnection object to access cartridge</param>
-    /// <returns></returns>
-    NesFile.MirroringType GetMirroring(IFamicomDumperConnection dumper);
+    /// <returns>Mirroring type</returns>
+    MirroringType GetMirroring(IFamicomDumperConnection dumper);
 }
 ```
 
@@ -160,7 +162,7 @@ public interface IFamicomDumperConnection : IDisposable
     /// <param name="address">Address to read from</param>
     /// <returns>Data from CPU (PRG) bus</returns>
     byte ReadCpu(ushort address);
-
+    
     /// <summary>
     /// Read data from CPU (PRG) bus
     /// </summary>
@@ -204,7 +206,7 @@ public interface IFamicomDumperConnection : IDisposable
     /// <param name="startBlock">First block number to read (zero-based)</param>
     /// <param name="maxBlockCount">Maximum number of blocks to read</param>
     /// <returns>Array of Famicom Disk System blocks</returns>
-    (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
+    public (byte[] Data, bool CrcOk, bool EndOfHeadMeet)[] ReadFdsBlocks(byte startBlock = 0, byte maxBlockCount = byte.MaxValue);
 
     /// <summary>
     /// Write blocks to Famicom Disk System card
@@ -230,7 +232,7 @@ public interface IFamicomDumperConnection : IDisposable
     /// Read decoded current mirroring mode
     /// </summary>
     /// <returns>Current mirroring</returns>
-    NesFile.MirroringType GetMirroring();
+    MirroringType GetMirroring();
 }
 ```
 
@@ -238,7 +240,6 @@ Check "mappers" directory for examples.
 
 
 ## Other scripts
-
 You can create and run custom C# scripts to interact with dumper and cartridge. It's usefull for reverse engineering. Each script must contain class (any name allowed) that contains **Run** method. You can specify those parameters in any order:
 
 *  `IFamicomDumperConnection dumper` - dumper object used to access dumper
@@ -246,6 +247,10 @@ You can create and run custom C# scripts to interact with dumper and cartridge. 
 *  `IMapper mapper`                  - mapper object compiled from mapper script specified by --mapper argument
 *  `int prgSize`                     - PRG size specified by --prg-size argument (parsed)
 *  `int chrSize`                     - CHR size specified by --chr-size argument (parsed)
+*  `int prgRamSize`                  - PRG RAM size specified by --prg-ram-size argument (parsed)
+*  `int chrRamSize`                  - CHR RAM size specified by --chr-ram-size argument (parsed)
+*  `int prgNvramSize`                - PRG NVRAM size specified by --prg-nvram-size argument (parsed)
+*  `int chrNvramSize`                - CHR NVRAM size specified by --chr-nvram-size argument (parsed)
 *  `string unifName`                 - string specified by --unif-name argument
 *  `string unifAuthor`               - string specified by --unif-author argument
 *  `bool battery`                    - true if --battery argument is specified
@@ -306,7 +311,6 @@ So you can write your own code to interact with dumper object and read/write dat
 
 
 ## gRPC
-
 You can start this application as gRPC server on one PC:
 ```
 famicom-dumper server --port COM14
@@ -323,8 +327,7 @@ Also you can use gRPC to access dumper from other applications or your own code 
 
 
 ## Examples
-
-Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR sizes are default.
+Dump NROM-cartridge using dumper on port "COM14" to the file "game.nes". PRG and CHR sizes are default.
 ~~~~
  > famicom-dumper dump --port COM14 --mapper nrom --file game.nes
  Dumper initialization... OK
@@ -338,7 +341,7 @@ Dump NROM-cartridge using dumper on port "COM14" to file "game.nes". PRG and CHR
  Saving to game.nes... OK
 ~~~~
 
-Dump MMC1-cartridge (iNES mapper #1) using dumper with serial number "A9Z1A0WD". PRG size is 128 kilobytes, CHR size is 128 kilobytes too.
+Dump MMC1-cartridge (iNES mapper #1) using dumper with FTDI serial number "A9Z1A0WD" and save it to game.nes file. PRG size is 128 kilobytes, CHR size is 128 kilobytes too.
 ~~~~
 >famicom-dumper dump --port A9Z1A0WD --mapper 1 --prg-size 128K --chr-size 128K --file game.nes
 Dumper initialization... OK
@@ -355,7 +358,7 @@ Saving to game.nes... OK
 
 Dump 32K of PRG and 8K of CHR as simple NROM cartridge but execute C# script first:
 ~~~~
->famicom-dumper dump --port COM14 --mapper 0 --prg-size 32K --chr-size 8K --file game.nes --cs-file init.cs"
+>famicom-dumper dump --port /dev/ttyUSB0 --mapper 0 --prg-size 32K --chr-size 8K --file game.nes --cs-file init.cs
 Dumper initialization... OK
 Compiling init.cs...
 Running init.Run()...
@@ -382,9 +385,23 @@ Reading PRG banks #0/4 and #0/5...
 Saving to coolboy.unf... OK
 ~~~~
 
+Dump 32MBytes of COOLBOY cartridge using C# script and save it as NES 2.0 file with some extra info:
+~~~~
+>famicom-dumper dump --port COM14 --mapper mappers\coolboy.cs --prg-size 32M --file coolboy.nes --prg-nvram-size 8K --chr-ram-size 256K
+Dumper initialization... OK
+Using mapper: COOLBOY
+Dumping...
+PRG memory size: 32768K
+Reading PRG banks #0/0 and #0/1...
+Reading PRG banks #0/2 and #0/3...
+Reading PRG banks #0/4 and #0/5...
+...
+Saving to coolboy.unf... OK
+~~~~
+
 Read battery-backed save from MMC1 cartridge:
 ~~~~
->famicom-dumper read-prg-ram --port COM14 --mapper mmc1 --file "zelda.sav"
+>famicom-dumper read-prg-ram --port COM14 --mapper mmc1 --file zelda.sav
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Reading PRG-RAM... OK
@@ -392,7 +409,7 @@ Reading PRG-RAM... OK
 
 Write battery-backed save back to MMC1 cartridge:
 ~~~~
->famicom-dumper write-prg-ram --port COM14 --mapper mmc1 --file "zelda_hacked.sav"
+>famicom-dumper write-prg-ram --port COM14 --mapper mmc1 --file zelda_hacked.sav
 Dumper initialization... OK
 Using mapper: #1 (MMC1)
 Writing PRG-RAM... OK
@@ -497,10 +514,9 @@ Running DemoScript.Run()...
 ~~~~
 
 ## Download
-
 You can always download latest version at [https://github.com/ClusterM/famicom-dumper-client/releases](https://github.com/ClusterM/famicom-dumper-client/releases)
+Also, you can download automatic nightly builds in GitHub Actions Artifacts: [https://github.com/ClusterM/famicom-dumper-client/actions](https://github.com/ClusterM/famicom-dumper-client/actions)
 
-
-## Donation and contact
-
-E-mail and PayPal: clusterrr@clusterrr.com
+## Donations
+* [Donation Alerts](https://www.donationalerts.com/r/clustermeerkat)
+* [Boosty](https://boosty.to/cluster)
