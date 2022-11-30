@@ -57,7 +57,7 @@
     public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
     {
         var banks = size / 0x400;
-        if (banks > 512) throw new ArgumentOutOfRangeException("size", "CHR size is too big");
+        if (banks > 512) throw new ArgumentOutOfRangeException("CHR size is too big");
         for (var bank = 0; bank < banks; bank++)
         {
             Console.Write($"Reading CHR banks #{bank}/{banks}... ");

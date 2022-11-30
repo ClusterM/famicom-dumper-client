@@ -83,7 +83,7 @@ class DumpTiles
 
         public Image GetAllTiles()
         {
-            if (TilesCount == 0) throw new ArgumentOutOfRangeException("TilesCount", "There are no CHR data in this ROM");
+            if (TilesCount == 0) throw new ArgumentOutOfRangeException("There are no CHR data in this ROM");
             int pages = TilesCount / 256;
             var result = new Bitmap(256, pages * 128 / 2);
             var gr = Graphics.FromImage(result);

@@ -308,34 +308,34 @@ namespace com.clusterrr.Famicom.Dumper
                             break;
                         case "write-fds":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             FDS.WriteFDS(dumper, filename, needCheck);
                             break;
                         case "write-prg-ram":
                         case "write-sram":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             WritePrgRam(dumper, filename, mapperName);
                             break;
                         case "write-coolboy":
                         case "write-coolboy-direct":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             new CoolboyWriter(dumper, coolboyGpioMode: false).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolboy-gpio":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             new CoolboyWriter(dumper, coolboyGpioMode: true).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             new CoolgirlWriter(dumper).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-unrom512":
                             if (string.IsNullOrEmpty(filename))
-                                throw new ArgumentNullException("--file", "Please specify ROM filename using --file argument");
+                                throw new ArgumentNullException("Please specify ROM filename using --file argument");
                             new Unrom512Writer(dumper).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "info-coolboy":
@@ -352,7 +352,7 @@ namespace com.clusterrr.Famicom.Dumper
                             break;
                         case "script":
                             if (string.IsNullOrEmpty(csFile))
-                                throw new ArgumentNullException("--cs-file", "Please specify C# script using --cs-file argument");
+                                throw new ArgumentNullException("Please specify C# script using --cs-file argument");
                             break;
                         case "server":
                             if (dumper is FamicomDumperLocal d)
