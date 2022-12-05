@@ -57,7 +57,8 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                 coolboyVersion = CoolboyVersion.COOLBOY;
             else if (v6000 == 1 && v5000 == 0)
                 coolboyVersion = CoolboyVersion.MINDKIDS;
-            else throw new IOException("Can't detect cartridge version");
+            else
+                throw new IOException("Can't detect cartridge version");
             Console.WriteLine($"Cartridge version: {coolboyVersion}");
         }
 

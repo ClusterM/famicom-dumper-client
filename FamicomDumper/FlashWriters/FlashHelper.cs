@@ -1,6 +1,7 @@
 ﻿using com.clusterrr.Famicom.DumperConnection;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace com.clusterrr.Famicom.Dumper.FlashWriters
 {
@@ -31,10 +32,6 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                 ResetFlash(dumper);
                 dumper.WriteCpu(0x8AAA, 0x98); // CFI mode
                 var cfiRaw = dumper.ReadCpu(0x8000, 0x100);
-                if (cfiRaw[0x20] != 0x51 || cfiRaw[0x22] != 0x52 || cfiRaw[0x24] != 0x59)
-                {
-                    throw new IOException("Can't enter CFI mode. Invalid flash memory? Broken cartridge? Is it inserted?");
-                }
                 var cfi = new CFIInfo(cfiRaw, CFIInfo.ParseMode.Every2Bytes);
                 return cfi;
             }

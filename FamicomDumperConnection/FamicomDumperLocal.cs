@@ -322,7 +322,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void EraseUnrom512()
         {
             if (ProtocolVersion < 5)
-                throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM512 cartridges");
+                throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM-512 cartridges");
             SendCommand(DumperCommand.UNROM512_ERASE_REQUEST, Array.Empty<byte>());
             var (Command, Data) = RecvCommand();
             if (Command == DumperCommand.FLASH_ERASE_ERROR)
@@ -341,7 +341,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void WriteUnrom512(uint address, byte[] data)
         {
             if (ProtocolVersion < 5)
-                throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM512 cartridges");
+                throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM-512 cartridges");
             int wlength = data.Length;
             int pos = 0;
             while (wlength > 0)

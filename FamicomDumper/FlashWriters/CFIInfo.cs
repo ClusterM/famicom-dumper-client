@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -115,21 +116,11 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             switch (parseMode)
             {
                 case ParseMode.Every2Bytes:
-                    {
-                        var newData = new byte[data.Length / 2];
-                        for (int i = 0; i < newData.Length; i++)
-                            newData[i] = data[i * 2];
-                        data = newData;
-                        break;
-                    }
+                    data = Enumerable.Range(0, data.Length).Where(i => i % 2 == 0).Select(i => data[i]).ToArray();
+                    break;
                 case ParseMode.Every4Bytes:
-                    {
-                        var newData = new byte[data.Length / 4];
-                        for (int i = 0; i < newData.Length; i++)
-                            newData[i] = data[i * 4];
-                        data = newData;
-                        break;
-                    }
+                    data = Enumerable.Range(0, data.Length).Where(i => i % 4 == 0).Select(i => data[i]).ToArray();
+                    break;
             }
             if (data[0x10] != 0x51 || data[0x11] != 0x52 || data[0x12] != 0x59)
             {
