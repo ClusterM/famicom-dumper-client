@@ -136,6 +136,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             int currentErrorCount = 0;
             var newBadSectorsList = new List<int>();
             var stopwatch = new Stopwatch();
+            bool sectorContainsData = false;
             stopwatch.Start();
 
             while (totalBank < banks)
@@ -169,11 +170,8 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
                     if (currentSectorBank == 0)
                     {
+                        sectorContainsData = false;
                         // TODO: Should i add option to skip empty sectors erasing?
-                        /*
-                        if (PRG.Skip(offset).Take(flash.Regions[region].SizeOfBlocks).Where(b => b != 0xFF).Any())
-                        {
-                        */
                         // Erase sector
                         switch (EraseMode)
                         {
@@ -186,20 +184,10 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                         }
                         Erase(offset);
                         Console.WriteLine("OK");
-                        /*
-                        }
-                        else
-                        {
-                            // Skip sector
-                            Console.WriteLine($"Sector #{totalSector} is empty, let's skip it.");
-                            totalBank += flash.Regions[region].SizeOfBlocks / bankSize;
-                            currentSectorBank += flash.Regions[region].SizeOfBlocks / bankSize;
-                            continue;
-                        }
-                        */
                     }
 
                     var data = PRG.Skip(offset).Take(BankSize).ToArray();
+                    sectorContainsData |= data.Where(b => b != 0xFF).Any();
                     var timePassed = stopwatch.Elapsed;
                     var timeEstimated = offset > 0 ? timePassed * PRG.Length / offset : new TimeSpan();
                     Console.Write($"Writing bank #{totalBank}/{banks} ({(offset > 0 ? 100L * offset / PRG.Length : 0)}%, {timePassed.Hours:D2}:{timePassed.Minutes:D2}:{timePassed.Seconds:D2}/{timeEstimated.Hours:D2}:{timeEstimated.Minutes:D2}:{timeEstimated.Seconds:D2})... ");
@@ -208,9 +196,10 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
                     if (EraseMode == FlashEraseMode.Sector)
                     {
-                        if ((currentSectorBank + 1) * BankSize >= flash.Regions![region].SizeOfBlocks)
+                        if (((currentSectorBank + 1) * BankSize >= flash.Regions![region].SizeOfBlocks) // end of sector
+                            || (totalBank + 1 >= banks)) // last bank
                         {
-                            if (CanUsePpbs && writePBBs)
+                            if (CanUsePpbs && writePBBs && sectorContainsData)
                                 PPBSet(offset);
                             currentErrorCount = 0;
                         }

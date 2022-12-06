@@ -5,7 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>com.clusterrr.Famicom.Dumper</RootNamespace>
     <AssemblyName>famicom-dumper</AssemblyName>
-    <Version>3.1.0</Version>
+    <Version>3.2.0</Version>
     <RepositoryUrl>https://github.com/ClusterM/famicom-dumper-client</RepositoryUrl>
     <Authors>Alexey "Cluster" Avdyukhin</Authors>
     <Description>Client (PC-software) for Famicom Dumper/Programmer</Description>
@@ -289,8 +289,8 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <Product>Famicom Dumper Client</Product>
-    <AssemblyVersion>3.1.0</AssemblyVersion>
-    <FileVersion>3.1.0</FileVersion>
+    <AssemblyVersion>3.2.0</AssemblyVersion>
+    <FileVersion>3.2.0</FileVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
