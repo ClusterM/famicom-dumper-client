@@ -1,4 +1,4 @@
-# Client (computer software) for Famicom Dumper/Programmer
+# Client (computer software) for Famicom/NES Dumper/Programmer
 [![Build test](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml/badge.svg)](https://github.com/ClusterM/famicom-dumper-client/actions/workflows/build-test.yml)
 
 This is a client for the [Famicom Dumper/Programmer](https://github.com/ClusterM/famicom-dumper-writer).
@@ -527,6 +527,7 @@ Running DemoScript.Run()...
 
 ## Download
 You can always download latest version at [https://github.com/ClusterM/famicom-dumper-client/releases](https://github.com/ClusterM/famicom-dumper-client/releases)
+
 Also, you can download automatic nightly builds in GitHub Actions Artifacts: [https://github.com/ClusterM/famicom-dumper-client/actions](https://github.com/ClusterM/famicom-dumper-client/actions)
 
 ## Donations
