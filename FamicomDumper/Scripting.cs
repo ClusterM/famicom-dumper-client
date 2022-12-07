@@ -6,22 +6,23 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.clusterrr.Famicom.Dumper
 {
     static class Scripting
     {
         public static string[] MappersSearchDirectories = {
+            Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!, "mappers"),
             Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
             "/usr/share/famicom-dumper/mappers"
         };
         public static readonly string[] ScriptsSearchDirectories = {
+            Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!, "scripts"),
             Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
             "/usr/share/famicom-dumper/scripts"
         };
@@ -37,7 +38,6 @@ namespace com.clusterrr.Famicom.Dumper
             var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
 
             // Try to load cached assembly
-            ;
             if (File.Exists(cacheFile))
             {
                 var cacheCompileTime = new FileInfo(cacheFile).LastWriteTime;
@@ -241,7 +241,7 @@ namespace com.clusterrr.Famicom.Dumper
         {
             if (!File.Exists(scriptPath))
             {
-                var scriptsPathes = ScriptsSearchDirectories.Select(d => Path.Combine(d, scriptPath)).Where(f => File.Exists(f));
+                var scriptsPathes = ScriptsSearchDirectories.Distinct().Select(d => Path.Combine(d, scriptPath)).Where(f => File.Exists(f));
                 if (!scriptsPathes.Any())
                 {
                     Console.WriteLine($"{Path.Combine(Directory.GetCurrentDirectory(), scriptPath)} not found");
