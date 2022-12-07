@@ -126,7 +126,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                 Console.WriteLine($"ERROR! {ex.Message}. Lets continue anyway.");
             }
 
-            int banks = PRG.Length / BankSize;
+            int banks = (int)Math.Ceiling((float)PRG.Length / (float)BankSize);
             int region = 0;
             int totalSector = 0;
             int currentRegionSector = 0;
