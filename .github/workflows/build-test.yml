@@ -27,7 +27,7 @@ jobs:
       APP_NAME: famicom-dumper
       PROJECT_PATH: FamicomDumper
       OUTPUT_DIR: output
-      CONFIGURATION: Release
+      CONFIGURATION: Debug
       OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
     steps:
     - name: Checkout
