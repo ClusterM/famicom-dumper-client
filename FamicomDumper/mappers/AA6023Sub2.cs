@@ -2,7 +2,7 @@
 {
     public string Name { get => "AA6023B submapper 2"; }
     public int Number { get => 268; }
-    public byte Submapper { get => 3; }
+    public byte Submapper { get => 2; }
     public string UnifName { get => null; }
     public int DefaultPrgSize { get => 32 * 1024 * 1024; }
     public int DefaultChrSize { get => 0; }
