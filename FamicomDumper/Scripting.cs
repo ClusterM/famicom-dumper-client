@@ -37,13 +37,6 @@ namespace com.clusterrr.Famicom.Dumper
             var cacheDirectory = Path.Combine(Path.GetDirectoryName(path)!, SCRIPTS_CACHE_DIRECTORY);
             var cacheFile = Path.Combine(cacheDirectory, Path.GetFileNameWithoutExtension(path)) + ".dll";
 
-            // Backward compatibility
-            if (source.Contains("NesFile.MirroringType"))
-            {
-                Console.WriteLine("WARNING! Please replace \"NesFile.MirroringType\" with \"MirroringType\" in your scripts.");
-                source = source.Replace("NesFile.MirroringType", "MirroringType");
-            }
-
             // Try to load cached assembly
             if (File.Exists(cacheFile))
             {
@@ -64,6 +57,12 @@ namespace com.clusterrr.Famicom.Dumper
             }
 
             Console.Write($"Compiling {Path.GetFileName(path)}... ");
+            // Backward compatibility
+            if (source.Contains("NesFile.MirroringType"))
+            {
+                Console.Write("WARNING! Please replace \"NesFile.MirroringType\" with \"MirroringType\" in your scripts. ");
+                source = source.Replace("NesFile.MirroringType", "MirroringType");
+            }
 
             // And usings
             SyntaxTree tree = CSharpSyntaxTree.ParseText(source);

@@ -530,6 +530,9 @@ namespace com.clusterrr.Famicom.Dumper
                     $"{(!string.IsNullOrEmpty(mapper.Name) ? $" ({mapper.Name})" : "")}");
             else
                 Console.WriteLine($"Using UNIF mapper: {mapper.Name}");
+
+
+
             Console.WriteLine("Dumping...");
             var prg = new List<byte>();
             var chr = new List<byte>();
