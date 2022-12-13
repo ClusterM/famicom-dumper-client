@@ -70,6 +70,7 @@ Available options:
 - **--fds-sides** - number of FDS sides to dump (default - 1)
 - **--fds-no-header** - do not add header to output file during FDS dumping
 - **--fds-dump-hidden** - try to dump hidden files during FDS dumping (used for some copy-protected games)
+- **--coolboy-submapper** <*submapper number*> - submapper number to use while writing COOLBOY (default - **auto**, based on a ROM header)
 - **--bad-sectors** <*bad_sectors*> - comma separated list of bad sectors for COOLBOY/COOLGIRL writing
 - **--ignore-bad-sectors** - ignore bad sectors while writing COOLBOY/COOLGIRL
 - **--verify** - verify COOLBOY/COOLGIRL/UNROM-512/FDS after writing
