@@ -67,7 +67,8 @@ Available options:
 - **--reset** - simulate reset first
 - **--unif-name** <*name*> - internal ROM name for UNIF dumps
 - **--unif-author** <*name*> - author of dump name for UNIF dumps
-- **--fds-sides** - number of FDS sides to dump (default - 1)
+- **--fds-sides** <*sides*> - number of FDS sides to dump (default - 1)
+- **--fds-skip-sides** <*sides*> - number of FDS sides to skip while writing (default - 0)
 - **--fds-no-header** - do not add header to output file during FDS dumping
 - **--fds-dump-hidden** - try to dump hidden files during FDS dumping (used for some copy-protected games)
 - **--coolboy-submapper** <*submapper number*> - submapper number to use while writing COOLBOY (default - **auto**, based on a ROM header)
