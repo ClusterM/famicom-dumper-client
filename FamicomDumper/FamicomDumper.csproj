@@ -40,12 +40,14 @@
     <Compile Remove="mappers\57.cs" />
     <Compile Remove="mappers\58.cs" />
     <Compile Remove="mappers\87.cs" />
+    <Compile Remove="mappers\AA6023Sub0.cs" />
+    <Compile Remove="mappers\AA6023Sub1.cs" />
+    <Compile Remove="mappers\AA6023Sub2.cs" />
+    <Compile Remove="mappers\AA6023Sub3.cs" />
     <Compile Remove="mappers\AxROM.cs" />
     <Compile Remove="mappers\CNROM.cs" />
     <Compile Remove="mappers\ColorDreams.cs" />
-    <Compile Remove="mappers\Coolboy.cs" />
     <Compile Remove="mappers\Coolgirl.cs" />
-    <Compile Remove="mappers\Mindkids.cs" />
     <Compile Remove="mappers\MMC1.cs" />
     <Compile Remove="mappers\MMC2.cs" />
     <Compile Remove="mappers\MMC3.cs" />
@@ -127,6 +129,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
+    <None Include="mappers\AA6023Sub2.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
     <None Include="mappers\AxROM.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -139,11 +145,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
-    <None Include="mappers\Mindkids.cs">
+    <None Include="mappers\AA6023Sub3.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
-    <None Include="mappers\Coolboy.cs">
+    <None Include="mappers\AA6023Sub1.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\AA6023Sub0.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
