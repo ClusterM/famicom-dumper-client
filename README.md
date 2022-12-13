@@ -246,6 +246,29 @@ public interface IFamicomDumperConnection : IDisposable
     /// </summary>
     /// <returns>Current mirroring</returns>
     MirroringType GetMirroring();
+    
+    /* Optional properties */
+    /*
+    /// <summary>
+    /// Default PRG RAM size, can be used with NES 2.0
+    /// </summary>
+    int DefaultPrgRamSize { get; }
+
+    /// <summary>
+    /// Default CHR RAM size, can be used with NES 2.0
+    /// </summary>
+    int DefaultChrRamSize { get; }
+
+    /// <summary>
+    /// Default PRG NVRAM size, can be used with NES 2.0
+    /// </summary>
+    int DefaultPrgNvramSize { get; }
+
+    /// <summary>
+    /// Default CHR NVRAM size, can be used with NES 2.0
+    /// </summary>
+    int DefaultChrNvramSize { get; }
+    */
 }
 ```
 
