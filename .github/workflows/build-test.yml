@@ -29,6 +29,7 @@ jobs:
       OUTPUT_DIR: output
       CONFIGURATION: Debug
       OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
+      OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -50,11 +51,17 @@ jobs:
       working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
       run: |
         ./famicom-dumper list-mappers
+    - name: Archive
+      working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
+      env:
+        CMD: ${{ matrix.os == 'win' && 'zip -r9' || 'tar -czvf' }}
+      run: |
+        ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: ${{ env.APP_NAME }}-${{ env.OUTPUT_SUBDIR }}
-        path: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
+        path: ${{ env.OUTPUT_FILE }}
 
   upload-to-pages:
     needs: build
@@ -64,3 +71,8 @@ jobs:
       uses: actions/download-artifact@v3
     - name: Display structure of downloaded files
       run: ls -R
+    - name: Display structure of downloaded files
+      run: ls -R > index.html
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v1
