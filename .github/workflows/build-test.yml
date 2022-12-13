@@ -55,3 +55,12 @@ jobs:
       with:
         name: ${{ env.APP_NAME }}-${{ env.OUTPUT_SUBDIR }}
         path: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
+
+  upload-to-pages:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+    - name: Display structure of downloaded files
+      run: ls -R
