@@ -54,9 +54,8 @@ jobs:
         (matrix.host == 'ubuntu-latest' && matrix.os == 'linux' && matrix.arch == 'x64') 
         || (matrix.host == 'macos-latest' && matrix.os == 'osx' && matrix.arch == 'x64')
         || (matrix.host == 'windows-latest' && matrix.os == 'win' && matrix.arch == 'x64')
-      working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}
       run: |
-        ./famicom-dumper list-mappers
+        ./${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}/${{ env.APP_NAME }}/famicom-dumper list-mappers
     - name: Archive
       working-directory: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
       env:

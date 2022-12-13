@@ -208,6 +208,7 @@ namespace com.clusterrr.Famicom.Dumper
             foreach (var mapperFile in mappers
                 .Where(m => m.Value.Number >= 0)
                 .OrderBy(m => m.Value.Number)
+                .ThenBy(m => m.Value.Submapper)
                 .Union(mappers.Where(m => m.Value.Number < 0)
                 .OrderBy(m => m.Value.Name)))
             {
