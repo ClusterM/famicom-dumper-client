@@ -503,7 +503,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "--fds-sides", "number of FDS sides to dump (default - 1)");
             Console.WriteLine(" {0,-30}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-30}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
-            Console.WriteLine(" {0,-30}{1}", "--coolboy-submapper", "submapper number to use while writing COOLBOY (default - auto, based on a ROM header)");
+            Console.WriteLine(" {0,-30}{1}", "--coolboy-submapper <submapper number>", "submapper number to use while writing COOLBOY (default - auto, based on a ROM header)");
             Console.WriteLine(" {0,-30}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-30}{1}", "--cs-file <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-30}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
