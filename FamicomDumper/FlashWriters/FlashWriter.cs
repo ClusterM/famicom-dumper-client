@@ -25,7 +25,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
     {
         const int MAX_WRITE_ERROR_COUNT = 5;
 
-        protected abstract IFamicomDumperConnectionExt Dumper { get; }
+        protected abstract IFamicomDumperConnectionExt dumper { get; }
         protected abstract int BankSize { get; }
         protected abstract FlashEraseMode EraseMode { get; }
         protected virtual bool UseSubmappers { get => false; }
@@ -51,7 +51,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         }
         public abstract void PrintFlashInfo();
 
-        public void Write(string filename, IEnumerable<int>? badSectors = null, bool silent = false, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        protected virtual byte[] LoadPrg(string filename)
         {
             byte[] PRG;
             var extension = Path.GetExtension(filename).ToLower();
@@ -78,11 +78,16 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                 default:
                     throw new InvalidDataException($"Unknown file extension: {extension}, can't detect file format");
             }
+            return PRG;
+        }
 
-            Program.Reset(Dumper);
+        public void Write(string filename, IEnumerable<int>? badSectors = null, bool silent = false, bool needCheck = false, bool writePBBs = false, bool ignoreBadSectors = false)
+        {
+            var PRG = LoadPrg(filename);
+            Program.Reset(dumper);
             Init();
             InitBanking();
-            FlashHelper.ResetFlash(Dumper);
+            FlashHelper.ResetFlash(dumper);
             var flash = GetFlashInfo();
             if (flash.DeviceSize > 4 * 1024 * 1024)
                 Console.WriteLine($"Device size: {flash.DeviceSize / 1024 / 1024} MByte / {flash.DeviceSize / 1024 / 1024 * 8} Mbit");
@@ -93,8 +98,8 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 #if DEBUG
                 Console.WriteLine($"Maximum number of bytes in multi-byte program: {flash.MaximumNumberOfBytesInMultiProgram}");
 #endif
-                if (Dumper.ProtocolVersion >= 3)
-                    Dumper.SetMaximumNumberOfBytesInMultiProgram((uint)flash.MaximumNumberOfBytesInMultiProgram);
+                if (dumper.ProtocolVersion >= 3)
+                    dumper.SetMaximumNumberOfBytesInMultiProgram((uint)flash.MaximumNumberOfBytesInMultiProgram);
             }
             if (PRG.Length > flash.DeviceSize)
                 throw new InvalidDataException("This ROM is too big for this cartridge");
@@ -237,9 +242,9 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                             // Back to the first bank of the sector
                             totalBank -= currentSectorBank;
                             currentSectorBank = 0;
-                            Program.Reset(Dumper);
+                            Program.Reset(dumper);
                             InitBanking();
-                            FlashHelper.ResetFlash(Dumper);
+                            FlashHelper.ResetFlash(dumper);
                             continue;
                     }
                 }
@@ -249,7 +254,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             if (needCheck)
             {
                 Console.WriteLine("Starting verification process");
-                Program.Reset(Dumper);
+                Program.Reset(dumper);
                 InitBanking();
 
                 banks = PRG.Length / BankSize;
@@ -286,19 +291,6 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                             currentSectorBank += flash.Regions[region].SizeOfBlocks / BankSize;
                             continue;
                         }
-                        /*
-                        if (currentSectorBank == 0)
-                        {
-                            if (!PRG.Skip(offset).Take(flash.Regions[region].SizeOfBlocks).Where(b => b != 0xFF).Any())
-                            {
-                                // Skip sector
-                                Console.WriteLine($"Sector #{totalSector} is empty, let's skip it.");
-                                totalBank += flash.Regions[region].SizeOfBlocks / BankSize;
-                                currentSectorBank += flash.Regions[region].SizeOfBlocks / BankSize;
-                                continue;
-                            }
-                        }
-                        */
                     }
 
                     ushort crc = Crc16Calculator.CalculateCRC16(PRG, offset, BankSize);

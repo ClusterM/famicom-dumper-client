@@ -54,8 +54,8 @@ namespace com.clusterrr.Famicom.Dumper
         static int Main(string[] args)
         {
             Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName()?.Version?.Major}.{Assembly.GetExecutingAssembly().GetName()?.Version?.Minor}");
-            Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
 #if DEBUG
+            Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
             Console.WriteLine($"  Debug version, build time: {BUILD_TIME.ToLocalTime()}");
 #endif
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
@@ -91,6 +91,8 @@ namespace com.clusterrr.Famicom.Dumper
             bool writePBBs = false;
             List<int> badSectors = new();
             bool ignoreBadSectors = false;
+
+            int coolboySubmapper = -1;
 
             int tcpPort = DEFAULT_GRPC_PORT;
             string? remoteHost = null;
@@ -225,6 +227,10 @@ namespace com.clusterrr.Famicom.Dumper
                         case "ignore-bad-sectors":
                             ignoreBadSectors = true;
                             break;
+                        case "coolboy-submapper":
+                            coolboySubmapper = byte.Parse(value);
+                            i++;
+                            break;
                         default:
                             Console.WriteLine("Unknown option: " + param);
                             PrintHelp();
@@ -321,12 +327,12 @@ namespace com.clusterrr.Famicom.Dumper
                         case "write-coolboy-direct":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentException("Please specify ROM filename using --file argument");
-                            new CoolboyWriter(dumper, coolboyGpioMode: false).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            new CoolboyWriter(dumper, coolboyGpioMode: false, coolboySubmapper).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolboy-gpio":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentException("Please specify ROM filename using --file argument");
-                            new CoolboyWriter(dumper, coolboyGpioMode: true).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
+                            new CoolboyWriter(dumper, coolboyGpioMode: true, coolboySubmapper).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "write-coolgirl":
                             if (string.IsNullOrEmpty(filename))
@@ -339,10 +345,10 @@ namespace com.clusterrr.Famicom.Dumper
                             new Unrom512Writer(dumper).Write(filename, badSectors, silent, needCheck, writePBBs, ignoreBadSectors);
                             break;
                         case "info-coolboy":
-                            new CoolboyWriter(dumper, coolboyGpioMode: false).PrintFlashInfo();
+                            new CoolboyWriter(dumper, coolboyGpioMode: false, coolboySubmapper).PrintFlashInfo();
                             break;
                         case "info-coolboy-gpio":
-                            new CoolboyWriter(dumper, coolboyGpioMode: true).PrintFlashInfo();
+                            new CoolboyWriter(dumper, coolboyGpioMode: true, coolboySubmapper).PrintFlashInfo();
                             break;
                         case "info-coolgirl":
                             new CoolgirlWriter(dumper).PrintFlashInfo();
@@ -497,6 +503,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "--fds-sides", "number of FDS sides to dump (default - 1)");
             Console.WriteLine(" {0,-30}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-30}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
+            Console.WriteLine(" {0,-30}{1}", "--coolboy-submapper", "submapper number to use while writing COOLBOY (default - auto, based on a ROM header)");
             Console.WriteLine(" {0,-30}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-30}{1}", "--cs-file <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-30}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
@@ -518,12 +525,14 @@ namespace com.clusterrr.Famicom.Dumper
         {
             var mapper = Scripting.GetMapper(mapperName);
             if (mapper.Number >= 0)
-                Console.WriteLine($"Using mapper: #{mapper.Number} ({mapper.Name})");
+                Console.WriteLine($"Using mapper: " +
+                    $"#{mapper.Number}{(mapper.Submapper > 0 ? $".{mapper.Submapper}" : "" )}" +
+                    $"{(!string.IsNullOrEmpty(mapper.Name) ? $" ({mapper.Name})" : "")}");
             else
-                Console.WriteLine($"Using mapper: {mapper.Name}");
+                Console.WriteLine($"Using UNIF mapper: {mapper.Name}");
             Console.WriteLine("Dumping...");
-            List<byte> prg = new();
-            List<byte> chr = new();
+            var prg = new List<byte>();
+            var chr = new List<byte>();
             prgSize = prgSize >= 0 ? prgSize : mapper.DefaultPrgSize;
             chrSize = chrSize >= 0 ? chrSize : mapper.DefaultChrSize;
             if (prgSize > 0)
@@ -550,9 +559,9 @@ namespace com.clusterrr.Famicom.Dumper
                             || (prgRamSize >= 0) || (prgNvRamSize >= 0)
                             || (chrRamSize >= 0) || (chrNvRamSize >= 0))
                         ? NesFile.iNesVersion.NES20 : NesFile.iNesVersion.iNES;
-                    Console.Write($"Saving as {(nesFile.Version switch { NesFile.iNesVersion.NES20 => "NES 2.0", _ => "iNES" })} file: {fileName}... ");
+                    Console.Write($"Saving ROM as {(nesFile.Version switch { NesFile.iNesVersion.NES20 => "NES 2.0", _ => "iNES" })} file: {fileName}... ");
                     if (mapper.Number < 0)
-                        throw new NotSupportedException("Can't save as .nes file: mapper number unknown");
+                        throw new NotSupportedException("Can't save ROM as .nes file: mapper number unknown");
                     nesFile.Mapper = (ushort)mapper.Number;
                     nesFile.Submapper = mapper.Submapper;
                     nesFile.Mirroring = mirroring;
@@ -568,9 +577,9 @@ namespace com.clusterrr.Famicom.Dumper
                 case ".unf":
                 case ".unif":
                     // Using UNIF container
-                    Console.Write($"Saving as UNIF file: {fileName}... ");
+                    Console.Write($"Saving ROM as UNIF file: {fileName}... ");
                     if (string.IsNullOrEmpty(mapper.UnifName))
-                        throw new NotSupportedException("Can't save file as UNIF - mapper code name unknown");
+                        throw new NotSupportedException("Can't save ROM as UNIF file - mapper code name unknown");
                     var unifFile = new UnifFile
                     {
                         Version = 5,

@@ -16,14 +16,14 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         const int MAPPER_NUMBER = 342;
         const string MAPPER_STRING = "COOLGIRL";
 
-        protected override IFamicomDumperConnectionExt Dumper { get; }
+        protected override IFamicomDumperConnectionExt dumper { get; }
         protected override int BankSize => 0x8000;
         protected override FlashEraseMode EraseMode => FlashEraseMode.Sector;
         protected override bool CanUsePpbs => true;
 
         public CoolgirlWriter(IFamicomDumperConnectionExt dumper)
         {
-            Dumper = dumper;
+            this.dumper = dumper;
         }
 
         protected override void Init()
@@ -43,7 +43,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
         protected override FlashInfo GetFlashInfo()
         {
-            var cfi = FlashHelper.GetCFIInfo(Dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             return new FlashInfo()
             {
                 DeviceSize = (int)cfi.DeviceSize,
@@ -54,56 +54,56 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
         protected override void InitBanking()
         {
-            Dumper.WriteCpu(0x5007, 0x04); // enable PRG write
-            Dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
+            dumper.WriteCpu(0x5007, 0x04); // enable PRG write
+            dumper.WriteCpu(0x5002, 0xFE); // mask = 32K
         }
 
         protected override void Erase(int offset)
         {
             SelectBank(offset / BankSize);
-            Dumper.EraseFlashSector();
+            dumper.EraseFlashSector();
         }
 
         protected override void Write(byte[] data, int offset)
         {
             SelectBank(offset / BankSize);
-            Dumper.WriteFlash(0x8000, data);
+            dumper.WriteFlash(0x8000, data);
         }
 
         protected override ushort ReadCrc(int offset)
         {
             SelectBank(offset / BankSize);
-            return Dumper.ReadCpuCrc(0x8000, BankSize);
+            return dumper.ReadCpuCrc(0x8000, BankSize);
         }
 
         protected override void PPBClear()
         {
             SelectBank(0);
-            FlashHelper.PPBClear(Dumper);
+            FlashHelper.PPBClear(dumper);
         }
 
         protected override void PPBSet(int offset)
         {
             SelectBank(offset / BankSize);
-            FlashHelper.PPBSet(Dumper);
+            FlashHelper.PPBSet(dumper);
         }
 
         public override void PrintFlashInfo()
         {
-            Program.Reset(Dumper);
+            Program.Reset(dumper);
             Init();
             InitBanking();
-            var cfi = FlashHelper.GetCFIInfo(Dumper);
+            var cfi = FlashHelper.GetCFIInfo(dumper);
             FlashHelper.PrintCFIInfo(cfi);
-            FlashHelper.LockBitsCheckPrint(Dumper);
-            FlashHelper.PPBLockBitCheckPrint(Dumper);
+            FlashHelper.LockBitsCheckPrint(dumper);
+            FlashHelper.PPBLockBitCheckPrint(dumper);
         }
 
         private void SelectBank(int bank)
         {
             byte r0 = (byte)(bank >> 7);
             byte r1 = (byte)(bank << 1);
-            Dumper.WriteCpu(0x5000, r0, r1);
+            dumper.WriteCpu(0x5000, r0, r1);
         }   
     }
 }

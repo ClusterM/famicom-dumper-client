@@ -16,14 +16,14 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         static int[] MAPPER_NUMBERS = { 2, 30 };
         static string[] MAPPER_STRINGS = { "UNROM", "UNROM-512", "UNROM-512-8", "UNROM-512-16", "UNROM-512-32" };
 
-        protected override IFamicomDumperConnectionExt Dumper { get; }
+        protected override IFamicomDumperConnectionExt dumper { get; }
         protected override int BankSize => 0x4000;
         protected override FlashEraseMode EraseMode => FlashEraseMode.Chip;
         protected override bool NeedEnlarge => true;
 
         public Unrom512Writer(IFamicomDumperConnectionExt dumper)
         {
-            Dumper = dumper;
+            this.dumper = dumper;
         }
 
         protected override void Init()
@@ -47,7 +47,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             WriteFlashCmd(0x2AAA, 0x55);
             WriteFlashCmd(0x5555, 0x90);
 
-            var id = Dumper.ReadCpu(0x8000, 2);
+            var id = dumper.ReadCpu(0x8000, 2);
             int flashSize = id[1] switch
             {
                 0xB5 => 128 * 1024,
@@ -66,18 +66,18 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
         protected override void Erase(int offset)
         {
-            Dumper.EraseUnrom512();
+            dumper.EraseUnrom512();
         }
 
         protected override void Write(byte[] data, int offset)
         {
-            Dumper.WriteUnrom512((uint)offset, data);
+            dumper.WriteUnrom512((uint)offset, data);
         }
 
         protected override ushort ReadCrc(int offset)
         {
             SelectBank((byte)(offset / BankSize));
-            return Dumper.ReadCpuCrc(0x8000, 0x4000);
+            return dumper.ReadCpuCrc(0x8000, 0x4000);
         }
 
         public override void PrintFlashInfo()
@@ -90,18 +90,18 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
         void WriteFlashCmd(uint address, byte value)
         {
-            Dumper.WriteCpu(0xC000, (byte)(address >> 14));
-            Dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
+            dumper.WriteCpu(0xC000, (byte)(address >> 14));
+            dumper.WriteCpu((ushort)(0x8000 | (address & 0x3FFF)), value);
         }
 
         void ResetFlash()
         {
-            Dumper.WriteCpu(0x8000, 0xF0);
+            dumper.WriteCpu(0x8000, 0xF0);
         }
 
         void SelectBank(byte bank)
         {
-            Dumper.WriteCpu(0xC000, bank);
+            dumper.WriteCpu(0xC000, bank);
         }
     }
 }
