@@ -6,8 +6,9 @@
     public string UnifName { get => null; }
     public int DefaultPrgSize { get => 32 * 1024 * 1024; }
     public int DefaultChrSize { get => 0; }
+    public int DefaultPrgRamSize { get => 8 * 1024; }
+    public int DefaultChrRamSize { get => 256 * 1024; }
 
-   
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {
         dumper.Reset();

@@ -531,7 +531,42 @@ namespace com.clusterrr.Famicom.Dumper
             else
                 Console.WriteLine($"Using UNIF mapper: {mapper.Name}");
 
-
+            // Get optional properties
+            // int DefaultPrgRamSize -> PRG RAM size
+            if (prgRamSize < 0) {
+                var method = mapper.GetType().GetProperty(
+                        "DefaultPrgRamSize", BindingFlags.Instance | BindingFlags.Public,
+                        null, typeof(int), Array.Empty<Type>(),
+                        Array.Empty<ParameterModifier>());
+                if (method != null) prgRamSize = (int)method.GetValue(mapper)!;
+            }
+            // int DefaultChrRamSize -> CHR RAM size
+            if (chrRamSize < 0)
+            {
+                var method = mapper.GetType().GetProperty(
+                        "DefaultChrRamSize", BindingFlags.Instance | BindingFlags.Public,
+                        null, typeof(int), Array.Empty<Type>(),
+                        Array.Empty<ParameterModifier>());
+                if (method != null) chrRamSize = (int)method.GetValue(mapper)!;
+            }
+            // int DefaultPrgNvramSize -> PRG NVRAM size
+            if (prgNvRamSize < 0)
+            {
+                var method = mapper.GetType().GetProperty(
+                        "DefaultPrgNvramSize", BindingFlags.Instance | BindingFlags.Public,
+                        null, typeof(int), Array.Empty<Type>(),
+                        Array.Empty<ParameterModifier>());
+                if (method != null) prgNvRamSize = (int)method.GetValue(mapper)!;
+            }
+            // int DefaultChrNvramSize -> CHR NVRAM size
+            if (chrNvRamSize < 0)
+            {
+                var method = mapper.GetType().GetProperty(
+                        "DefaultChrNvramSize", BindingFlags.Instance | BindingFlags.Public,
+                        null, typeof(int), Array.Empty<Type>(),
+                        Array.Empty<ParameterModifier>());
+                if (method != null) chrNvRamSize = (int)method.GetValue(mapper)!;
+            }
 
             Console.WriteLine("Dumping...");
             var prg = new List<byte>();

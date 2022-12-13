@@ -6,6 +6,8 @@
     public string UnifName { get => "COOLGIRL"; }
     public int DefaultPrgSize { get => 1024 * 1024 * 128; }
     public int DefaultChrSize { get => 0; }
+    public int DefaultPrgRamSize { get => 32 * 1024; }
+    public int DefaultChrRamSize { get => 512 * 1024; }
 
     public void DumpPrg(IFamicomDumperConnection dumper, List<byte> data, int size)
     {
