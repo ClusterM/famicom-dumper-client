@@ -35,7 +35,7 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
     - name: Build
@@ -51,7 +51,7 @@ jobs:
       run: |
         ./famicom-dumper list-mappers
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ env.APP_NAME }}-${{ env.OUTPUT_SUBDIR }}
         path: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
