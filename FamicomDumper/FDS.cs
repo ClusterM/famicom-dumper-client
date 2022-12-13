@@ -10,7 +10,7 @@ namespace com.clusterrr.Famicom.Dumper
 {
     public class FDS
     {
-        public static void WriteFDS(IFamicomDumperConnectionExt dumper, string fileName, bool needCheck = false)
+        public static void WriteFDS(IFamicomDumperConnectionExt dumper, string fileName, bool needCheck = false, byte skipSides = 0)
         {
             if (dumper.ProtocolVersion < 3)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to read/write FDS cards");
@@ -22,7 +22,7 @@ namespace com.clusterrr.Famicom.Dumper
 
                 var rom = new FdsFile(fileName);
 
-                for (int sideNumber = 0; sideNumber < rom.Sides.Count; sideNumber++)
+                for (int sideNumber = skipSides; sideNumber < rom.Sides.Count; sideNumber++)
                 {
                     var driveStatus = dumper.ReadCpu(0x4032);
                     if ((driveStatus & 1) != 0)

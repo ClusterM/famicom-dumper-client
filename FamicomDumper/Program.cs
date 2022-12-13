@@ -82,6 +82,7 @@ namespace com.clusterrr.Famicom.Dumper
             string? chrNvRamSize = null;
 
             byte fdsSides = 1;
+            byte fdsSkipSides = 0;
             bool fdsUseHeader = true;
             bool fdsDumpHiddenFiles = false;
 
@@ -141,6 +142,10 @@ namespace com.clusterrr.Famicom.Dumper
                             break;
                         case "fds-sides":
                             fdsSides = byte.Parse(value);
+                            i++;
+                            break;
+                        case "fds-skip-sides":
+                            fdsSkipSides = byte.Parse(value);
                             i++;
                             break;
                         case "fds-no-header":
@@ -315,7 +320,7 @@ namespace com.clusterrr.Famicom.Dumper
                         case "write-fds":
                             if (string.IsNullOrEmpty(filename))
                                 throw new ArgumentException("Please specify ROM filename using --file argument");
-                            FDS.WriteFDS(dumper, filename, needCheck);
+                            FDS.WriteFDS(dumper, filename, needCheck, fdsSkipSides);
                             break;
                         case "write-prg-ram":
                         case "write-sram":
@@ -500,10 +505,11 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine(" {0,-30}{1}", "--battery", "set \"battery\" flag in ROM header after dumping");
             Console.WriteLine(" {0,-30}{1}", "--unif-name <name>", "internal ROM name for UNIF dumps");
             Console.WriteLine(" {0,-30}{1}", "--unif-author <name>", "author of dump name for UNIF dumps");
-            Console.WriteLine(" {0,-30}{1}", "--fds-sides", "number of FDS sides to dump (default - 1)");
+            Console.WriteLine(" {0,-30}{1}", "--fds-sides <sides>", "number of FDS sides to dump (default - 1)");
+            Console.WriteLine(" {0,-30}{1}", "--fds-skip-sides <sides>", "number of FDS sides to skip while writing (default - 0)");
             Console.WriteLine(" {0,-30}{1}", "--fds-no-header", "do not add header to output file during FDS dumping");
             Console.WriteLine(" {0,-30}{1}", "--fds-dump-hidden", "try to dump hidden files during FDS dumping (used for some copy-protected games)");
-            Console.WriteLine(" {0,-30}{1}", "--coolboy-submapper <submapper number>", "submapper number to use while writing COOLBOY (default - auto, based on a ROM header)");
+            Console.WriteLine(" {0,-30}{1}", "--coolboy-submapper <submapper>", "submapper number to use while writing COOLBOY (default - auto, based on a ROM header)");
             Console.WriteLine(" {0,-30}{1}", "--reset", "simulate reset first");
             Console.WriteLine(" {0,-30}{1}", "--cs-file <C#_file>", "execute C# script from file");
             Console.WriteLine(" {0,-30}{1}", "--bad-sectors <bad_sectors>", "comma separated list of bad sectors for COOLBOY/COOLGIRL writing");
