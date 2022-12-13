@@ -553,7 +553,7 @@ Running DemoScript.Run()...
 ## Download
 You can always download latest version at [https://github.com/ClusterM/famicom-dumper-client/releases](https://github.com/ClusterM/famicom-dumper-client/releases).
 
-Also, you can download automatic nightly builds in GitHub Actions Artifacts: [https://github.com/ClusterM/famicom-dumper-client/actions](https://github.com/ClusterM/famicom-dumper-client/actions) (registration required).
+Also, you can download automatic nightly builds: [http://clusterm.github.io/famicom-dumper-client/](http://clusterm.github.io/famicom-dumper-client/).
 
 ## Donations
 * [Donation Alerts](https://www.donationalerts.com/r/clustermeerkat)
