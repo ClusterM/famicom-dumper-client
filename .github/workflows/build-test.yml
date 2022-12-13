@@ -57,7 +57,7 @@ jobs:
         path: ${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_SUBDIR }}
 
   upload-to-pages:
-    needs: create-release
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
