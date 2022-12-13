@@ -75,10 +75,16 @@ jobs:
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v3
+    - name: Move files to the root
+      run: find -mindepth 2 -exec mv {} . \;
     - name: Display structure of downloaded files
       run: ls -R
     - name: Display structure of downloaded files
       run: ls -R > index.html
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: '.'
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v1
