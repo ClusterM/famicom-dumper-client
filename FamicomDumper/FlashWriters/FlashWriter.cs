@@ -120,9 +120,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             {
                 if (CanUsePpbs)
                 {
-                    Console.Write("Erasing PPBs... ");
                     PPBClear();
-                    Console.WriteLine("OK");
                 }
             }
             catch (Exception ex)
