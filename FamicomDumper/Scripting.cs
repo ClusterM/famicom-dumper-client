@@ -16,19 +16,31 @@ namespace com.clusterrr.Famicom.Dumper
 {
     static class Scripting
     {
-        public static string[] MappersSearchDirectories = {
-            Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!, "mappers"),
-            Path.Combine(Directory.GetCurrentDirectory(), "mappers"),
-            "/usr/share/famicom-dumper/mappers"
-        };
-        public static readonly string[] ScriptsSearchDirectories = {
-            Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!, "scripts"),
-            Path.Combine(Directory.GetCurrentDirectory(), "scripts"),
-            "/usr/share/famicom-dumper/scripts"
-        };
+        public static string[] MappersSearchDirectories;
+        public static readonly string[] ScriptsSearchDirectories;
 
         public const string SCRIPTS_CACHE_DIRECTORY = ".dumpercache";
         public const string SCRIPT_START_METHOD = "Run";
+
+        static Scripting()
+        {
+            var mappersDirectories = new List<string>
+            {
+                Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!, "mappers"),
+                Path.Combine(Directory.GetCurrentDirectory(), "mappers")
+            };
+            if (!OperatingSystem.IsWindows())
+                mappersDirectories.Add("/usr/share/famicom-dumper/mappers");
+            MappersSearchDirectories = mappersDirectories.Distinct().ToArray();
+            var scriptsDirectories = new List<string>
+            {
+                Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!, "scripts"),
+                Path.Combine(Directory.GetCurrentDirectory(), "scripts")
+            };
+            if (!OperatingSystem.IsWindows())
+                mappersDirectories.Add("/usr/share/famicom-dumper/scripts");
+            ScriptsSearchDirectories = scriptsDirectories.Distinct().ToArray();
+        }
 
         static Assembly Compile(string path)
         {
