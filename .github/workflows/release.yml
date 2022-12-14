@@ -76,6 +76,8 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: release_url
+    - name: List files
+      run: ls -R
     - name: Get Release File Name & Upload URL
       id: get_release_info
       env:
