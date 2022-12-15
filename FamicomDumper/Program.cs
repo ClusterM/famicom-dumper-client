@@ -53,7 +53,8 @@ namespace com.clusterrr.Famicom.Dumper
 
         static int Main(string[] args)
         {
-            Console.WriteLine($"Famicom Dumper Client v{Assembly.GetExecutingAssembly().GetName()?.Version?.Major}.{Assembly.GetExecutingAssembly().GetName()?.Version?.Minor}");
+            var version = Assembly.GetExecutingAssembly()?.GetName()?.Version;
+            Console.WriteLine($"Famicom Dumper Client v{version?.Major}.{version?.Minor}{((version?.Build ?? 0) > 0 ? $"{(char)((byte)'a' + version!.Build)}" : "")}");
 #if DEBUG
             Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
             Console.WriteLine($"  Debug version, build time: {BUILD_TIME.ToLocalTime()}");
