@@ -599,7 +599,7 @@ namespace com.clusterrr.Famicom.Dumper
                 case ".nes":
                     // Using iNES or NES 2.0 container
                     var nesFile = new NesFile();
-                    nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper >= 0)
+                    nesFile.Version = ((mapper.Number > 255) || (mapper.Submapper > 0)
                             || (prgRamSize >= 0) || (prgNvRamSize >= 0)
                             || (chrRamSize >= 0) || (chrNvRamSize >= 0))
                         ? NesFile.iNesVersion.NES20 : NesFile.iNesVersion.iNES;
