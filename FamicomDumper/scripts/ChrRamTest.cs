@@ -22,7 +22,7 @@
  */
 
 /*
- * Usage: famicom-dumper script --cs-script ChrRamTest.cs - [number of repetitions]
+ * Usage: famicom-dumper script --cs-file ChrRamTest.cs - [number of repetitions]
  */
 
 using System.IO;
