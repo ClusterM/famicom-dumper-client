@@ -88,15 +88,18 @@ namespace com.clusterrr.Communication
                                     break;
                                 }
                             }
-                            if (!found) throw new IOException($"Can't autodetect serial port, try to specify it manually");
-                            if (myFtdiDevice.GetCOMPort(out string portName) != FTDI.FT_STATUS.FT_OK)
-                                throw new IOException($"Failed to get FTDI serial port name (error {ftStatus})");
-                            myFtdiDevice.Close();
-                            Console.WriteLine($"Autodetected virtual serial port: {portName}");
-                            OpenPortByName(portName, baudRate, timeout);
-                            return;
+                            if (found)
+                            {
+                                if (myFtdiDevice.GetCOMPort(out string portName) != FTDI.FT_STATUS.FT_OK)
+                                    throw new IOException($"Failed to get FTDI serial port name (error {ftStatus})");
+                                myFtdiDevice.Close();
+                                Console.WriteLine($"Autodetected virtual serial port: {portName}");
+                                OpenPortByName(portName, baudRate, timeout);
+                                return;
+                            }
                         }
                     } // FTDI OK
+                    throw new IOException($"Can't autodetect serial port, try to specify it manually");
                 } // not COM
             } // Windows
             else
