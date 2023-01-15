@@ -22,7 +22,7 @@
  */
 
 /*
- * Usage: famicom-dumper script --cs-script BatteryTest.cs --mapper <mapper>
+ * Usage: famicom-dumper script --cs-file BatteryTest.cs --mapper <mapper>
  */
 
 class BatteryTest

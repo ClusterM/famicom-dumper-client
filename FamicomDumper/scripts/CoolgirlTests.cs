@@ -22,7 +22,7 @@
  */
 
 /*
- * Usage: famicom-dumper script --cs-script CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]
+ * Usage: famicom-dumper script --cs-file CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]
  */
 
 class CoolgirlTests
@@ -56,7 +56,7 @@ class CoolgirlTests
             default:
                 break;
         }
-        Console.WriteLine("Usage: famicom-dumper script --cs-script CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]");
+        Console.WriteLine("Usage: famicom-dumper script --cs-file CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]");
     }
 
     public static void FullTest(IFamicomDumperConnection dumper, int count, int chrSize)

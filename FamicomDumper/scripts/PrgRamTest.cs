@@ -22,7 +22,7 @@
  */
 
 /*
- * Usage: famicom-dumper script --cs-script PrgRamTest.cs --mapper <mapper> - [number of repetitions]
+ * Usage: famicom-dumper script --cs-file PrgRamTest.cs --mapper <mapper> - [number of repetitions]
  */
 
 class TestPrgRam

@@ -232,7 +232,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         {
             LockBitsCheckPrint(dumper);
             PPBLockBitCheckPrint(dumper);
-            Console.Write($"Erasing all PBBs... ");
+            Console.Write($"Erasing all PPBs... ");
             // PPB Command Set Entry
             dumper.WriteCpu(0x8AAA, 0xAA);
             dumper.WriteCpu(0x8555, 0x55);

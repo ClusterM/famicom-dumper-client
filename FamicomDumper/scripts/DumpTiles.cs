@@ -22,7 +22,7 @@
  */
 
 /*
- * Usage: famicom-dumper script --cs-script DumpTiles.cs --mapper <mapper> --file <output_file.png> --chr-size <size>
+ * Usage: famicom-dumper script --cs-file DumpTiles.cs --mapper <mapper> --file <output_file.png> --chr-size <size>
  */
 
 using System.Drawing;
