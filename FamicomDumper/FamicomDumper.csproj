@@ -13,7 +13,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <Configurations>Debug;Release;Interim</Configurations>
   </PropertyGroup>
 
