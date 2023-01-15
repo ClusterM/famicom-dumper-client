@@ -33,7 +33,7 @@ jobs:
       APP_NAME: famicom-dumper
       PROJECT_PATH: FamicomDumper
       OUTPUT_DIR: output
-      CONFIGURATION: Debug
+      CONFIGURATION: Interim
       OUTPUT_SUBDIR: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.sc }}
       OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
     steps:

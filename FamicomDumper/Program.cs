@@ -46,7 +46,7 @@ namespace com.clusterrr.Famicom.Dumper
 {
     public class Program
     {
-
+        public const string APP_NAME = "Famicom Dumper Client";
         public const string REPO_PATH = "https://github.com/ClusterM/famicom-dumper-client";
         public const int DEFAULT_GRPC_PORT = 26673;
         public static DateTime BUILD_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(long.Parse(Properties.Resources.buildtime.Trim()));
@@ -54,10 +54,20 @@ namespace com.clusterrr.Famicom.Dumper
         static int Main(string[] args)
         {
             var version = Assembly.GetExecutingAssembly()?.GetName()?.Version;
-            Console.WriteLine($"Famicom Dumper Client v{version?.Major}.{version?.Minor}{((version?.Build ?? 0) > 0 ? $"{(char)((byte)'a' + version!.Build)}" : "")}");
+            var versionStr = $"{version?.Major}.{version?.Minor}{((version?.Build ?? 0) > 0 ? $"{(char)((byte)'a' + version!.Build)}" : "")}";
+            Console.WriteLine($"{APP_NAME} " +
+#if !INTERIM
+                $"v{versionStr}"
+#else
+                "intrerim version"
+#endif
 #if DEBUG
-            Console.WriteLine($"  Commit {Properties.Resources.gitCommit} @ {REPO_PATH}");
-            Console.WriteLine($"  Debug version, build time: {BUILD_TIME.ToLocalTime()}");
+                + " (debug)"
+#endif
+            );
+#if INTERIM || DEBUG
+            Console.WriteLine($"  Commit: {Properties.Resources.gitCommit} @ {REPO_PATH}");
+            Console.WriteLine($"  Build time: {BUILD_TIME.ToLocalTime()}");
 #endif
             Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
             Console.WriteLine("");
