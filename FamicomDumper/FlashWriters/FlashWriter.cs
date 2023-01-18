@@ -87,7 +87,6 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             Program.Reset(dumper);
             Init();
             InitBanking();
-            FlashHelper.ResetFlash(dumper);
             var flash = GetFlashInfo();
             if (flash.DeviceSize > 4 * 1024 * 1024)
                 Console.WriteLine($"Device size: {flash.DeviceSize / 1024 / 1024} MByte / {flash.DeviceSize / 1024 / 1024 * 8} Mbit");
