@@ -96,8 +96,32 @@ namespace com.clusterrr.Famicom.DumperConnection
 
         private (DumperCommand Command, byte[] Data) RecvCommand()
         {
-            var (Command, Data) = connection.RecvCommand();
-            return ((DumperCommand)Command, Data);
+            byte command;
+            byte[] data;
+#if DEBUG
+            bool debugging = false;
+            do
+            {
+                (command, data) = connection.RecvCommand();
+                if (command == (byte)DumperCommand.DEBUG)
+                {
+                    if (!debugging)
+                        Console.Write("Debug data: ");
+                    foreach (var b in data)
+                    {
+                        Console.Write($"{b:X02} ");
+                    }
+                    debugging = true;
+                } else if (debugging)
+                {
+                    Console.WriteLine();
+                }
+            }
+            while (command == (byte)DumperCommand.DEBUG);
+#else
+            (command, data) = connection.RecvCommand();
+#endif
+            return ((DumperCommand)command, data);
         }
 
         /// <summary>
