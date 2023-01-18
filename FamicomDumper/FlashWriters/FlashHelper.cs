@@ -62,7 +62,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             Console.WriteLine($"Maximum number of bytes in multi-byte program: {cfi.MaximumNumberOfBytesInMultiProgram}");
             for (int eraseBlockRegion = 0; eraseBlockRegion < cfi.EraseBlockRegionsInfo.Length; eraseBlockRegion++)
             {
-                Console.WriteLine($"Erase block region #{eraseBlockRegion + 1}:");
+                Console.WriteLine($"Erase block region #{eraseBlockRegion}:");
                 Console.WriteLine($" - Sectors size: {cfi.EraseBlockRegionsInfo[eraseBlockRegion].SizeOfBlocks} Bytes");
                 Console.WriteLine($" - Sectors count: {cfi.EraseBlockRegionsInfo[eraseBlockRegion].NumberOfBlocks}");
             }
