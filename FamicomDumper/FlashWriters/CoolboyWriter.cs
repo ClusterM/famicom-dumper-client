@@ -1,9 +1,7 @@
 ﻿using com.clusterrr.Famicom.Containers;
 using com.clusterrr.Famicom.DumperConnection;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace com.clusterrr.Famicom.Dumper.FlashWriters
 {
@@ -139,10 +137,8 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
 
         public override void PrintFlashInfo()
         {
-            if (submapper < 0) throw new InvalidDataException("Can't autodetect submapper, please use \"--coolboy-submapper\" option");
             Program.Reset(dumper);
             Init();
-            SelectBank(0);
             var cfi = FlashHelper.GetCFIInfo(dumper);
             FlashHelper.PrintCFIInfo(cfi);
             FlashHelper.LockBitsCheckPrint(dumper);
