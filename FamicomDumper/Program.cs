@@ -550,40 +550,13 @@ namespace com.clusterrr.Famicom.Dumper
 
             // Get optional properties
             // int DefaultPrgRamSize -> PRG RAM size
-            if (prgRamSize < 0) {
-                var method = mapper.GetType().GetProperty(
-                        "DefaultPrgRamSize", BindingFlags.Instance | BindingFlags.Public,
-                        null, typeof(int), Array.Empty<Type>(),
-                        Array.Empty<ParameterModifier>());
-                if (method != null) prgRamSize = (int)method.GetValue(mapper)!;
-            }
+            if (prgRamSize < 0) prgRamSize = mapper.DefaultPrgRamSize;
             // int DefaultChrRamSize -> CHR RAM size
-            if (chrRamSize < 0)
-            {
-                var method = mapper.GetType().GetProperty(
-                        "DefaultChrRamSize", BindingFlags.Instance | BindingFlags.Public,
-                        null, typeof(int), Array.Empty<Type>(),
-                        Array.Empty<ParameterModifier>());
-                if (method != null) chrRamSize = (int)method.GetValue(mapper)!;
-            }
+            if (chrRamSize < 0) chrRamSize = mapper.DefaultChrRamSize;
             // int DefaultPrgNvramSize -> PRG NVRAM size
-            if (prgNvRamSize < 0)
-            {
-                var method = mapper.GetType().GetProperty(
-                        "DefaultPrgNvramSize", BindingFlags.Instance | BindingFlags.Public,
-                        null, typeof(int), Array.Empty<Type>(),
-                        Array.Empty<ParameterModifier>());
-                if (method != null) prgNvRamSize = (int)method.GetValue(mapper)!;
-            }
+            if (prgNvRamSize < 0) prgNvRamSize = mapper.DefaultPrgNvramSize;
             // int DefaultChrNvramSize -> CHR NVRAM size
-            if (chrNvRamSize < 0)
-            {
-                var method = mapper.GetType().GetProperty(
-                        "DefaultChrNvramSize", BindingFlags.Instance | BindingFlags.Public,
-                        null, typeof(int), Array.Empty<Type>(),
-                        Array.Empty<ParameterModifier>());
-                if (method != null) chrNvRamSize = (int)method.GetValue(mapper)!;
-            }
+            if (chrNvRamSize < 0) chrNvRamSize = mapper.DefaultChrNvramSize;
 
             Console.WriteLine("Dumping...");
             var prg = new List<byte>();
@@ -626,7 +599,7 @@ namespace com.clusterrr.Famicom.Dumper
                     nesFile.PrgNvRamSize = (uint)Math.Max(0, prgNvRamSize);
                     nesFile.ChrRamSize = (uint)Math.Max(0, chrRamSize);
                     nesFile.ChrNvRamSize = (uint)Math.Max(0, chrNvRamSize);
-                    nesFile.Battery = battery;
+                    nesFile.Battery = battery || nesFile.PrgNvRamSize > 0 || nesFile.ChrNvRamSize > 0;
                     nesFile.Save(fileName);
                     break;
                 case ".unf":

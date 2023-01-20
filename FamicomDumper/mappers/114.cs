@@ -2,8 +2,6 @@
 {
     public string Name { get => "MMC3 SG PROT. A"; }
     public int Number { get => 114; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 512 * 1024; }
     public int DefaultChrSize { get => 256 * 1024; }
 
@@ -67,11 +65,6 @@
             data.AddRange(dumper.ReadPpu(0x1000, 0x0400));
             Console.WriteLine("OK");
         }
-    }
-
-    public void EnablePrgRam(IFamicomDumperConnection dumper)
-    {
-        throw new NotSupportedException("PRG RAM is not supported by this mapper");
     }
 
     public MirroringType GetMirroring(IFamicomDumperConnection dumper)

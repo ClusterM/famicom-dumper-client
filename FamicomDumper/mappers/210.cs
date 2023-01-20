@@ -2,8 +2,6 @@
 {
     public string Name { get => "Mapper 210"; }
     public int Number { get => 210; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 512 * 1024; }
     public int DefaultChrSize { get => 256 * 1024; }
 
@@ -31,15 +29,5 @@
             data.AddRange(dumper.ReadPpu(0x0000, 0x0400));
             Console.WriteLine("OK");
         }
-    }
-
-    public void EnablePrgRam(IFamicomDumperConnection dumper)
-    {
-        dumper.WriteCpu(0xC000, 0x01);
-    }
-
-    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
-    {
-        return dumper.GetMirroring();
     }
 }

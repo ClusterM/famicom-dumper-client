@@ -2,8 +2,6 @@
 {
     public string Name { get => "NROM"; }
     public int Number { get => 0; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 0x8000; }
     public int DefaultChrSize { get => 0x2000; }
 
@@ -24,10 +22,5 @@
     public void EnablePrgRam(IFamicomDumperConnection dumper)
     {
         // Actually PRG RAM is present in Family Basic
-    }
-
-    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
-    {
-        return dumper.GetMirroring();
     }
 }

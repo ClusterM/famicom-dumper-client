@@ -2,8 +2,6 @@
 {
     public string Name { get => "MMC3"; }
     public int Number { get => 4; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 512 * 1024; }
     public int DefaultChrSize { get => 256 * 1024; }
 

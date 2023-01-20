@@ -2,8 +2,6 @@
 {
     public string Name { get => "FME-7"; }
     public int Number { get => 69; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 512 * 1024; }
     public int DefaultChrSize { get => 256 * 1024; }
 

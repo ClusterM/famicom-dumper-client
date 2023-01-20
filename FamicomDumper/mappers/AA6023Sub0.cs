@@ -5,7 +5,6 @@
     public byte Submapper { get => 0; }
     public string UnifName { get => "COOLBOY"; }
     public int DefaultPrgSize { get => 32 * 1024 * 1024; }
-    public int DefaultChrSize { get => 0; }
     public int DefaultPrgRamSize { get => 8 * 1024; }
     public int DefaultChrRamSize { get => 256 * 1024; }
 
@@ -37,11 +36,6 @@
             data.AddRange(dumper.ReadCpu(0x8000, 0x4000));
             Console.WriteLine("OK");
         }
-    }
-
-    public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
-    {
-        throw new NotSupportedException("This mapper doesn't have a CHR ROM");
     }
 
     public void EnablePrgRam(IFamicomDumperConnection dumper)

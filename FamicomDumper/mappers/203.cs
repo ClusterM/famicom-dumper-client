@@ -2,8 +2,6 @@
 {
     public string Name { get => "Mapper 203"; }
     public int Number { get => 203; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 4 * 0x4000; }
     public int DefaultChrSize { get => 4 * 0x2000; }
 
@@ -29,15 +27,5 @@
             data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
             Console.WriteLine("OK");
         }
-    }
-
-    public void EnablePrgRam(IFamicomDumperConnection dumper)
-    {
-        throw new NotSupportedException("PRG RAM is not supported by this mapper");
-    }
-
-    public MirroringType GetMirroring(IFamicomDumperConnection dumper)
-    {
-        return dumper.GetMirroring();
     }
 }

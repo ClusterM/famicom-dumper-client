@@ -2,8 +2,6 @@
 {
     public string Name { get => "VRC6a"; }
     public int Number { get => 24; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 256 * 1024; }
     public int DefaultChrSize { get => 256 * 1024; }
 

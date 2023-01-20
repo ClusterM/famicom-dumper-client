@@ -2,8 +2,6 @@
 {
     public string Name { get => "Mapper 57"; }
     public int Number { get => 57; }
-    public byte Submapper { get => 0; }
-    public string UnifName { get => null; }
     public int DefaultPrgSize { get => 8 * 0x4000; }
     public int DefaultChrSize { get => 8 * 0x2000; }
 
