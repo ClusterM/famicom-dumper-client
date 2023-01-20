@@ -70,7 +70,6 @@ namespace com.clusterrr.Famicom.Dumper
         /// <returns>Mirroring type</returns>
         MirroringType GetMirroring(IFamicomDumperConnection dumper) => dumper.GetMirroring();
 
-        /* Optional properties */
         /// <summary>
         /// Default PRG RAM size, can be used with NES 2.0
         /// </summary>
