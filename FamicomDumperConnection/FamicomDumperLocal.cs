@@ -150,7 +150,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                     try
                     {
                         SendCommand(DumperCommand.PRG_INIT, Array.Empty<byte>());
-                        var (command, data) = RecvCommand();
+                        (var command, var data) = RecvCommand();
                         if (command == DumperCommand.STARTED)
                         {
                             if (data.Length >= 1)
@@ -182,7 +182,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void Reset()
         {
             SendCommand(DumperCommand.RESET, Array.Empty<byte>());
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command != DumperCommand.RESET_ACK)
                 throw new IOException($"Invalid data received: {command}");
         }
@@ -220,7 +220,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.PRG_READ_REQUEST, buffer);
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command != DumperCommand.PRG_READ_RESULT)
                 throw new IOException($"Invalid data received: {command}");
             return data;
@@ -240,7 +240,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.PRG_CRC_READ_REQUEST, buffer);
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command != DumperCommand.PRG_READ_RESULT)
                 throw new IOException($"Invalid data received: {command}");
             var crc = (ushort)(data[0] | (data[1] << 8));
@@ -278,7 +278,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.PRG_WRITE_REQUEST, buffer);
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command != DumperCommand.PRG_WRITE_DONE)
                 throw new IOException($"Invalid data received: {command}");
         }
@@ -289,7 +289,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public void EraseFlashSector()
         {
             SendCommand(DumperCommand.FLASH_ERASE_SECTOR_REQUEST, Array.Empty<byte>());
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command == DumperCommand.FLASH_ERASE_ERROR)
                 throw new IOException($"Flash erase error (0x{data[0]:X2})");
             else if (command == DumperCommand.FLASH_ERASE_TIMEOUT)
@@ -329,7 +329,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.FLASH_WRITE_REQUEST, buffer);
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command == DumperCommand.FLASH_WRITE_ERROR)
                 throw new IOException($"Flash write error");
             else if (command == DumperCommand.FLASH_WRITE_TIMEOUT)
@@ -346,7 +346,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             if (ProtocolVersion < 5)
                 throw new NotSupportedException("Dumper firmware version is too old, update it to write UNROM-512 cartridges");
             SendCommand(DumperCommand.UNROM512_ERASE_REQUEST, Array.Empty<byte>());
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command == DumperCommand.FLASH_ERASE_ERROR)
                 throw new IOException($"Flash erase error (0x{data[0]:X2})");
             else if (command == DumperCommand.FLASH_ERASE_TIMEOUT)
@@ -390,7 +390,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[5] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 6, length);
             SendCommand(DumperCommand.UNROM512_WRITE_REQUEST, buffer);
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command == DumperCommand.FLASH_WRITE_ERROR)
                 throw new IOException($"Flash write error");
             else if (command == DumperCommand.FLASH_WRITE_TIMEOUT)
@@ -432,7 +432,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.CHR_READ_REQUEST, buffer);
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command != DumperCommand.CHR_READ_RESULT)
                 throw new IOException($"Invalid data received: {command}");
             return data;
@@ -452,7 +452,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[2] = (byte)(length & 0xFF);
             buffer[3] = (byte)((length >> 8) & 0xFF);
             SendCommand(DumperCommand.CHR_CRC_READ_REQUEST, buffer);
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command != DumperCommand.CHR_READ_RESULT)
                 throw new IOException($"Invalid data received: {command}");
             var crc = (ushort)(data[0] | (data[1] << 8));
@@ -490,7 +490,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[3] = (byte)((length >> 8) & 0xFF);
             Array.Copy(data, 0, buffer, 4, length);
             SendCommand(DumperCommand.CHR_WRITE_REQUEST, buffer);
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command != DumperCommand.CHR_WRITE_DONE)
                 throw new IOException($"Invalid data received: {command}");
         }
@@ -514,7 +514,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             int currentBlock = startBlock;
             while (receiving)
             {
-                var (command, data) = RecvCommand();
+                (var command, var data) = RecvCommand();
                 switch (command)
                 {
                     case DumperCommand.FDS_READ_RESULT_BLOCK:
@@ -574,7 +574,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                 pos += block.Length;
             }
             SendCommand(DumperCommand.FDS_WRITE_REQUEST, buffer);
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             switch (command)
             {
                 case DumperCommand.FDS_WRITE_DONE:
@@ -615,7 +615,7 @@ namespace com.clusterrr.Famicom.DumperConnection
         public bool[] GetMirroringRaw()
         {
             SendCommand(DumperCommand.MIRRORING_REQUEST, Array.Empty<byte>());
-            var (command, data) = RecvCommand();
+            (var command, var data) = RecvCommand();
             if (command != DumperCommand.MIRRORING_RESULT)
                 throw new IOException($"Invalid data received: {command}");
             var mirroringRaw = data;
@@ -664,7 +664,7 @@ namespace com.clusterrr.Famicom.DumperConnection
             buffer[0] = (byte)(pageSize & 0xFF);
             buffer[1] = (byte)((pageSize >> 8) & 0xFF);
             SendCommand(DumperCommand.SET_FLASH_BUFFER_SIZE, buffer);
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command != DumperCommand.SET_VALUE_DONE)
                 throw new IOException($"Invalid data received: {command}");
         }
@@ -686,7 +686,7 @@ namespace com.clusterrr.Famicom.DumperConnection
                     return;
             }
             SendCommand(DumperCommand.COOLBOY_GPIO_MODE, new byte[] { (byte)(coolboyGpioMode ? 1 : 0) });
-            var (command, _) = RecvCommand();
+            (var command, _) = RecvCommand();
             if (command != DumperCommand.SET_VALUE_DONE)
                 throw new IOException($"Invalid data received: {command}");
         }
