@@ -60,7 +60,7 @@ namespace com.clusterrr.Famicom.Dumper
         /// This method will be called to enable PRG RAM
         /// </summary>
         /// <param name="dumper"></param>
-        void EnablePrgRam(IFamicomDumperConnection dumper) 
+        void EnablePrgRam(IFamicomDumperConnection dumper)
             => throw new NotImplementedException("PRG RAM is not supported by this mapper");
 
         /// <summary>

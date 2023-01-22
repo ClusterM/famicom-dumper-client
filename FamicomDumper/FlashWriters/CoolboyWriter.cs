@@ -198,7 +198,8 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                 case 2:
                 case 3:
                     r1 = (byte)(
-                          (((bank >> 8) & 1) << 1) // 8(22)
+                          (1 << 4) // PRG mask 32KB, inverted
+                        | (((bank >> 8) & 1) << 1) // 8(22)
                         | (((bank >> 7) & 1) << 2) // 7(21)
                         | (((bank >> 6) & 1) << 3) // 6(20)
                         | (1 << 7)); // PRG mask 512KB
