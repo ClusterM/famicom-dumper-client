@@ -44,7 +44,7 @@
     {
         dumper.Reset();
         dumper.WriteCpu(0xA001, 0x00);
-        dumper.WriteCpu(0x5003, 0x80);
+        dumper.WriteCpu(0x7003, 0x80);
         dumper.WriteCpu(0xA001, 0x80);
     }
 
