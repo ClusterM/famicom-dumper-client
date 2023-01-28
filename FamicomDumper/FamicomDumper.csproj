@@ -76,6 +76,7 @@
     <Compile Remove="mappers\VRC7.cs" />
     <Compile Remove="scripts\BatteryTest.cs" />
     <Compile Remove="scripts\ChrRamTest.cs" />
+    <Compile Remove="scripts\CoolboyTests.cs" />
     <Compile Remove="scripts\CoolgirlTests.cs" />
     <Compile Remove="scripts\DemoScript.cs" />
     <Compile Remove="scripts\DumpTiles.cs" />
@@ -235,6 +236,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\VRC7.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="scripts\CoolboyTests.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>

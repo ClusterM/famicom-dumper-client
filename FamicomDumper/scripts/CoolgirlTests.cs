@@ -1,7 +1,7 @@
 ﻿/* COOLGIRL cartridge tests script
  *
  * Copyright notice for this file:
- *  Copyright (C) 2021 Cluster
+ *  Copyright (C) 2023 Cluster
  *  http://clusterrr.com
  *  clusterrr@clusterrr.com
  *
@@ -37,6 +37,7 @@ class CoolgirlTests
             count = int.Parse(args[1]);
         switch (testMode)
         {
+            default:
             case "full":
                 FullTest(dumper, count, chrSize);
                 return;
@@ -50,11 +51,6 @@ class CoolgirlTests
             case "chr-ram":
                 TestChrRam(dumper, count, chrSize);
                 return;
-            case "":
-                Console.WriteLine("Please specify one of the test modes: full, prg-ram or chr-ram");
-                break;
-            default:
-                break;
         }
         Console.WriteLine("Usage: famicom-dumper script --cs-file CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]");
     }
