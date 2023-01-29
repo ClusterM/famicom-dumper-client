@@ -22,10 +22,13 @@
  */
 
 /*
- * Usage: famicom-dumper script --cs-file CoolgirlTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]
+ * Usage: famicom-dumper script --cs-file CoolboyTests.cs --mapper 268.x --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]
  */
 
-class CoolgirlTests
+using System.IO;
+using System;
+
+class CoolboyTests
 {
     void Run(IFamicomDumperConnection dumper, IMapper mapper, string[] args, int chrSize = 256 * 1024)
     {
@@ -52,7 +55,7 @@ class CoolgirlTests
                 TestChrRam(dumper, count, chrSize);
                 return;
         }
-        Console.WriteLine("Usage: famicom-dumper script --cs-file CoolboyTests.cs --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]");
+        Console.WriteLine("Usage: famicom-dumper script --cs-file CoolboyTests.cs --mapper 268.x --chr-size <size> - full|prg-ram|chr-ram [number of repetitions]");
     }
 
     public static void FullTest(IFamicomDumperConnection dumper, IMapper mapper, int count, int chrSize)
