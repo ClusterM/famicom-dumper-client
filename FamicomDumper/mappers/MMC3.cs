@@ -16,7 +16,6 @@
             data.AddRange(dumper.ReadCpu(0x8000, 0x2000));
             Console.WriteLine("OK");
         }
-        Console.WriteLine("OK");
     }
 
     public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)

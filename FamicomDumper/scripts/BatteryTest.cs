@@ -43,7 +43,7 @@ class BatteryTest
         Console.Write("Writing PRG RAM... ");
         dumper.WriteCpu(0x6000, data);
         Console.WriteLine("OK");
-        Console.WriteLine("Replug cartridge and press any key");
+        Console.WriteLine("Replug the cartridge and press any key");
         Console.ReadKey();
         Console.WriteLine();
         Console.Write("Reading PRG RAM... ");

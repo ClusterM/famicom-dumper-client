@@ -59,7 +59,7 @@ namespace com.clusterrr.Famicom.Dumper
 #if !INTERIM
                 $"v{versionStr}"
 #else
-                "intrerim version"
+                "interim version"
 #endif
 #if DEBUG
                 + " (debug)"

@@ -20,7 +20,6 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         public EraseBlockRegionInfo[]? Regions;
     }
 
-
     public abstract class FlashWriter
     {
         const int MAX_WRITE_ERROR_COUNT = 5;

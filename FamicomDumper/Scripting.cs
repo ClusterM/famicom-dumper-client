@@ -236,9 +236,7 @@ namespace com.clusterrr.Famicom.Dumper
         {
             if (!string.IsNullOrEmpty(mapperName) && File.Exists(mapperName)) // CS script?
             {
-                Console.Write($"Compiling {mapperName}... ");
                 var m = CompileMapper(mapperName);
-                Console.WriteLine("OK");
                 return m;
             }
 
