@@ -555,5 +555,6 @@ You can always download latest version at [https://github.com/ClusterM/famicom-d
 Also, you can download automatic interim builds: [http://clusterm.github.io/famicom-dumper-client/](http://clusterm.github.io/famicom-dumper-client/).
 
 ## Donate
+* PayPal: cluster@cluster.wtf
 * [Donation Alerts](https://www.donationalerts.com/r/clustermeerkat)
 * [Boosty](https://boosty.to/cluster)
