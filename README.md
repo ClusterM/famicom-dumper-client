@@ -550,9 +550,9 @@ Running DemoScript.Run()...
 ~~~~
 
 ## Download
-You can always download latest version at [https://github.com/ClusterM/famicom-dumper-client/releases](https://github.com/ClusterM/famicom-dumper-client/releases).
+You can always download the latest version at [https://github.com/ClusterM/famicom-dumper-client/releases](https://github.com/ClusterM/famicom-dumper-client/releases).
 
-Also, you can download automatic interim builds: [http://clusterm.github.io/famicom-dumper-client/](http://clusterm.github.io/famicom-dumper-client/).
+Also, you can download automatic interim builds at [http://clusterm.github.io/famicom-dumper-client/](http://clusterm.github.io/famicom-dumper-client/).
 
 ## Donate
 * PayPal: cluster@cluster.wtf
