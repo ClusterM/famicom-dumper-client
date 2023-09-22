@@ -549,12 +549,16 @@ Compiling DemoScript.cs...
 Running DemoScript.Run()...
 ~~~~
 
+
 ## Download
 You can always download the latest version at [https://github.com/ClusterM/famicom-dumper-client/releases](https://github.com/ClusterM/famicom-dumper-client/releases).
 
 Also, you can download automatic interim builds at [http://clusterm.github.io/famicom-dumper-client/](http://clusterm.github.io/famicom-dumper-client/).
 
+
 ## Donate
-* PayPal: cluster@cluster.wtf
+* [Buy Me A Coffee](https://www.buymeacoffee.com/cluster)
 * [Donation Alerts](https://www.donationalerts.com/r/clustermeerkat)
 * [Boosty](https://boosty.to/cluster)
+* BTC: 1MBYsGczwCypXhMBocoDQWxx7KZT2iiwzJ
+* PayPal is not available in Armenia :(
