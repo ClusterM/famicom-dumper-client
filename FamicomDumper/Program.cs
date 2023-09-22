@@ -69,7 +69,7 @@ namespace com.clusterrr.Famicom.Dumper
             Console.WriteLine($"  Commit: {Properties.Resources.gitCommit} @ {REPO_PATH}");
             Console.WriteLine($"  Build time: {BUILD_TIME.ToLocalTime()}");
 #endif
-            Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://clusterrr.com / clusterrr@clusterrr.com");
+            Console.WriteLine("  (c) Alexey 'Cluster' Avdyukhin / https://cluster.wtf / cluster@cluster.wtf");
             Console.WriteLine("");
 #if DEBUG
             var stopwatch = new Stopwatch();
@@ -111,7 +111,7 @@ namespace com.clusterrr.Famicom.Dumper
 
             try
             {
-                if (args.Length == 0 || args.Contains("help") || args.Contains("--help"))
+                if (args.Length == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "/?")
                 {
                     PrintHelp();
                     return 0;
