@@ -190,7 +190,7 @@ namespace com.clusterrr.Famicom.Dumper
             dumper.WriteCpu(0x4025, 0b00100110); // reset
             dumper.WriteCpu(0x0000, 0xFF); // to prevent open bus read
             var ext = dumper.ReadCpu(0x4033);
-            if (ext != 0x00) ramAdapterPresent = false;
+            if ((ext & 0x7F) != 0x00) ramAdapterPresent = false;
             dumper.WriteCpu(0x4026, 0xFF);
             dumper.WriteCpu(0x0000, 0x00); // to prevent open bus read
             ext = dumper.ReadCpu(0x4033);
