@@ -19,18 +19,18 @@
             Console.Write($"Reading PRG bank #{bank}/{banks}... ");
             // Avoiding bus conflicts
             bool noBusConflict = false;
-            var regValue = bank & 0b11;
+            var regValue = (byte)(bank & 0b11);
             for (int i = 0; i < lastBank.Length; i++)
             {
                 if (lastBank[i] == regValue)
                 {
-                    dumper.WriteCpu((ushort)(0x8000 + i), (byte)bank);
+                    dumper.WriteCpu((ushort)(0x8000 + i), regValue);
                     noBusConflict = true;
                     break;
                 }
             }
             if (!noBusConflict) // Whatever...
-                dumper.WriteCpu((ushort)0x8000, (byte)bank);
+                dumper.WriteCpu((ushort)0x8000, regValue);
             lastBank = dumper.ReadCpu(0x8000, 0x8000);
             data.AddRange(lastBank);
             Console.WriteLine("OK");
@@ -39,25 +39,28 @@
 
     public void DumpChr(IFamicomDumperConnection dumper, List<byte> data, int size)
     {
-        if (prg == null)
-        {
-            prg = dumper.ReadCpu(0x8000, DefaultPrgSize);
-        }
-        var banks = size / 0x2000;
+        Console.Write("Reading random PRG... ");
+        var prg = dumper.ReadCpu(0x8000, DefaultPrgSize);
+        Console.WriteLine("OK");
 
+        var banks = size / 0x2000;
         for (var bank = 0; bank < banks; bank++)
         {
             Console.Write($"Reading CHR bank #{bank}/{banks}... ");
             // Avoiding bus conflicts
-            var regValue = (bank & 0b1111) << 4;
+            bool noBusConflict = false;
+            var regValue = (byte)((bank & 0b1111) << 4);
             for (var i = 0; i < prg.Length; i++)
             {
-                if (prg[i] == (bank & 0b1111))
+                if (prg[i] == regValue)
                 {
-                    dumper.WriteCpu((ushort)(0x8000 + i), (byte)bank);
+                    dumper.WriteCpu((ushort)(0x8000 + i), regValue);
+                    noBusConflict = true;
                     break;
                 }
             }
+            if (!noBusConflict) // Whatever...
+                dumper.WriteCpu((ushort)0x8000, regValue);
             data.AddRange(dumper.ReadPpu(0x0000, 0x2000));
             Console.WriteLine("OK");
         }
