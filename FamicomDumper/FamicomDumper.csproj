@@ -54,9 +54,11 @@
     <Compile Remove="mappers\AA6023Sub2.cs" />
     <Compile Remove="mappers\AA6023Sub3.cs" />
     <Compile Remove="mappers\AxROM.cs" />
+    <Compile Remove="mappers\BNROM.cs" />
     <Compile Remove="mappers\CNROM.cs" />
     <Compile Remove="mappers\ColorDreams.cs" />
     <Compile Remove="mappers\Coolgirl.cs" />
+    <Compile Remove="mappers\GTROM.cs" />
     <Compile Remove="mappers\MMC1.cs" />
     <Compile Remove="mappers\MMC2.cs" />
     <Compile Remove="mappers\MMC3.cs" />
@@ -147,6 +149,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
+    <None Include="mappers\BNROM.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
     <None Include="mappers\CNROM.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -168,6 +174,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\Coolgirl.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\GTROM.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
