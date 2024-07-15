@@ -48,16 +48,53 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             WriteFlashCmd(0x5555, 0x90);
 
             var id = dumper.ReadCpu(0x8000, 2);
-            int flashSize = id[1] switch
+            int flashSize;
+            switch (id[0])
             {
-                0xB5 => 128 * 1024,
-                0xB6 => 256 * 1024,
-                0xB7 => 512 * 1024,
-                _ => 0
-            };
+                case 0xBF: // Microchip
+                    flashSize = id[1] switch
+                    {
+                        0xB5 => 128 * 1024, // SST39SF010A
+                        0xB6 => 256 * 1024, // SST39SF020A
+                        0xB7 => 512 * 1024, // SST39SF040
+                        _ => 0,
+                    };
+                    break;
+                case 0x01: // AMD
+                    flashSize = id[1] switch
+                    {
+                        0xD9 => 128 * 1024, // Am29F100 (top)
+                        0xDF => 128 * 1024, // Am29F100 (botton)
+                        0x20 => 128 * 1024, // Am29F010 
+                        0x51 => 256 * 1024, // Am29F200 (too)
+                        0x57 => 256 * 1024, // Am29F200 (bottom)
+                        0xB0 => 256 * 1024, // Am29F002 (top)
+                        0x34 => 256 * 1024, // Am29F002 (bottom)
+                        0xA4 => 512 * 1024, // Am29F040
+                        0xD5 => 1024 * 1024, // Am29F080
+                        0xAD => 2 * 1024 * 1024, // Am29F016
+                        _ => 0,
+                    };
+                    break;
+                case 0x9D: // PMC
+                    flashSize = id[1] switch
+                    {
+                        0x1B => 64 * 1024,  // Pm39LV512
+                        0x1C => 128 * 1024, // Pm39LV010
+                        0x3D => 256 * 1024, // Pm39LV020
+                        0x3E => 512 * 1024, // Pm39LV040
+                        _ => 0,
+                    };
+                    break;
+                default:
+                    flashSize = 0;
+                    break;
+            }
             ResetFlash();
             return new FlashInfo()
             {
+                ManufactorerId = id[0],
+                DeviceId = id[1],
                 DeviceSize = flashSize,
                 MaximumNumberOfBytesInMultiProgram = 0,
                 Regions = null
@@ -84,6 +121,10 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
         {
             ResetFlash();
             var flash = GetFlashInfo();
+            if (flash.ManufactorerId != null)
+                Console.WriteLine($"Manufactorer ID: {flash.ManufactorerId:X2}");
+            if (flash.DeviceId != null)
+                Console.WriteLine($"Device ID: {flash.DeviceId:X2}");
             var deviceSize = flash.DeviceSize;
             Console.WriteLine($"Device size: " + (deviceSize > 0 ? $"{deviceSize / 1024} KByte / {deviceSize / 1024 * 8} Kbit" : "unknown"));
         }

@@ -15,6 +15,8 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
     public enum FlashEraseMode { Chip, Sector }
     public record FlashInfo
     {
+        public byte? ManufactorerId;
+        public ushort? DeviceId;
         public int DeviceSize;
         public int MaximumNumberOfBytesInMultiProgram;
         public EraseBlockRegionInfo[]? Regions;
@@ -87,10 +89,16 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
             Init();
             InitBanking();
             var flash = GetFlashInfo();
-            if (flash.DeviceSize > 4 * 1024 * 1024)
+            if (flash.ManufactorerId != null)
+                Console.WriteLine($"Manufactorer ID: {flash.ManufactorerId:X2}");
+            if (flash.DeviceId != null)
+                Console.WriteLine($"Device ID: {flash.DeviceId:X2}");
+            if (flash.DeviceSize == 0)
+                Console.WriteLine("Dvice size: unknown");
+            else if (flash.DeviceSize > 4 * 1024 * 1024)
                 Console.WriteLine($"Device size: {flash.DeviceSize / 1024 / 1024} MByte / {flash.DeviceSize / 1024 / 1024 * 8} Mbit");
             else
-                Console.WriteLine($"Device size: {flash.DeviceSize / 1024 } KByte / {flash.DeviceSize / 1024 * 8} Kbit");
+                Console.WriteLine($"Device size: {flash.DeviceSize / 1024} KByte / {flash.DeviceSize / 1024 * 8} Kbit");
             if (flash.MaximumNumberOfBytesInMultiProgram > 0)
             {
 #if DEBUG
@@ -99,7 +107,7 @@ namespace com.clusterrr.Famicom.Dumper.FlashWriters
                 if (dumper.ProtocolVersion >= 3)
                     dumper.SetMaximumNumberOfBytesInMultiProgram((uint)flash.MaximumNumberOfBytesInMultiProgram);
             }
-            if (PRG.Length > flash.DeviceSize)
+            if (flash.DeviceSize != 0 && PRG.Length > flash.DeviceSize)
                 throw new InvalidDataException("This ROM is too big for this cartridge");
 
             if (NeedEnlarge)
