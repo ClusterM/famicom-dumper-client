@@ -592,7 +592,13 @@ namespace com.clusterrr.Famicom.Dumper
                         throw new NotSupportedException("Can't save ROM as .nes file: mapper number unknown");
                     nesFile.Mapper = (ushort)mapper.Number;
                     nesFile.Submapper = mapper.Submapper;
-                    nesFile.Mirroring = mirroring;
+                    nesFile.Mirroring = mirroring switch
+                    {
+                        MirroringType.Horizontal => MirroringType.Horizontal,
+                        MirroringType.Vertical => MirroringType.Vertical,
+                        MirroringType.FourScreenVram => MirroringType.FourScreenVram,
+                        _ => MirroringType.Horizontal
+                    };
                     nesFile.PRG = prg.ToArray();
                     nesFile.CHR = chr.ToArray();
                     nesFile.PrgRamSize = (uint)Math.Max(0, prgRamSize);
