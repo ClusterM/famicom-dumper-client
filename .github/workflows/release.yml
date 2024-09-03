@@ -73,7 +73,7 @@ jobs:
       run: |
         ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
     - name: Load Release URL File from release job
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: release_url
     - name: Get Release File Name & Upload URL
