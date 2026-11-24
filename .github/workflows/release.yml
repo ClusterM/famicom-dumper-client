@@ -8,21 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Create Release
-      id: create_release
-      uses: ncipollo/release-action@v1
+      uses: ncipollo/release-action@v1.21.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.event.repository.updated_at }}
         commit: ${{ github.head_ref || github.ref_name }} 
         name: Release ${{ github.event.repository.updated_at }}
         draft: true
-    - name: Output Release URL File
-      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
-    - name: Save Release URL File for publish
-      uses: actions/upload-artifact@v1
-      with:
-        name: release_url
-        path: release_url.txt
 
   publish:
     needs: create-release
@@ -48,11 +40,11 @@ jobs:
             arch: arm          
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 6.0.x
     - name: Build
@@ -72,22 +64,10 @@ jobs:
         CMD: ${{ matrix.os == 'win' && 'zip -r9' || 'tar -czvf' }}
       run: |
         ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
-    - name: Load Release URL File from release job
-      uses: actions/download-artifact@v4.1.7
-      with:
-        name: release_url
-    - name: Get Release File Name & Upload URL
-      id: get_release_info
-      run: |
-        value=`cat release_url.txt`
-        echo upload_url=$value >> $GITHUB_OUTPUT
     - name: Upload
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        MIME: ${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
+      uses: softprops/action-gh-release@v3
       with:
-        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-        asset_path: ${{ env.OUTPUT_FILE }}
-        asset_name: ${{ env.OUTPUT_FILE }}
-        asset_content_type: ${{ env.MIME }}
+        tag_name: ${{ github.event.repository.updated_at }}
+        draft: true
+        files: ${{ env.OUTPUT_FILE }}
+        fail_on_unmatched_files: true

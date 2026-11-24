@@ -38,11 +38,11 @@ jobs:
       OUTPUT_FILE: famicom-dumper-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.sc == 'self-contained' && '-self-contained' || '' }}.${{ matrix.os == 'win' && 'zip' || 'tar.gz' }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 6.0.x
     - name: Build
@@ -60,7 +60,7 @@ jobs:
       run: |
         ${{ env.CMD }} ../../${{ env.OUTPUT_FILE }} ${{ env.APP_NAME }}
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.APP_NAME }}-${{ env.OUTPUT_SUBDIR }}
         path: ${{ env.OUTPUT_FILE }}
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v8
     - name: Move files to the root
       run: find -mindepth 2 -exec mv {} . \;
     - name: Remove empty directories
@@ -78,10 +78,10 @@ jobs:
     - name: Generate index.html
       run: "(echo \"<html><head><title>Famicom Dumper Client</title></head><body>Updated: `date`<br/><br/>\" ; for file in famicom-dumper-* ; do echo \"<a href='$file'>$file</a><br/>\" ; done ; echo \"</body></html>\") > index.html"
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v1
+      uses: actions/upload-pages-artifact@v5
       with:
         path: '.'
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v1
+      uses: actions/deploy-pages@v5
       if: github.event_name != 'pull_request'
