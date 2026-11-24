@@ -42,6 +42,9 @@
 
   <ItemGroup>
     <Compile Remove="mappers\114.cs" />
+    <Compile Remove="mappers\16.cs" />
+    <Compile Remove="mappers\153.cs" />
+    <Compile Remove="mappers\157.cs" />
     <Compile Remove="mappers\19.cs" />
     <Compile Remove="mappers\202.cs" />
     <Compile Remove="mappers\203.cs" />
@@ -110,6 +113,18 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>
     <None Include="mappers\114.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\16.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\153.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+    <None Include="mappers\157.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </None>

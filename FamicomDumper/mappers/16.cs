@@ -2,7 +2,7 @@
 {
     public string Name { get => "BANDAI 16"; }
     public int Number { get => 16; }
-    public int Submapper { get => 5; }
+    public byte Submapper { get => 5; }
     public int DefaultPrgSize { get => 256 * 1024; }
     public int DefaultChrSize { get => 256 * 1024; }
 
